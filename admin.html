@@ -43,19 +43,10 @@
 
       <section class="admin-panel full-panel" id="visualManager" aria-labelledby="visualHeading">
         <div class="panel-heading"><div><span class="panel-index">01 / ART DIRECTION</span><h2 id="visualHeading">Visual editor</h2></div><span class="panel-icon">✳</span></div>
-        <p class="panel-description">Switch the palette and layout, edit the hero copy, and preview changes in the page preview below. Changes stay in this browser until you publish.</p>
+        <p class="panel-description">The page uses a fixed black-and-white base. Edit the shared accent color, hero copy, and image; preview changes below, then publish them for visitors.</p>
         <div class="visual-editor-grid">
-          <div class="visual-field"><label for="themePreset">DESIGN TEMPLATE</label>
-            <select id="themePreset">
-              <option value="noir">01 — Noir / Monochrome</option><option value="editorial">02 — Warm editorial</option><option value="lavender">03 — Lavender</option><option value="ocean">04 — Blue / Slate</option><option value="rose">05 — Clay / Rose</option>
-            </select>
-          </div>
-          <div class="visual-field"><label for="layoutPreset">HERO LAYOUT</label>
-            <select id="layoutPreset"><option value="center">Centered statement</option><option value="left">Editorial left</option><option value="split">Split composition</option></select>
-          </div>
-          <div class="visual-field"><label for="accentColor">ACCENT COLOR</label><input id="accentColor" type="color" aria-describedby="contrastStatus" value="#2456d7"></div>
-          <div class="visual-field"><label for="backgroundColor">BACKGROUND COLOR</label><input id="backgroundColor" type="color" aria-describedby="contrastStatus" value="#f4f7fb"></div>
-          <div class="visual-field"><label for="textColor">TEXT COLOR</label><input id="textColor" type="color" aria-describedby="contrastStatus" value="#111827"></div><div class="full-visual-field"><p class="contrast-check" id="contrastStatus" role="status" aria-live="polite"></p></div>
+          <div class="visual-field"><label for="accentColor">ACCENT COLOR — LINKS, BUTTONS &amp; HIGHLIGHTS</label><input id="accentColor" type="color" aria-describedby="contrastStatus" value="#2456d7"></div>
+          <div class="full-visual-field"><p class="contrast-check" id="contrastStatus" role="status" aria-live="polite"></p></div>
           <div class="visual-field"><label for="heroTitle">MAIN TITLE</label><input id="heroTitle" maxlength="60" value="רואי"></div>
           <div class="visual-field"><label for="heroSubtitle">SUBTITLE</label><input id="heroSubtitle" maxlength="120" value="A study of ordinary days."></div>
           <div class="visual-field"><label for="heroDescription">INTRO TEXT</label><textarea id="heroDescription" rows="3" maxlength="240">Light shifts across familiar places. A song returns with the weather.</textarea></div>
@@ -118,13 +109,13 @@
 
       <section class="admin-panel full-panel" id="guestbookManager" aria-labelledby="guestHeading">
         <div class="panel-heading"><div><span class="panel-index">03 / VISITOR NOTES</span><h2 id="guestHeading">Guestbook moderation</h2></div><span class="panel-icon">/</span></div>
-        <p class="panel-description">Review visitor comments. Approve pending notes to publish them, or delete notes that should not appear.</p>
+        <p class="panel-description">Only real visitor submissions appear here. Approve pending notes to publish them, or delete notes you do not want to keep.</p>
         <label class="sr-only" for="guestSearch">Search guestbook notes</label><input class="list-search" id="guestSearch" type="search" placeholder="Search visitor notes…" autocomplete="off"><label class="sr-only" for="guestStatusFilter">Filter guestbook notes by status</label><select class="list-filter" id="guestStatusFilter"><option value="all">All notes</option><option value="pending">Pending approval</option><option value="published">Published</option></select><p class="list-count" id="guestSearchCount" role="status" aria-live="polite"></p><p id="guestbookModerationStatus" class="admin-message" role="status" aria-live="polite"></p><div id="adminGuestList" class="admin-item-list" aria-label="Visitor notes"></div>
       </section>
 
       <section class="admin-panel full-panel" id="backupManager" aria-labelledby="backupHeading">
         <div class="panel-heading"><div><span class="panel-index">04 / PORTABILITY</span><h2 id="backupHeading">Backup &amp; restore</h2></div><span class="panel-icon">↗</span></div>
-        <p class="panel-description">Export published page content and collections to JSON. The export excludes visitor submissions; those stay in guestbook moderation. Restore replaces shared page content and collections, plus local fallback notes.</p>
+        <p class="panel-description">Export or restore published page content, songs, and notes. Visitor submissions remain separate in guestbook moderation.</p>
         <div class="backup-actions"><button type="button" class="primary-button" id="exportBackup">Export backup <span>↓</span></button><label class="upload-button">Import backup <span>↑</span><input type="file" id="importBackup" aria-label="Choose a JSON backup file to import" accept="application/json,.json"></label></div>
         <p id="backupStatus" class="admin-message" role="status"></p>
       </section>
