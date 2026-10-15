@@ -4,16 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f4f7fb">
-  <meta name="description" content="MY FAVORITE HOOMAN EVER Light shifts across familiar places. A song returns with the weather.">
+  <meta name="description" content="A photo journal and personal archive of images, songs, and notes for רואי.">
   <title>רואי — Biggest Fan Archive</title>
   <!-- og:start -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="רואי — Biggest Fan Archive">
-  <meta property="og:description" content="MY FAVORITE HOOMAN EVER Light shifts across familiar places. A song returns with the weather.">
-  <meta property="og:url" content="https://kamila11441.github.io/biggest-fan-archive/">
-  <meta property="og:image" content="https://kamila11441.github.io/biggest-fan-archive/assets/archive/hero/1792089875020.jpg">
-  <meta name="twitter:card" content="summary_large_image">
-  <link rel="alternate" type="application/rss+xml" title="Photo journal." href="feed.xml">
+  <meta property="og:description" content="A photo journal and personal archive of images, songs, and notes.">
+  <meta name="twitter:card" content="summary">
+  <link rel="alternate" type="application/rss+xml" title="Photo journal" href="feed.xml">
   <!-- og:end -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -82,8 +80,27 @@
       <div id="publicThoughts" class="archive-thought-grid"></div>
     </section>
 
+    <section class="section archive-collection kiss-section" id="kiss" aria-labelledby="kissHeading">
+      <div class="section-label"><span>06</span><span>DAILY RITUAL</span></div>
+      <div class="kiss-card" id="kissGame">
+        <div class="kiss-copy">
+          <h2 id="kissHeading">Today’s <em>kiss.</em></h2>
+          <p class="kiss-lead">One kiss a day, waiting to be claimed. Come back tomorrow for the next one.</p>
+        </div>
+        <div class="kiss-play">
+          <div class="kiss-stage">
+            <div class="kiss-burst" id="kissBurst" aria-hidden="true"></div>
+            <button type="button" class="kiss-button" id="kissButton" aria-pressed="false"><span class="kiss-button-mark" aria-hidden="true">xo</span><span id="kissButtonLabel">Claim today’s kiss</span></button>
+          </div>
+          <p class="kiss-message" id="kissMessage" aria-live="polite"></p>
+          <p class="kiss-stats" id="kissStats" hidden></p>
+          <p class="kiss-note" id="kissNote"></p>
+        </div>
+      </div>
+    </section>
+
     <section class="guestbook-section section" id="guestbook">
-      <div class="section-label"><span>06</span><span>GUESTBOOK / CONTRIBUTIONS</span></div>
+      <div class="section-label"><span>07</span><span>GUESTBOOK / CONTRIBUTIONS</span></div>
       <div class="guestbook-layout">
         <div class="guestbook-heading"><h2>Leave a<br><em>line.</em></h2><p>A few words from visitors become part of the archive.</p><div class="guestbook-stamp">OPEN<br>CONTRIBUTIONS <span>↗</span></div></div>
         <div class="guestbook-content">
