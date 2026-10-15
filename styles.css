@@ -474,3 +474,60 @@ body[data-song-layout="grid"] .songs-section .archive-song:has(iframe[src*="open
     column-span: all;
   }
 }
+
+/* Mobile footer layout */
+@media (max-width: 620px) {
+  .footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "brand admin"
+      "description description"
+      "top top"
+      "meta meta";
+    align-items: center;
+    gap: 14px 18px;
+    margin: 22px 8px 12px;
+    padding: 22px 20px 16px;
+    border-radius: 22px;
+    text-align: left;
+  }
+
+  .footer-logo {
+    grid-area: brand;
+    justify-self: start;
+    font-size: 22px;
+  }
+
+  .footer > p {
+    grid-area: description;
+    max-width: 34ch;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .footer > .back-top[href="admin.html"] {
+    grid-area: admin;
+    justify-self: end;
+  }
+
+  .footer > .back-top[href="#home"]:not(.footer-logo) {
+    grid-area: top;
+    justify-self: start;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .footer-bottom {
+    grid-area: meta;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding-top: 13px;
+    font-size: 8px;
+    line-height: 1.5;
+  }
+}
