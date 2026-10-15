@@ -93,12 +93,10 @@ h1,h2,h3{text-transform:uppercase}
 
 @media(max-width:850px){.hero{min-height:580px;margin:8px;border-radius:22px}.hero-content{padding-left:6vw}}
 
-/* phone: editorial masthead layout, tuned for the portrait beach photo */
+/* phone: editorial masthead layout (photo comes from the admin setting, same as desktop) */
 @keyframes hero-rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 @media(max-width:620px){
   .hero{--pad:20px;place-items:center start;height:auto;min-height:min(760px,calc(100svh - 78px));margin:7px;border-radius:22px}
-  /* separate phone photo; the position keeps the whole frame of the subjects in view */
-  .hero-image{background-image:url("hero-mobile.jpg")!important;background-size:cover!important;background-position:35% 50%!important}
   /* blue-tinted veil on top (pale sky), dark base for the link bar, faint column hairlines */
   .hero::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background:repeating-linear-gradient(90deg,#ffffff14 0 1px,transparent 1px 25%),linear-gradient(180deg,#0a1a3a70 0%,#0a1a3a1f 32%,transparent 48%,transparent 62%,#000000b0 100%)}
   /* corner registration marks */
@@ -108,23 +106,19 @@ h1,h2,h3{text-transform:uppercase}
     linear-gradient(var(--m),var(--m)) bottom left/14px 1px no-repeat,linear-gradient(var(--m),var(--m)) bottom left/1px 14px no-repeat,
     linear-gradient(var(--m),var(--m)) bottom right/14px 1px no-repeat,linear-gradient(var(--m),var(--m)) bottom right/1px 14px no-repeat}
 
-  .hero-content{align-self:stretch;width:100%;max-width:none;height:100%;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto auto auto;padding:46px var(--pad) 72px;transform:none!important}
-  .hero .eyebrow{grid-row:1;display:flex;align-items:center;gap:10px;font:500 10px/1.4 var(--mono);letter-spacing:.2em}
-  .hero .eyebrow::after{content:"";flex:1;height:1px;background:#ffffff80}
+  .hero-content{align-self:stretch;width:100%;max-width:none;height:100%;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto auto auto;padding:34px var(--pad) 24px;transform:none!important}
+  .hero .eyebrow,.hero-index{display:none}   /* top and bottom captions hidden on phones */
   .hero h1{grid-row:2;margin:16px 0 0;padding:0;text-align:center;font-size:clamp(88px,34vw,168px);font-weight:800;line-height:.8;letter-spacing:-.04em;overflow-wrap:normal}
   .hero-subtitle{grid-row:4;width:min-content;max-width:100%;font:400 clamp(30px,9.5vw,42px)/.9 var(--display);letter-spacing:.01em}
   .hero-description{grid-row:5;max-width:22ch;margin:14px 0 18px;font:500 10px/1.9 var(--mono);letter-spacing:.16em}
   .hero-link{grid-row:6;display:flex;justify-content:space-between;width:100%;min-height:44px;padding:14px 0;font-size:11px;font-weight:700;letter-spacing:.2em;background:transparent;border:0;border-top:1px solid #ffffffb3;border-radius:0;transition:opacity .3s ease}
   .hero-link:hover{background:transparent;opacity:.8;transform:none}
-  .hero-index{top:auto;bottom:24px;left:var(--pad);right:var(--pad);justify-content:flex-start;gap:0;font-size:10px;letter-spacing:.12em}
-  .hero-index span+span::before{content:"•";margin:0 10px}
   .hero-content>*{animation:hero-rise .9s cubic-bezier(.2,.7,.2,1) both}
   .hero-content>h1{animation-delay:.12s}
   .hero-content>.hero-subtitle{animation-delay:.24s}
   .hero-content>.hero-description{animation-delay:.34s}
   .hero-content>.hero-link{animation-delay:.44s}
 }
-@media(max-width:390px){.hero-index{font-size:9px}}
 
 /* 4 · ABOUT & QUALITIES --------------------------------------------------- */
 .intro-grid{display:grid;grid-template-columns:.9fr 1fr;gap:clamp(36px,7vw,92px);margin:32px 0 36px}
