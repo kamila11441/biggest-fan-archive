@@ -582,3 +582,108 @@ body[data-song-layout="grid"] .songs-section .archive-song-grid{grid-template-co
 /* Caps need a little more spacing to stay readable */
 .hero-subtitle{letter-spacing:.02em}
 .hero-description{letter-spacing:.04em;line-height:1.8}
+
+/* ===== Editorial hero ===== */
+.hero{
+  height:min(900px,calc(100svh - 24px));
+  min-height:640px;
+  place-items:stretch;
+}
+
+/* soft edge shading so white type stays legible on any photo */
+.hero::after{
+  content:"";position:absolute;inset:0;z-index:3;pointer-events:none;
+  background:linear-gradient(180deg,#00000038 0%,transparent 26%,transparent 46%,#00000080 100%);
+}
+
+/* 12-column grid: eyebrow top, text block mid-right, giant title on the bottom edge */
+.hero-content{
+  width:100%;max-width:none;height:100%;
+  display:grid;
+  grid-template-columns:repeat(12,minmax(0,1fr));
+  grid-template-rows:auto 1fr auto auto auto;
+  column-gap:clamp(12px,2vw,28px);
+  padding:clamp(22px,3.4vw,52px) clamp(22px,3.4vw,52px) clamp(18px,2.4vw,34px);
+  text-align:left;
+}
+
+.hero .eyebrow{
+  grid-column:1/8;grid-row:1;
+  display:flex;align-items:center;gap:12px;
+  font-size:11px;font-weight:600!important;letter-spacing:.22em;
+}
+.hero .eyebrow::after{content:"";flex:0 0 clamp(36px,6vw,80px);height:1px;background:#ffffffb3}
+
+/* index moves to the top-right corner */
+.hero-index{
+  top:clamp(22px,3.4vw,52px);bottom:auto;
+  left:auto;right:clamp(22px,3.4vw,52px);
+  gap:clamp(14px,2.4vw,34px);
+  font-size:10px;font-weight:600!important;letter-spacing:.18em;
+}
+
+/* subtitle: large serif italic, the editorial contrast to the heavy caps */
+.hero .hero-subtitle{
+  grid-column:1/8;grid-row:3/5;align-self:end;
+  max-width:16ch;margin:0;
+  font-family:"Instrument Serif","Playfair Display",Georgia,serif;
+  font-style:italic;font-weight:400!important;
+  font-size:clamp(32px,4.6vw,72px);line-height:1.02;
+  letter-spacing:-.02em;text-transform:none;
+}
+
+.hero .hero-description{
+  grid-column:9/-1;grid-row:3;align-self:end;
+  max-width:34ch;margin:0 0 18px;
+  font-size:12px;font-weight:500!important;line-height:1.9;letter-spacing:.14em;
+}
+
+/* link: underlined text with a moving arrow instead of a pill */
+.hero .hero-link{
+  grid-column:9/-1;grid-row:4;justify-self:start;align-self:start;
+  margin:0 0 clamp(20px,3vw,40px);padding:0!important;
+  border:0!important;border-radius:0!important;
+  font-size:11px;font-weight:700!important;letter-spacing:.2em;
+  text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:8px;
+  transition:gap .3s ease,opacity .3s ease;
+}
+.hero .hero-link:hover{gap:30px;opacity:.85;transform:none;background:transparent!important}
+/* fixes the white box your earlier rule put behind the arrow */
+.hero .hero-link span{background:none!important}
+
+/* giant title across the bottom, with a hairline above it */
+.hero h1{
+  grid-column:1/-1;grid-row:5;
+  margin:0;padding:clamp(10px,1.6vw,20px) 0 .06em;
+  border-top:1px solid #ffffff8c;
+  font-size:clamp(96px,min(24vw,40svh),340px);
+  font-weight:800!important;line-height:.82;letter-spacing:-.03em;
+  text-transform:uppercase;overflow-wrap:normal;
+}
+
+/* quiet staggered entrance */
+@keyframes hero-rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+.hero-content>*{animation:hero-rise .9s cubic-bezier(.2,.7,.2,1) both}
+.hero-content>.eyebrow{animation-delay:.05s}
+.hero-content>.hero-subtitle{animation-delay:.2s}
+.hero-content>.hero-description{animation-delay:.3s}
+.hero-content>.hero-link{animation-delay:.4s}
+.hero-content>h1{animation-delay:.5s}
+
+@media(max-width:620px){
+  .hero{min-height:min(720px,calc(100svh - 78px));height:auto}
+  .hero-content{
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto 1fr auto auto auto auto;
+    padding:68px 20px 22px;
+  }
+  .hero-index{top:20px;left:20px;right:20px;justify-content:space-between;font-size:9px}
+  .hero .eyebrow{grid-column:1;grid-row:1;font-size:10px}
+  .hero h1{grid-column:1;grid-row:3;font-size:clamp(88px,32vw,170px);margin-bottom:18px}
+  .hero .hero-subtitle{grid-column:1;grid-row:4;max-width:20ch;font-size:clamp(28px,8.6vw,40px)}
+  .hero .hero-description{grid-column:1;grid-row:5;max-width:32ch;margin:14px 0 16px;font-size:11px}
+  .hero .hero-link{grid-column:1;grid-row:6;margin:0}
+}
+
+@media(prefers-reduced-motion:reduce){.hero-content>*{animation:none}}
+
