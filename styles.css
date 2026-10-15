@@ -568,3 +568,17 @@ body[data-song-layout="grid"] .songs-section .archive-song-grid{grid-template-co
   .blog-post,.archive-song,.archive-thought,.guestbook-form,.guest-note{border-radius:20px}
   .blog-post h3{font-weight:800;font-size:clamp(20px,6vw,26px);line-height:1.2}
 }
+/* Hero: all text over the photo in caps */
+.hero .eyebrow,
+.hero h1,
+.hero-subtitle,
+.hero-description,
+.hero-link,
+.hero-index,
+.hero-side-note{
+  text-transform:uppercase;
+}
+
+/* Caps need a little more spacing to stay readable */
+.hero-subtitle{letter-spacing:.02em}
+.hero-description{letter-spacing:.04em;line-height:1.8}
