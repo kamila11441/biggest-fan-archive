@@ -364,196 +364,60 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex}
   word-break: normal;
 }
 
-/* Desktop footer: two columns */
+
+/* Footer layout: two columns on desktop, compact stack on mobile. */
 .footer {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px 32px;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  grid-template-areas:
+    "brand description"
+    "admin top"
+    "meta meta" !important;
+  align-items: center;
+  gap: 16px 28px !important;
+  padding: 30px clamp(22px, 7vw, 100px) 18px !important;
+  margin: 22px 12px 12px !important;
+  border-radius: 24px !important;
+  overflow: hidden;
 }
-
-.footer-logo { grid-column: 1; }
-.footer > p { grid-column: 2; }
-.footer > .back-top[href="admin.html"] { grid-column: 1; }
-.footer > .back-top[href="#home"]:not(.footer-logo) { grid-column: 2; }
-.footer-bottom { grid-column: 1 / -1; }
-
-/* Mobile footer: stack into one column */
-@media (max-width: 620px) {
-  .footer {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "brand admin"
-      "description description"
-      "top top"
-      "meta meta";
-  }
-
-  .footer-logo { grid-area: brand; }
-  .footer > p { grid-area: description; }
-  .footer > .back-top[href="admin.html"] { grid-area: admin; }
-  .footer > .back-top[href="#home"]:not(.footer-logo) { grid-area: top; }
-  .footer-bottom { grid-area: meta; }
-}
-
-@media (max-width: 620px) {
-  .songs-section .archive-song-grid {
-    columns: 2;
-    column-gap: 10px;
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .songs-section .archive-song {
-    width: 100%;
-    max-width: 100%;
-    padding: min(14px, var(--song-card-padding, 24px));
-    margin: 0 0 10px;
-    border-radius: 15px;
-  }
-
-  .songs-section .archive-song iframe {
-    width: 100% !important;
-    max-width: 100% !important;
-    border-radius: 9px !important;
-  }
-
-  .songs-section .archive-song iframe[src*="open.spotify.com"] {
-    height: 152px !important;
-    min-height: 152px !important;
-  }
-
-  .songs-section .archive-song iframe[src*="youtube.com/embed"],
-  .songs-section .archive-song iframe[src*="youtube-nocookie.com/embed"] {
-    height: auto !important;
-    min-height: 0 !important;
-    aspect-ratio: 16 / 9;
-  }
-
-  .songs-section .archive-song h3 {
-    min-height: 56px;
-    margin-top: 9px;
-    padding: 10px 4px;
-    font-size: clamp(11px, 3.3vw, 14px);
-    line-height: 1.35;
-  }
-}
-
-@media (max-width: 380px) {
-  .songs-section .archive-song {
-    padding: min(10px, var(--song-card-padding, 24px));
-    border-radius: 12px;
-  }
-
-  .songs-section .archive-song-grid {
-    column-gap: 8px;
-  }
-
-  .songs-section .archive-song h3 {
-    min-height: 50px;
-    font-size: 11px;
-    padding: 8px 2px;
-  }
-
-  .songs-section .archive-song iframe[src*="open.spotify.com"] {
-    height: 152px !important;
-    min-height: 152px !important;
-  }
-}
-
-  .songs-section .archive-song {
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .songs-section .archive-song iframe {
-    display: block;
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  .songs-section .archive-song h3 {
-    width: 100%;
-    box-sizing: border-box;
-    overflow-wrap: anywhere;
-  }
-}
-
-/* Give Spotify song cards a full row; keep other songs in the two-column flow. */
-.songs-section .archive-song:has(iframe[src*="open.spotify.com"]) {
-  column-span: all;
-  display: block;
+.footer > .footer-logo { grid-area: brand; justify-self: start; }
+.footer > p { grid-area: description; margin: 0; }
+.footer > a.back-top[href="admin.html"] { grid-area: admin; justify-self: start; }
+.footer > a.back-top[href="#home"]:not(.footer-logo) { grid-area: top; justify-self: end; }
+.footer > .footer-bottom {
+  grid-area: meta;
   width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-body[data-song-layout="grid"] .songs-section .archive-song:has(iframe[src*="open.spotify.com"]) {
-  grid-column: 1 / -1;
   display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding-top: 14px;
 }
 
-@media (max-width: 620px) {
-  .songs-section .archive-song-grid {
-    columns: 2;
-  }
-
-  .songs-section .archive-song:has(iframe[src*="open.spotify.com"]) {
-    column-span: all;
-  }
-}
-
-/* Mobile footer layout */
 @media (max-width: 620px) {
   .footer {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto !important;
     grid-template-areas:
       "brand admin"
       "description description"
       "top top"
-      "meta meta";
-    align-items: center;
-    gap: 14px 18px;
-    margin: 22px 8px 12px;
-    padding: 22px 20px 16px;
-    border-radius: 22px;
-    text-align: left;
+      "meta meta" !important;
+    gap: 12px 16px !important;
+    margin: 22px 8px 12px !important;
+    padding: 22px 20px 16px !important;
+    border-radius: 22px !important;
   }
-
-  .footer-logo {
-    grid-area: brand;
-    justify-self: start;
-    font-size: 22px;
-  }
-
-  .footer > p {
-    grid-area: description;
-    max-width: 34ch;
-    font-size: 13px;
-    line-height: 1.55;
-  }
-
-  .footer > .back-top[href="admin.html"] {
-    grid-area: admin;
-    justify-self: end;
-  }
-
-  .footer > .back-top[href="#home"]:not(.footer-logo) {
-    grid-area: top;
+  .footer > .footer-logo { font-size: 21px; }
+  .footer > p { max-width: 34ch; font-size: 13px; line-height: 1.55; }
+  .footer > a.back-top[href="admin.html"] { justify-self: end; min-height: 40px; }
+  .footer > a.back-top[href="#home"]:not(.footer-logo) {
     justify-self: start;
     min-height: 40px;
     display: inline-flex;
     align-items: center;
   }
-
-  .footer-bottom {
-    grid-area: meta;
-    display: flex;
+  .footer > .footer-bottom {
     justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-    padding-top: 13px;
     font-size: 8px;
     line-height: 1.5;
   }
