@@ -159,6 +159,7 @@ function retryMedia(el,max=6){const src=el.getAttribute('src');let n=0;if(!src)r
     {const s=document.querySelector('.hero-subtitle');if(s&&typeof v.subtitle==='string')s.textContent=v.subtitle;const d=document.querySelector('.hero-description');if(d&&typeof v.description==='string')setLines(d,v.description);}
     const hero=document.querySelector('.hero-image');
     if(hero){if(typeof v.image!=='string'||!v.image.trim()){hero.style.backgroundImage='';hero.style.backgroundSize='';hero.setAttribute('aria-label','Abstract blue and white hero artwork');}else try{const image=new URL(v.image);if(image.protocol!=='https:'||!image.hostname||image.username||image.password)throw new Error();hero.style.backgroundImage=`url("${image.href.replace(/"/g,'%22')}")`;hero.style.backgroundSize='cover';hero.style.backgroundPosition='center';hero.setAttribute('aria-label','Main photograph from the personal archive');}catch(_){hero.style.backgroundImage='';hero.style.backgroundSize='';hero.setAttribute('aria-label','Abstract blue and white hero artwork');}}
+    window.archiveSetKissMessages?.((Array.isArray(v.kissMessages)?v.kissMessages:[]).map(m=>String(m).trim()).filter(Boolean).slice(0,60));
     document.documentElement.style.setProperty('--hero-mobile-image',heroCssUrl(v.mobileImage));
     document.title=(v.title||'רואי')+' — Biggest Fan Archive';
   }
@@ -172,7 +173,27 @@ function retryMedia(el,max=6){const src=el.getAttribute('src');let n=0;if(!src)r
   function renderSongs(items){ensureCollectionSections();const root=$('publicSongs');if(!root)return;root.replaceChildren();(items||[]).forEach(song=>{const embed=safeEmbedUrl(song.embed);if(!embed)return;const card=document.createElement('article');card.className='archive-song';const label=document.createElement('h3');label.textContent=song.label||song.title||'A song for you';const frame=document.createElement('iframe');frame.src=embed;frame.title=label.textContent;frame.loading='lazy';frame.allow='autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';frame.referrerPolicy='strict-origin-when-cross-origin';frame.style.width='100%';frame.style.border='0';frame.style.borderRadius='12px';frame.style.minHeight=song.kind==='spotify'?'152px':'190px';card.append(frame,label);root.append(card);});if(!items?.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='The soundtrack is waiting for its first song.';root.append(p);}window.archiveReveal(root);}
   function safeAudioUrl(value){try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password?u.href:null;}catch(_){return null;}}
   function renderNoises(items){ensureCollectionSections();const root=$('publicNoises');if(!root)return;root.replaceChildren();(items||[]).forEach(noise=>{const url=safeAudioUrl(noise.url);if(!url)return;const row=document.createElement('article');row.className='archive-noise';const icon=document.createElement('span');icon.className='noise-mark';icon.setAttribute('aria-hidden','true');icon.textContent='▂▅▇▅▃';const body=document.createElement('div');body.className='noise-content';const title=document.createElement('h3');title.textContent=noise.title||'Untitled recording';const caption=document.createElement('p');caption.className='noise-caption';caption.textContent=noise.caption||'';const player=document.createElement('audio');player.controls=true;player.preload='none';player.src=url;retryMedia(player);player.setAttribute('aria-label','Play '+title.textContent);body.append(title);if(caption.textContent)body.append(caption);if(noise.date){const date=document.createElement('time');date.className='noise-date';date.dateTime=noise.date;date.textContent=noise.date;body.append(date);}body.append(player);row.append(icon,body);root.append(row);});if(!root.children.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='No sounds in the archive yet.';root.append(p);}window.archiveReveal(root);}
-  function renderThoughts(items){ensureCollectionSections();const root=$('publicThoughts');if(!root)return;root.replaceChildren();(items||[]).forEach(t=>{const card=document.createElement('article');card.className='archive-thought';const mark=document.createElement('span');mark.className='archive-thought-index';mark.textContent='—';const p=document.createElement('p');p.textContent=t.text;card.append(mark,p);root.append(card);});if(!items?.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='A few observations are waiting to be added.';root.append(p);}window.archiveReveal(root);}
+  let lastSurprise=-1;
+  function setupSurprise(root,items){
+    let row=document.getElementById('surpriseRow');
+    if(!row){
+      row=document.createElement('div');row.id='surpriseRow';row.className='fun-row';
+      const button=document.createElement('button');button.type='button';button.id='surpriseNote';button.className='fun-button';button.textContent='Surprise me ✦';
+      row.append(button);root.before(row);
+      button.addEventListener('click',()=>{
+        const cards=[...root.querySelectorAll('.archive-thought')];if(!cards.length)return;
+        let i;do{i=Math.floor(Math.random()*cards.length);}while(cards.length>1&&i===lastSurprise);
+        lastSurprise=i;cards.forEach(c=>c.classList.remove('spotlight'));
+        const card=cards[i];card.classList.add('spotlight');
+        const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+        card.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'});
+        card.tabIndex=-1;card.focus({preventScroll:true});
+        clearTimeout(setupSurprise.timer);setupSurprise.timer=setTimeout(()=>card.classList.remove('spotlight'),6000);
+      });
+    }
+    row.hidden=!items?.length;
+  }
+  function renderThoughts(items){ensureCollectionSections();const root=$('publicThoughts');if(!root)return;root.replaceChildren();(items||[]).forEach(t=>{const card=document.createElement('article');card.className='archive-thought';const mark=document.createElement('span');mark.className='archive-thought-index';mark.textContent='—';const p=document.createElement('p');p.textContent=t.text;card.append(mark,p);root.append(card);});if(!items?.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='A few observations are waiting to be added.';root.append(p);}setupSurprise(root,items);window.archiveReveal(root);}
   async function loadContent(){ensureCollectionSections();if(adminPreviewActive)return;try{const response=await fetch(new URL('archive-data.json',location.href),{cache:'no-store'});if(response.ok){const content=await response.json();if(content&&typeof content==='object'){apply(content);renderSongs(content.songs||[]);renderNoises(content.noises||[]);renderThoughts(content.thoughts||[]);return;}}}catch(error){console.warn('GitHub archive file is not available yet; using the initial Supabase copy.',error);}if(!db){renderSongs([]);renderNoises([]);renderThoughts([]);return;}try{const {data,error}=await db.from('archive_content').select('content').eq('id',true).maybeSingle();if(error)throw error;if(data?.content){apply(data.content);renderSongs(data.content.songs||[]);renderNoises(data.content.noises||[]);renderThoughts(data.content.thoughts||[]);}else{renderSongs([]);renderNoises([]);renderThoughts([]);}}catch(error){console.error('Could not load archive content:',error);renderSongs([]);renderNoises([]);renderThoughts([]);}}
   window.addEventListener('message',event=>{
     if(window.parent===window||event.source!==window.parent||event.origin!==location.origin||event.data?.type!=='biggest-fan-admin-preview')return;
@@ -204,4 +225,83 @@ function retryMedia(el,max=6){const src=el.getAttribute('src');let n=0;if(!src)r
     if(window.parent!==window)window.parent.postMessage({type:'biggest-fan-preview-ready'},location.origin==='null'?'*':location.origin);
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+
+/* Daily kiss: one claim per day per browser, with a streak. */
+(() => {
+  const $ = id => document.getElementById(id);
+  const button = $('kissButton');
+  if (!button) return;
+  const label = $('kissButtonLabel'), message = $('kissMessage'), stats = $('kissStats'), note = $('kissNote'), burst = $('kissBurst');
+  const defaults = [
+    'A kiss for the quiet part of your day.',
+    'Delivered with the light through the window.',
+    'One kiss, no questions asked.',
+    'Saved up since yesterday, all for you.',
+    'For every ordinary day that turned out better with you in it.',
+    'A small kiss for a big week.',
+    'Sent ahead of the weather. Dress warm.',
+    'Handle with care. Best claimed with a smile.',
+    'Because today deserved a good start.',
+    'A kiss, a song, and a slow afternoon.',
+    'Proof that small things count.',
+    'Claimed, kept, and remembered.'
+  ];
+  let messages = defaults;
+  const KEY = 'archiveKissGame';
+  const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const dayNumber = (d = new Date()) => Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+  const yesterdayKey = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dayKey(d); };
+  const read = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || '{}'); return { last: typeof v.last === 'string' ? v.last : '', streak: Number(v.streak) || 0, total: Number(v.total) || 0 }; } catch (_) { return { last: '', streak: 0, total: 0 }; } };
+  const write = value => { try { localStorage.setItem(KEY, JSON.stringify(value)); } catch (_) {} };
+  let state = read();
+  const todaysMessage = () => messages[dayNumber() % messages.length];
+  function untilMidnight() {
+    const now = new Date(), next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const mins = Math.max(1, Math.ceil((next - now) / 60000)), hours = Math.floor(mins / 60);
+    return hours ? `${hours}h ${mins % 60}m` : `${mins}m`;
+  }
+  function render() {
+    const claimed = state.last === dayKey();
+    const streak = claimed || state.last === yesterdayKey() ? state.streak : 0;
+    button.disabled = claimed;
+    button.setAttribute('aria-pressed', String(claimed));
+    label.textContent = claimed ? 'Claimed today' : 'Claim today’s kiss';
+    message.textContent = claimed ? todaysMessage() : 'Today’s note is waiting for you.';
+    note.textContent = claimed ? `Next kiss in ${untilMidnight()}` : '';
+    stats.hidden = state.total === 0;
+    stats.textContent = `${streak} day${streak === 1 ? '' : 's'} in a row · ${state.total} kiss${state.total === 1 ? '' : 'es'} claimed`;
+  }
+  function floatHearts() {
+    if (!burst || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const glyphs = ['♥', '♡', '✦', 'x'];
+    for (let i = 0; i < 16; i++) {
+      const el = document.createElement('span');
+      el.className = 'kiss-float';
+      el.textContent = glyphs[i % glyphs.length];
+      const angle = (Math.PI * 2 * i) / 16 + Math.random() * 0.4;
+      const dist = 70 + Math.random() * 70;
+      el.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+      el.style.setProperty('--dy', `${Math.sin(angle) * dist - 50}px`);
+      el.style.setProperty('--rot', `${Math.round(Math.random() * 60 - 30)}deg`);
+      el.style.setProperty('--size', `${14 + Math.round(Math.random() * 14)}px`);
+      el.style.setProperty('--delay', `${(Math.random() * 0.15).toFixed(2)}s`);
+      burst.append(el);
+      setTimeout(() => el.remove(), 1900);
+    }
+  }
+  button.addEventListener('click', () => {
+    const today = dayKey();
+    if (state.last === today) return;
+    const streak = state.last === yesterdayKey() ? state.streak + 1 : 1;
+    state = { last: today, streak, total: state.total + 1 };
+    write(state);
+    render();
+    floatHearts();
+    navigator.vibrate?.(25);
+  });
+  window.archiveSetKissMessages = list => { messages = Array.isArray(list) && list.length ? list : defaults; render(); };
+  setInterval(render, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+  render();
 })();
