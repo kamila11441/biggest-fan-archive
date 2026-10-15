@@ -428,10 +428,6 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex}
     min-height: 152px !important;
   }
 }
-@media (max-width: 620px) {
-  .songs-section .archive-song-grid {
-    columns: 1;
-  }
 
   .songs-section .archive-song {
     width: 100%;
