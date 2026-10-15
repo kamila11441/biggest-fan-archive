@@ -1,0 +1,80 @@
+{
+  "songs": [
+    {
+      "kind": "spotify",
+      "embed": "https://open.spotify.com/embed/track/2e1cxDtd6Pm31HcbRAcwgy",
+      "label": "I think of you every time I hear it play",
+      "title": "Spotify track",
+      "addedAt": 1792078226729,
+      "original": "https://open.spotify.com/track/2e1cxDtd6Pm31HcbRAcwgy?si=161ea1ab323a4023"
+    },
+    {
+      "kind": "spotify",
+      "embed": "https://open.spotify.com/embed/track/3QRM0qZB7oMYavveH0iEqx",
+      "label": "I remember feeling so much joy I started flopping around to this song in your bathroom",
+      "title": "Spotify track",
+      "addedAt": 1792078083480,
+      "original": "https://open.spotify.com/track/3QRM0qZB7oMYavveH0iEqx?si=0cf4ff88b23e4689"
+    },
+    {
+      "kind": "spotify",
+      "embed": "https://open.spotify.com/embed/track/3X0WwsNHfSqpd85A9Iggr2",
+      "label": "simply our song!💋",
+      "title": "Spotify track",
+      "addedAt": 1792077917072,
+      "original": "https://open.spotify.com/track/3X0WwsNHfSqpd85A9Iggr2?si=8f3e58e16cd844e3"
+    },
+    {
+      "kind": "spotify",
+      "embed": "https://open.spotify.com/embed/track/1B2k0kYA6DJ4QF6G3J6WPQ",
+      "label": "I played it so much even my mother likes this one now",
+      "title": "Spotify track",
+      "addedAt": 1792077777107,
+      "original": "https://open.spotify.com/track/1B2k0kYA6DJ4QF6G3J6WPQ?si=f942b22a19d74372"
+    },
+    {
+      "kind": "spotify",
+      "embed": "https://open.spotify.com/embed/track/3TgwB0fQ3QajJV7DLwBhYv",
+      "label": "a song I can't stop listening to because of you",
+      "title": "Spotify track",
+      "addedAt": 1792076511373,
+      "original": "https://open.spotify.com/track/3TgwB0fQ3QajJV7DLwBhYv?si=ab99e5c5e44743bc"
+    }
+  ],
+  "noises": [],
+  "thoughts": [
+    {
+      "at": 1792069476312,
+      "id": "1792069476312-y1jd0f",
+      "text": "you smell good today"
+    }
+  ],
+  "navAbout": "About",
+  "navMoments": "Journal",
+  "navNotes": "Notes",
+  "navGuestbook": "Contact",
+  "aboutHeading": "A record of ordinary days.",
+  "aboutLead": "Everyday life leaves its marks in unexpected places.",
+  "blogPosts": [],
+  "aboutBody": "This archive gathers photographs, music, and brief notes from shared places and familiar routines.\n\nSome days return as a particular light through a window; others arrive by way of a song heard again years later.\n\nA collection still in progress.",
+  "momentsHeading": "Photo journal.",
+  "momentsIntro": "Images, captions, and dates. One entry at a time.",
+  "qualities": [
+    "places",
+    "people",
+    "sound",
+    "observations",
+    "details"
+  ],
+  "footerText": "A personal archive of photographs, music, and notes.",
+  "theme": "noir",
+  "layout": "left",
+  "accent": "#5f73a5",
+  "background": "#ffffff",
+  "text": "#090a0c",
+  "isTrusted": true,
+  "title": "רואי",
+  "subtitle": "A study of ordinary days.",
+  "description": "Light shifts across familiar places. A song returns with the weather.",
+  "image": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/hero/1792081501994.jpg"
+}
