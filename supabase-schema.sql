@@ -75,3 +75,32 @@ drop policy if exists "Admins delete archive photos" on storage.objects;
 create policy "Admins delete archive photos" on storage.objects
 for delete to authenticated
 using (bucket_id = 'archive-photos' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+
+-- Voice-note style audio clips: public can listen; signed-in admins can upload and delete.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'archive-audio',
+  'archive-audio',
+  true,
+  26214400,
+  array['audio/mpeg','audio/mp4','audio/aac','audio/wav','audio/x-wav','audio/ogg','audio/webm','audio/flac']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Public can listen to archive audio" on storage.objects;
+create policy "Public can listen to archive audio" on storage.objects
+for select to anon, authenticated using (bucket_id = 'archive-audio');
+
+drop policy if exists "Admins upload archive audio" on storage.objects;
+create policy "Admins upload archive audio" on storage.objects
+for insert to authenticated
+with check (bucket_id = 'archive-audio' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+drop policy if exists "Admins delete archive audio" on storage.objects;
+create policy "Admins delete archive audio" on storage.objects
+for delete to authenticated
+using (bucket_id = 'archive-audio' and (storage.foldername(name))[1] = (select auth.uid())::text);
