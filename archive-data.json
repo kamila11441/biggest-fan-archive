@@ -81,7 +81,7 @@
   "background": "#ffffff",
   "text": "#090a0c",
   "songLayout": "grid",
-  "songCardPadding": 16,
+  "songCardPadding": 12,
   "isTrusted": true,
   "title": "רואי",
   "subtitle": "A study of ordinary days.",
