@@ -34,6 +34,7 @@
   const KEYS = { songs: 'biggestFanArchiveSongs', noises: 'biggestFanArchiveNoises', thoughts: 'biggestFanArchiveThoughts' };
   const $ = id => document.getElementById(id);
   const safeRead = key => { try { const v = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(v) ? v : []; } catch (_) { return []; } };
+  const validPostUrl = value => { try { const u = new URL(value); return u.protocol === 'https:' && u.hostname && !u.username && !u.password ? u.href : null; } catch (_) { return null; } };
   const safeWrite = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch (_) { return false; } };
   const githubConfigKey='biggestFanGitHubConfig',githubTokenKey='biggestFanGitHubTokenSession';let githubToken='';
   try{githubToken=sessionStorage.getItem(githubTokenKey)||'';}catch(_){}
@@ -51,19 +52,55 @@
   async function githubFile(path){try{return await githubRequest(`/contents/${githubPath(path)}?ref=${encodeURIComponent(githubConfig.branch)}`);}catch(error){if(/404|Not Found/i.test(error.message))return null;throw error;}}
   function decodeGitHubText(base64){const bytes=Uint8Array.from(atob(base64.replace(/\s/g,'')),c=>c.charCodeAt(0));return new TextDecoder().decode(bytes);}
   function bytesToBase64(bytes){let binary='';for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(binary);}
-  async function putGitHubBytes(path,bytes,message){const previous=await githubFile(path);return githubRequest(`/contents/${githubPath(path)}`,'PUT',{message,content:bytesToBase64(bytes),branch:githubConfig.branch,...(previous?.sha?{sha:previous.sha}:{})});}
+  let ghQueue=Promise.resolve();
+  const ghEnqueue=fn=>{const run=ghQueue.then(fn);ghQueue=run.catch(()=>{});return run;};
+  function putGitHubBytes(path,bytes,message){return ghEnqueue(async()=>{for(let attempt=0;;attempt++){const previous=await githubFile(path);try{return await githubRequest(`/contents/${githubPath(path)}`,'PUT',{message,content:bytesToBase64(bytes),branch:githubConfig.branch,...(previous?.sha?{sha:previous.sha}:{})});}catch(error){if(attempt<2&&/409|does not match/i.test(error.message))continue;throw error;}}});}
+  window.archiveStaging=window.archiveStaging||{uploads:new Set(),deletes:new Set()};
+  async function compressImage(file,maxDim=2000,quality=.82){
+    const typeExt={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','image/avif':'avif'};
+    const original={blob:file,ext:typeExt[file.type]||'jpg',optimized:false};
+    if(file.type==='image/gif'||!window.createImageBitmap)return original;
+    try{
+      const bmp=await createImageBitmap(file);
+      const scale=Math.min(1,maxDim/Math.max(bmp.width,bmp.height));
+      const w=Math.round(bmp.width*scale),h=Math.round(bmp.height*scale);
+      const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(bmp,0,0,w,h);bmp.close?.();
+      const toBlob=(type)=>new Promise(res=>canvas.toBlob(res,type,quality));
+      let blob=await toBlob('image/webp'),ext='webp';
+      if((!blob||blob.type!=='image/webp')&&file.type!=='image/png'){blob=await toBlob('image/jpeg');ext='jpg';}
+      if(!blob||!['image/webp','image/jpeg'].includes(blob.type))return original;
+      if(scale===1&&blob.size>=file.size)return original;
+      return {blob,ext,optimized:true};
+    }catch(_){return original;}
+  }
+  window.archiveCompressImage=compressImage;
+  function inlineEditForm(fields,onSave,onCancel){
+    const form=document.createElement('form');form.className='admin-form inline-edit';
+    fields.forEach(f=>{const id='ie-'+Math.random().toString(36).slice(2,9);const label=document.createElement('label');label.htmlFor=id;label.textContent=f.label;const el=document.createElement(f.rows?'textarea':'input');el.id=id;if(f.rows)el.rows=f.rows;else el.type=f.type||'text';if(f.max)el.maxLength=f.max;el.value=f.value||'';el.dataset.key=f.key;form.append(label,el);});
+    const actions=document.createElement('div');actions.className='inline-edit-actions';
+    const save=document.createElement('button');save.type='submit';save.className='primary-button';save.textContent='Save changes';
+    const cancel=document.createElement('button');cancel.type='button';cancel.className='text-button';cancel.textContent='Cancel';cancel.addEventListener('click',onCancel);
+    actions.append(save,cancel);form.append(actions);
+    form.addEventListener('submit',e=>{e.preventDefault();const out={};form.querySelectorAll('[data-key]').forEach(el=>{out[el.dataset.key]=el.value.trim();});onSave(out);});
+    return form;
+  }
+  window.archiveInlineEdit=inlineEditForm;
+  const siteBase=()=>String(window.ARCHIVE_BACKEND?.siteBase||`https://${githubConfig.owner}.github.io/${githubConfig.repo}`).replace(/\/+$/,'');
   window.archiveGitHub={
     get connected(){return Boolean(githubToken)},get config(){return {...githubConfig}},
     configure(owner,repo,branch,token){if(!/^[A-Za-z0-9-]+$/.test(owner)||!/^[A-Za-z0-9_.-]+$/.test(repo)||!/^[A-Za-z0-9._/-]+$/.test(branch))throw new Error('Enter a valid GitHub owner, repository, and branch.');githubConfig={owner,repo,branch};githubToken=token.trim();localStorage.setItem(githubConfigKey,JSON.stringify(githubConfig));try{if(githubToken)sessionStorage.setItem(githubTokenKey,githubToken);else sessionStorage.removeItem(githubTokenKey);}catch(_){}},
     disconnect(){githubToken='';try{sessionStorage.removeItem(githubTokenKey);}catch(_){}},
     async connect(){const repo=await githubRequest('');if(repo.permissions?.push===false)throw new Error('This token can read the repository but cannot write to it. Enable Contents read/write.');return repo;},
+    async getText(path){const f=await githubFile(path);return f?decodeGitHubText(f.content):null;},
+    putText(path,text,message='Update site file'){return putGitHubBytes(path,new TextEncoder().encode(text),message);},
     async getJson(path){const file=await githubFile(path);if(!file)return null;return JSON.parse(decodeGitHubText(file.content));},
     async putJson(path,value,message='Update archive content'){const text=JSON.stringify(value,null,2);return putGitHubBytes(path,new TextEncoder().encode(text),message);},
     async upload(path,file,message='Add archive media'){return putGitHubBytes(path,new Uint8Array(await file.arrayBuffer()),message);},
     async uploadBytes(path,bytes,message='Import archive media'){return putGitHubBytes(path,bytes,message);},
-    async delete(path,message='Remove archive media'){const previous=await githubFile(path);if(!previous)return false;await githubRequest(`/contents/${githubPath(path)}`,'DELETE',{message,sha:previous.sha,branch:githubConfig.branch});return true;},
-    pagesUrl(path){return `https://${githubConfig.owner}.github.io/${githubConfig.repo}/${path.split('/').map(encodeURIComponent).join('/')}`;},
-    repoPathFromPagesUrl(url){try{const u=new URL(url),prefix=`/${githubConfig.repo}/`;if(u.hostname!==`${githubConfig.owner}.github.io`||!u.pathname.startsWith(prefix))return null;return decodeURIComponent(u.pathname.slice(prefix.length));}catch(_){return null;}}
+    async delete(path,message='Remove archive media'){return ghEnqueue(async()=>{const previous=await githubFile(path);if(!previous)return false;await githubRequest(`/contents/${githubPath(path)}`,'DELETE',{message,sha:previous.sha,branch:githubConfig.branch});return true;});},
+    pagesUrl(path){return `${siteBase()}/${path.split('/').map(encodeURIComponent).join('/')}`;},
+    repoPathFromPagesUrl(url){try{const base=siteBase()+'/',u=new URL(url);if(!u.href.toLowerCase().startsWith(base.toLowerCase()))return null;return decodeURIComponent(u.href.slice(base.length).split(/[?#]/)[0]);}catch(_){return null;}}
   };
   ['githubOwner','githubRepo','githubBranch'].forEach((id,i)=>{const value=[githubConfig.owner,githubConfig.repo,githubConfig.branch][i];if($(id)&&value)$(id).value=value;});
   let songs = safeRead(KEYS.songs).filter(x => x && typeof x.embed === 'string');
@@ -97,33 +134,45 @@
     const root=$('adminSongList');root.replaceChildren();
     $('songStat').textContent=songs.length;
     if(!songs.length){const e=document.createElement('div');e.className='admin-empty';e.textContent='No songs added yet. Start with the one that reminds you of him most.';root.append(e);return;}
-    songs.forEach((song,i)=>{const row=document.createElement('article');row.className='admin-item';const main=document.createElement('div');main.className='admin-item-main';const title=document.createElement('div');title.className='admin-item-title';title.textContent=song.label||song.title||'Untitled song';const meta=document.createElement('div');meta.className='admin-item-meta';meta.textContent=(song.kind||'link').toUpperCase()+' · EMBED READY';main.append(title,meta);const actions=document.createElement('div');actions.className='admin-item-actions';actions.append(makeButton('↑',()=>moveSong(i,-1),false,'Move '+(song.label||song.title||'song')+' up'),makeButton('↓',()=>moveSong(i,1),false,'Move '+(song.label||song.title||'song')+' down'),makeButton('Remove',()=>{if(!window.archiveGitHub?.connected){$('adminSongStatus').textContent='Connect GitHub before editing songs.';return;}songs.splice(i,1);persistSongs();renderSongs();},true));row.append(main,actions);root.append(row);});
+    songs.forEach((song,i)=>{const row=document.createElement('article');row.className='admin-item';const main=document.createElement('div');main.className='admin-item-main';const title=document.createElement('div');title.className='admin-item-title';title.textContent=song.label||song.title||'Untitled song';const meta=document.createElement('div');meta.className='admin-item-meta';meta.textContent=(song.kind||'link').toUpperCase()+' · EMBED READY';main.append(title,meta);const actions=document.createElement('div');actions.className='admin-item-actions';actions.append(makeButton('Edit',()=>editSong(i,row),false,'Edit '+(song.label||song.title||'song')),makeButton('↑',()=>moveSong(i,-1),false,'Move '+(song.label||song.title||'song')+' up'),makeButton('↓',()=>moveSong(i,1),false,'Move '+(song.label||song.title||'song')+' down'),makeButton('Remove',()=>{if(!window.archiveGitHub?.connected){$('adminSongStatus').textContent='Connect GitHub before editing songs.';return;}songs.splice(i,1);persistSongs();renderSongs();},true));row.append(main,actions);root.append(row);});
   }
   function renderNoises(){
     const root=$('adminNoiseList');if(!root)return;root.replaceChildren();const count=$('noiseCount');if(count)count.textContent=`${noises.length} ITEM${noises.length===1?'':'S'}`;
     if(!noises.length){const empty=document.createElement('div');empty.className='admin-empty';empty.textContent='No recordings yet. Add the first voice note.';root.append(empty);return;}
-    noises.forEach((noise,i)=>{const row=document.createElement('article');row.className='admin-item';const main=document.createElement('div');main.className='admin-item-main';const title=document.createElement('div');title.className='admin-item-title';title.textContent=noise.title||'Untitled recording';const meta=document.createElement('div');meta.className='admin-item-meta';meta.textContent=[noise.date||'Undated',noise.caption||'Audio recording'].join(' · ');const player=document.createElement('audio');player.controls=true;player.preload='none';player.src=validPostUrl(noise.url)||'';player.className='admin-noise-preview';main.append(title,meta,player);const actions=document.createElement('div');actions.className='admin-item-actions';actions.append(makeButton('↑',()=>moveNoise(i,-1),false,'Move '+title.textContent+' up'),makeButton('↓',()=>moveNoise(i,1),false,'Move '+title.textContent+' down'),makeButton('Remove',()=>deleteNoise(noise),true));row.append(main,actions);root.append(row);});
+    noises.forEach((noise,i)=>{const row=document.createElement('article');row.className='admin-item';const main=document.createElement('div');main.className='admin-item-main';const title=document.createElement('div');title.className='admin-item-title';title.textContent=noise.title||'Untitled recording';const meta=document.createElement('div');meta.className='admin-item-meta';meta.textContent=[noise.date||'Undated',noise.caption||'Audio recording'].join(' · ');const player=document.createElement('audio');player.controls=true;player.preload='none';player.src=validPostUrl(noise.url)||'';player.className='admin-noise-preview';main.append(title,meta,player);const actions=document.createElement('div');actions.className='admin-item-actions';actions.append(makeButton('Edit',()=>editNoise(i,row),false,'Edit '+title.textContent),makeButton('↑',()=>moveNoise(i,-1),false,'Move '+title.textContent+' up'),makeButton('↓',()=>moveNoise(i,1),false,'Move '+title.textContent+' down'),makeButton('Remove',()=>deleteNoise(noise),true));row.append(main,actions);root.append(row);});
   }
-  function moveNoise(i,dir){const j=i+dir;if(j<0||j>=noises.length)return;[noises[i],noises[j]]=[noises[j],noises[i]];persistSharedCollections().then(ok=>{const status=$('adminNoiseStatus');if(status)status.textContent=ok?'Order saved and published.':'Saved locally, but shared publishing failed.';});renderNoises();}
-  async function deleteNoise(noise){if(!window.archiveGitHub?.connected){$('adminNoiseStatus').textContent='Connect GitHub before deleting recordings.';return;}if(!confirm(`Remove “${noise.title||'this recording'}” from Noises?`))return;const status=$('adminNoiseStatus');status.textContent='Removing recording…';noises=noises.filter(item=>item.id!==noise.id);const ok=await persistSharedCollections();if(ok&&noise.path?.startsWith('assets/archive/'))await window.archiveGitHub.delete(noise.path,`Remove recording: ${(noise.title||'noise').slice(0,60)}`);status.textContent=ok?'Recording removed from GitHub.':'Could not publish the removal to GitHub.';renderNoises();}
-  $('adminNoiseForm')?.addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget,file=$('adminNoiseFile').files?.[0],status=$('adminNoiseStatus'),button=form.querySelector('button[type=submit]');if(!file)return;if(!window.archiveGitHub?.connected){status.textContent='Connect GitHub before uploading a recording.';return;}if(!file.type.startsWith('audio/')&& !/\.(mp3|m4a|wav|ogg|aac|webm)$/i.test(file.name)){status.textContent='Choose a supported audio file.';return;}if(file.size>25*1024*1024){status.textContent='Audio files must be 25 MB or smaller.';return;}button.disabled=true;status.textContent='Uploading recording to GitHub…';let path='';try{const ext=(file.name.split('.').pop()||'audio').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8)||'audio',slug=($('adminNoiseTitle').value.trim()||file.name.replace(/\.[^.]+$/,'')).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'recording';path=`assets/archive/noises/${Date.now()}-${slug}.${ext}`;await window.archiveGitHub.upload(path,file,`Add recording: ${slug.slice(0,50)}`);const url=window.archiveGitHub.pagesUrl(path);noises.unshift({id:`noise-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,title:$('adminNoiseTitle').value.trim()||file.name.replace(/\.[^.]+$/,''),caption:$('adminNoiseCaption').value.trim(),date:$('adminNoiseDate').value||new Date().toISOString().slice(0,10),url,path,mime:file.type||'',addedAt:Date.now()});noises=noises.slice(0,50);const ok=await persistSharedCollections();if(!ok)throw new Error('The file uploaded, but the archive JSON could not be published.');form.reset();status.textContent='Recording and archive entry published to GitHub.';renderNoises();}catch(error){if(path)try{await window.archiveGitHub.delete(path,'Remove unpublished audio upload');}catch(_){}status.textContent=error.message||'Could not upload recording. Check GitHub token and repository permissions.';}finally{button.disabled=false;}});
+  function editSong(i,row){
+    if(row.querySelector('.inline-edit'))return;const song=songs[i];
+    const form=inlineEditForm([{key:'label',label:'DISPLAY LABEL',value:song.label||song.title||'',max:90}],values=>{songs[i].label=values.label||song.title||'Untitled song';persistSongs();renderSongs();},()=>form.remove());
+    row.append(form);form.querySelector('input').focus();
+  }
+  function editNoise(i,row){
+    if(row.querySelector('.inline-edit'))return;const n=noises[i];
+    const form=inlineEditForm([{key:'title',label:'TITLE',value:n.title||'',max:90},{key:'caption',label:'CAPTION',value:n.caption||'',rows:2,max:240},{key:'date',label:'DATE',value:n.date||'',type:'date'}],v=>{noises[i]={...n,title:v.title||n.title||'Untitled recording',caption:v.caption,date:v.date};persistSharedCollections().then(()=>{const s=$('adminNoiseStatus');if(s)s.textContent='Edit staged. Publish all changes to go live.';});renderNoises();},()=>form.remove());
+    row.append(form);form.querySelector('input').focus();
+  }
+  function moveNoise(i,dir){const j=i+dir;if(j<0||j>=noises.length)return;[noises[i],noises[j]]=[noises[j],noises[i]];persistSharedCollections().then(ok=>{const status=$('adminNoiseStatus');if(status)status.textContent=ok?'Order staged. Publish all changes to go live.':'Saved locally, but shared publishing failed.';});renderNoises();}
+  async function deleteNoise(noise){
+    if(!window.archiveGitHub?.connected){$('adminNoiseStatus').textContent='Connect GitHub before deleting recordings.';return;}
+    if(!confirm(`Remove “${noise.title||'this recording'}” from Noises?`))return;
+    noises=noises.filter(item=>item.id!==noise.id);
+    if(noise.path?.startsWith('assets/archive/'))window.archiveStaging.deletes.add(noise.path);
+    await persistSharedCollections();
+    $('adminNoiseStatus').textContent='Recording removed. Publish all changes to delete the file.';
+    renderNoises();
+  }
+  $('adminNoiseForm')?.addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget,file=$('adminNoiseFile').files?.[0],status=$('adminNoiseStatus'),button=form.querySelector('button[type=submit]');if(!file)return;if(!window.archiveGitHub?.connected){status.textContent='Connect GitHub before uploading a recording.';return;}if(!file.type.startsWith('audio/')&& !/\.(mp3|m4a|wav|ogg|aac|webm)$/i.test(file.name)){status.textContent='Choose a supported audio file.';return;}if(file.size>25*1024*1024){status.textContent='Audio files must be 25 MB or smaller.';return;}button.disabled=true;status.textContent='Uploading recording to GitHub…';let path='';try{const ext=(file.name.split('.').pop()||'audio').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8)||'audio',slug=($('adminNoiseTitle').value.trim()||file.name.replace(/\.[^.]+$/,'')).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'recording';path=`assets/archive/noises/${Date.now()}-${slug}.${ext}`;await window.archiveGitHub.upload(path,file,`Add recording: ${slug.slice(0,50)}`);window.archiveStaging.uploads.add(path);const url=window.archiveGitHub.pagesUrl(path);noises.unshift({id:`noise-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,title:$('adminNoiseTitle').value.trim()||file.name.replace(/\.[^.]+$/,''),caption:$('adminNoiseCaption').value.trim(),date:$('adminNoiseDate').value||new Date().toISOString().slice(0,10),url,path,mime:file.type||'',addedAt:Date.now()});noises=noises.slice(0,50);const ok=await persistSharedCollections();if(!ok)throw new Error('The file uploaded, but the archive JSON could not be published.');form.reset();status.textContent='Recording uploaded and staged. Publish all changes to go live.';renderNoises();}catch(error){if(path)try{await window.archiveGitHub.delete(path,'Remove unpublished audio upload');}catch(_){}status.textContent=error.message||'Could not upload recording. Check GitHub token and repository permissions.';}finally{button.disabled=false;}});
 
   function moveSong(i,dir){if(!window.archiveGitHub?.connected){$('adminSongStatus').textContent='Connect GitHub before editing songs.';return;}const j=i+dir;if(j<0||j>=songs.length)return;[songs[i],songs[j]]=[songs[j],songs[i]];persistSongs();renderSongs();}
   async function persistSharedCollections(){
     safeWrite(KEYS.songs,songs); safeWrite(KEYS.noises,noises); safeWrite(KEYS.thoughts,thoughts);
-    if(!window.archiveGitHub?.connected||!window.archivePublishContent)return false;
-    try {
-      const existing=await window.archiveGitHub.getJson('archive-data.json');
-      if(!existing)throw new Error('Copy the existing archive to GitHub before editing collections.');
-      const saved=await window.archivePublishContent({...existing,songs,noises,thoughts});
-      if(!saved)throw new Error('GitHub did not confirm the archive update.');
-      window.dispatchEvent(new CustomEvent('archive-collections-saved',{detail:{songs,noises,thoughts}}));
-      return true;
-    } catch(err) { console.error('GitHub archive save failed:',err); return false; }
+    window.archiveMarkDirty?.();
+    window.dispatchEvent(new CustomEvent('archive-collections-saved',{detail:{songs,noises,thoughts}}));
+    return true;
   }
   function persistSongs(){
     safeWrite(KEYS.songs,songs);
-    persistSharedCollections().then(ok=>{const status=$('adminSongStatus');if(status)status.textContent=ok?'Saved and published to GitHub Pages.':'GitHub publish failed. Connect GitHub and confirm Contents read/write access.';});
+    persistSharedCollections().then(ok=>{const status=$('adminSongStatus');if(status)status.textContent=ok?'Staged. Publish all changes to go live.':'GitHub publish failed. Connect GitHub and confirm Contents read/write access.';});
   }
   async function loadSharedCollections(){
     const db=window.archiveSupabase;if(!db)return;
@@ -144,17 +193,17 @@
   }
   window.addEventListener('archive-content-loaded',event=>{const content=event.detail?.content;if(event.detail?.githubSource&&content){songs=Array.isArray(content.songs)?content.songs.filter(x=>x&&typeof x.embed==='string'):[];noises=Array.isArray(content.noises)?content.noises.filter(x=>x&&typeof x.url==='string'):[];thoughts=Array.isArray(content.thoughts)?content.thoughts.filter(x=>x&&typeof x.text==='string'):[];refreshAll();return;}loadSharedCollections();},{once:true});
   window.addEventListener('archive-github-content-loaded',event=>{const content=event.detail?.content||{};songs=Array.isArray(content.songs)?content.songs.filter(x=>x&&typeof x.embed==='string'):[];noises=Array.isArray(content.noises)?content.noises.filter(x=>x&&typeof x.url==='string'):[];thoughts=Array.isArray(content.thoughts)?content.thoughts.filter(x=>x&&typeof x.text==='string'):[];safeWrite(KEYS.songs,songs);safeWrite(KEYS.noises,noises);safeWrite(KEYS.thoughts,thoughts);refreshAll();});
-  $('adminSongForm').addEventListener('submit',e=>{e.preventDefault();const status=$('adminSongStatus');if(!window.archiveGitHub?.connected){status.textContent='Connect GitHub before adding songs.';return;}const parsed=parseLink($('adminSongLink').value.trim());if(!parsed){status.textContent='Use a full Spotify URL or a YouTube video/playlist URL.';return;}if(songs.some(s=>s.embed===parsed.embed)){status.textContent='That song is already in the soundtrack.';return;}parsed.label=$('adminSongLabel').value.trim()||parsed.title;parsed.addedAt=Date.now();songs.unshift(parsed);songs=songs.slice(0,15);persistSongs();renderSongs();e.target.reset();status.textContent='Publishing…';});
+  $('adminSongForm').addEventListener('submit',e=>{e.preventDefault();const status=$('adminSongStatus');if(!window.archiveGitHub?.connected){status.textContent='Connect GitHub before adding songs.';return;}const parsed=parseLink($('adminSongLink').value.trim());if(!parsed){status.textContent='Use a full Spotify URL or a YouTube video/playlist URL.';return;}if(songs.some(s=>s.embed===parsed.embed)){status.textContent='That song is already in the soundtrack.';return;}parsed.label=$('adminSongLabel').value.trim()||parsed.title;parsed.addedAt=Date.now();songs.unshift(parsed);songs=songs.slice(0,15);persistSongs();renderSongs();e.target.reset();status.textContent='Staging…';});
 
   function renderThoughts(){
     const root=$('adminThoughtList');root.replaceChildren();$('thoughtStat').textContent=thoughts.length;
     if(!thoughts.length){const e=document.createElement('div');e.className='admin-empty';e.textContent='No notes yet. Add an observation to the collection.';root.append(e);return;}
-    thoughts.forEach(t=>{const row=document.createElement('article');row.className='admin-item';const main=document.createElement('div');main.className='admin-item-main';const meta=document.createElement('div');meta.className='admin-item-meta';meta.textContent=new Date(t.at||Date.now()).toLocaleDateString();const body=document.createElement('div');body.className='admin-item-text';body.textContent=t.text;main.append(meta,body);const actions=document.createElement('div');actions.className='admin-item-actions';actions.append(makeButton('Edit',()=>startEdit(t)),makeButton('Delete',()=>{if(!window.archiveGitHub?.connected){$('adminThoughtStatus').textContent='Connect GitHub before editing notes.';return;}thoughts=thoughts.filter(x=>x.id!==t.id);safeWrite(KEYS.thoughts,thoughts);persistSharedCollections().then(ok=>{const s=$('adminThoughtStatus');if(s)s.textContent=ok?'Published for all visitors. ':'Saved locally, but shared publishing failed. Check Supabase permissions.';});renderThoughts();},true));row.append(main,actions);root.append(row);});
+    thoughts.forEach(t=>{const row=document.createElement('article');row.className='admin-item';const main=document.createElement('div');main.className='admin-item-main';const meta=document.createElement('div');meta.className='admin-item-meta';meta.textContent=new Date(t.at||Date.now()).toLocaleDateString();const body=document.createElement('div');body.className='admin-item-text';body.textContent=t.text;main.append(meta,body);const actions=document.createElement('div');actions.className='admin-item-actions';actions.append(makeButton('Edit',()=>startEdit(t)),makeButton('Delete',()=>{if(!window.archiveGitHub?.connected){$('adminThoughtStatus').textContent='Connect GitHub before editing notes.';return;}thoughts=thoughts.filter(x=>x.id!==t.id);safeWrite(KEYS.thoughts,thoughts);persistSharedCollections().then(ok=>{const s=$('adminThoughtStatus');if(s)s.textContent=ok?'Staged. Publish all changes to go live. ':'Saved locally, but shared publishing failed. Check Supabase permissions.';});renderThoughts();},true));row.append(main,actions);root.append(row);});
   }
   function startEdit(t){editingThoughtId=t.id;$('adminThoughtText').value=t.text;$('editMode').textContent='EDITING NOTE';$('saveThoughtButton').innerHTML='Update thought <span>↗</span>';$('cancelEdit').hidden=false;$('adminThoughtText').focus();}
   function resetEdit() {editingThoughtId=null;$('adminThoughtForm').reset();$('editMode').textContent='NEW NOTE';$('saveThoughtButton').innerHTML='Save thought <span>↗</span>';$('cancelEdit').hidden=true;}
   $('cancelEdit').addEventListener('click',resetEdit);
-  $('adminThoughtForm').addEventListener('submit',e=>{e.preventDefault();if(!window.archiveGitHub?.connected){$('adminThoughtStatus').textContent='Connect GitHub before editing notes.';return;}const text=$('adminThoughtText').value.trim();const status=$('adminThoughtStatus');if(!text){status.textContent='Write something before saving.';return;}if(editingThoughtId){const t=thoughts.find(x=>x.id===editingThoughtId);if(t)t.text=text;}else{thoughts.unshift({id:`${Date.now()}-${Math.random().toString(36).slice(2,8)}`,text,at:Date.now()});}thoughts=thoughts.slice(0,50);safeWrite(KEYS.thoughts,thoughts);persistSharedCollections().then(ok=>{const s=$('adminThoughtStatus');if(s)s.textContent=ok?'Published for all visitors. ':'Saved locally, but shared publishing failed. Check Supabase permissions.';});renderThoughts();resetEdit();status.textContent='Publishing note…';});
+  $('adminThoughtForm').addEventListener('submit',e=>{e.preventDefault();if(!window.archiveGitHub?.connected){$('adminThoughtStatus').textContent='Connect GitHub before editing notes.';return;}const text=$('adminThoughtText').value.trim();const status=$('adminThoughtStatus');if(!text){status.textContent='Write something before saving.';return;}if(editingThoughtId){const t=thoughts.find(x=>x.id===editingThoughtId);if(t)t.text=text;}else{thoughts.unshift({id:`${Date.now()}-${Math.random().toString(36).slice(2,8)}`,text,at:Date.now()});}thoughts=thoughts.slice(0,50);safeWrite(KEYS.thoughts,thoughts);persistSharedCollections().then(ok=>{const s=$('adminThoughtStatus');if(s)s.textContent=ok?'Staged. Publish all changes to go live. ':'Saved locally, but shared publishing failed. Check Supabase permissions.';});renderThoughts();resetEdit();status.textContent='Staging note…';});
 
   function refreshAll(){renderSongs();renderNoises();renderThoughts();}
   refreshAll();
@@ -169,7 +218,7 @@
       rows.forEach(row=>{
         const text=row.textContent.toLocaleLowerCase();
         const matchesText=!query||text.includes(query);
-        const matchesStatus=status==='all'||(status==='pending'?text.includes('pending'):text.includes('published'));
+        const matchesStatus=status==='all'||row.dataset.status===status;
         row.hidden=!(matchesText&&matchesStatus);if(!row.hidden)visible++;
       });
       const empty=root.querySelector('.admin-empty');if(empty)empty.hidden=Boolean(query||status!=='all');
@@ -191,11 +240,11 @@
   });
 
   const VISUAL_KEY = 'biggestFanArchiveVisuals';
-  const visualDefaults = {theme:'noir',layout:'left',accent:'#5f73a5',background:'#ffffff',text:'#090a0c',title:'רואי',subtitle:'A study of ordinary days.',description:'Light shifts across familiar places. A song returns with the weather.',image:'',songLayout:'masonry',songCardPadding:24};
+  const visualDefaults = {theme:'noir',layout:'left',accent:'#5f73a5',background:'#ffffff',text:'#090a0c',title:'רואי',subtitle:'A study of ordinary days.',description:'Light shifts across familiar places. A song returns with the weather.',image:'',mobileImage:'',songLayout:'masonry',songCardPadding:24};
   let visuals = {...visualDefaults};
   try { visuals = {...visualDefaults, ...JSON.parse(localStorage.getItem(VISUAL_KEY) || '{}')}; } catch (_) {}
   if(['#778173','#2456d7','#315bff'].includes((visuals.accent||'').toLowerCase()))visuals.accent='#5f73a5';
-  const visualEls = {accent:'accentColor',title:'heroTitle',subtitle:'heroSubtitle',description:'heroDescription',image:'heroImageUrl',songLayout:'songLayout',songCardPadding:'songCardPadding'};
+  const visualEls = {accent:'accentColor',title:'heroTitle',subtitle:'heroSubtitle',description:'heroDescription',image:'heroImageUrl',mobileImage:'heroMobileImageUrl',songLayout:'songLayout',songCardPadding:'songCardPadding'};
   function applyVisuals(v) {
     const body=document.body;
     body.dataset.theme=v.theme==='noir'?'noir':v.theme;
@@ -211,39 +260,48 @@
     if(description)description.textContent=v.description||'';
     const image=document.querySelector('.hero-image');
     if(image){image.style.backgroundImage=v.image?`url("${v.image.replace(/"/g,'%22')}")`:'';image.style.backgroundSize=v.image?'cover':'';image.style.backgroundPosition='center';image.setAttribute('aria-label',v.image?'Main photograph from the personal archive':'Abstract blue and white hero artwork');}
+    root.style.setProperty('--hero-mobile-image',v.mobileImage?`url("${v.mobileImage.replace(/"/g,'%22')}")`:'none');
     const logo=document.querySelector('.logo [lang="he"]'); if(logo)logo.textContent=v.title||'רואי';
     const titleTag=document.querySelector('title');if(titleTag)titleTag.textContent=(v.title||'רואי')+' — Biggest Fan Archive';
   }
   function readVisualInputs(){
-    return {theme:'noir',layout:'left',accent:$('accentColor').value,background:'#ffffff',text:'#090a0c',title:$('heroTitle').value.trim()||'רואי',subtitle:$('heroSubtitle').value.trim(),description:$('heroDescription').value.trim(),image:$('heroImageUrl').value.trim(),songLayout:$('songLayout')?.value||'masonry',songCardPadding:Number($('songCardPadding')?.value||24)};
+    return {theme:'noir',layout:'left',accent:$('accentColor').value,background:'#ffffff',text:'#090a0c',title:$('heroTitle').value.trim()||'רואי',subtitle:$('heroSubtitle').value.trim(),description:$('heroDescription').value.trim(),image:$('heroImageUrl').value.trim(),mobileImage:$('heroMobileImageUrl')?.value.trim()||'',songLayout:$('songLayout')?.value||'masonry',songCardPadding:Number($('songCardPadding')?.value||24)};
   }
   function fillVisualInputs(){
     Object.entries(visualEls).forEach(([key,id])=>{if($(id))$(id).value=visuals[key]||visualDefaults[key]||'';});
     updateImagePreview();
   }
   function updateImagePreview(){
-    const preview=$('heroImagePreview');if(!preview)return;
-    if(visuals.image){preview.style.backgroundImage=`url("${visuals.image.replace(/"/g,'%22')}")`;preview.textContent='';}
-    else {preview.style.backgroundImage='';preview.textContent='Illustrated sky background';}
+    [['heroImagePreview','image','Illustrated sky background'],['heroMobileImagePreview','mobileImage','No mobile picture set']].forEach(([id,key,empty])=>{
+      const preview=$(id);if(!preview)return;
+      if(visuals[key]){preview.style.backgroundImage=`url("${visuals[key].replace(/"/g,'%22')}")`;preview.textContent='';}
+      else{preview.style.backgroundImage='';preview.textContent=empty;}
+    });
   }
-  $('heroImageFile')?.addEventListener('change',async event=>{
-    const input=event.currentTarget,file=input.files?.[0],status=$('visualStatus');if(!file)return;
-    const allowed=['image/jpeg','image/png','image/webp','image/gif','image/avif'];
-    if(!allowed.includes(file.type)){status.textContent='Choose a JPG, PNG, WebP, GIF, or AVIF image.';input.value='';return;}
-    if(file.size>10*1024*1024){status.textContent='The main picture must be 10 MB or smaller.';input.value='';return;}
-    if(!window.archiveGitHub?.connected){status.textContent='Connect GitHub before uploading the main picture.';input.value='';return;}
-    input.disabled=true;status.textContent='Uploading main picture to GitHub…';let objectPath='';
-    try{
-      const extension=file.type.split('/')[1].replace('jpeg','jpg');
-      objectPath=`assets/archive/hero/${Date.now()}.${extension}`;
-      await window.archiveGitHub.upload(objectPath,file,'Update archive hero image');
-      const url=window.archiveGitHub.pagesUrl(objectPath);
-      $('heroImageUrl').value=url;$('heroImageUrl').dispatchEvent(new Event('input',{bubbles:true}));
-      status.textContent='Main picture uploaded to GitHub. Review the preview, then save visual changes.';
-    }catch(error){if(objectPath)try{await window.archiveGitHub.delete(objectPath,'Remove unpublished hero image');}catch(_){}status.textContent=error.message||'Could not upload the main picture.';}
-    finally{input.disabled=false;input.value='';}
-  });
-  Object.values(visualEls).forEach(id=>{const el=$(id);if(el){el.addEventListener('input',()=>{visuals=readVisualInputs();applyVisuals(visuals);if(id==='heroImageUrl')updateImagePreview();});el.addEventListener('change',()=>{visuals=readVisualInputs();applyVisuals(visuals);});}});
+  function bindHeroUpload(fileId,urlId,folder,label){
+    $(fileId)?.addEventListener('change',async event=>{
+      const input=event.currentTarget,file=input.files?.[0],status=$('visualStatus');if(!file)return;
+      const allowed=['image/jpeg','image/png','image/webp','image/gif','image/avif'];
+      if(!allowed.includes(file.type)){status.textContent='Choose a JPG, PNG, WebP, GIF, or AVIF image.';input.value='';return;}
+      if(file.size>10*1024*1024){status.textContent=`The ${label} must be 10 MB or smaller.`;input.value='';return;}
+      if(!window.archiveGitHub?.connected){status.textContent=`Connect GitHub before uploading the ${label}.`;input.value='';return;}
+      input.disabled=true;status.textContent=`Uploading ${label} to GitHub…`;let objectPath='';
+      try{
+        status.textContent=`Optimizing ${label}…`;
+        const opt=await compressImage(file,2400);
+        objectPath=`assets/archive/${folder}/${Date.now()}.${opt.ext}`;
+        await window.archiveGitHub.upload(objectPath,opt.blob,`Update archive ${folder} image`);
+        window.archiveStaging.uploads.add(objectPath);
+        const url=window.archiveGitHub.pagesUrl(objectPath);
+        $(urlId).value=url;$(urlId).dispatchEvent(new Event('input',{bubbles:true}));
+        status.textContent=`${label[0].toUpperCase()+label.slice(1)} uploaded. It can take 1–2 minutes to appear while GitHub Pages rebuilds. Save visual changes to publish.`;
+      }catch(error){if(objectPath)try{await window.archiveGitHub.delete(objectPath,'Remove unpublished hero image');}catch(_){}status.textContent=error.message||`Could not upload the ${label}.`;}
+      finally{input.disabled=false;input.value='';}
+    });
+  }
+  bindHeroUpload('heroImageFile','heroImageUrl','hero','main picture');
+  bindHeroUpload('heroMobileImageFile','heroMobileImageUrl','hero-mobile','mobile picture');
+  Object.values(visualEls).forEach(id=>{const el=$(id);if(el){el.addEventListener('input',()=>{visuals=readVisualInputs();applyVisuals(visuals);if(id==='heroImageUrl'||id==='heroMobileImageUrl')updateImagePreview();});el.addEventListener('change',()=>{visuals=readVisualInputs();applyVisuals(visuals);});}});
   $('songCardPadding')?.addEventListener('input',event=>{const label=$('songCardPaddingValue');if(label)label.value=`${event.currentTarget.value} px`;});
 
   function colorLuminance(hex){
@@ -307,10 +365,9 @@
     songs:[],noises:[],thoughts:[],
     navAbout:'About', navMoments:'Journal', navNotes:'Notes', navGuestbook:'Contact',
     aboutHeading:'A record of ordinary days.', aboutLead:'Everyday life leaves its marks in unexpected places.',
-    blogPosts:[],
+    blogPosts:[],journalOrder:'date',
     aboutBody:"This archive gathers photographs, music, and brief notes from shared places and familiar routines.\n\nSome days return as a particular light through a window; others arrive by way of a song heard again years later.\n\nA collection still in progress.",
     momentsHeading:'Photo journal.', momentsIntro:'Images, captions, and dates. One entry at a time.',
-    qualities:['places','people','sound','observations','details'],
     footerText:'A personal archive of photographs, music, and notes.',
     theme:'editorial',layout:'left',accent:'#5f73a5',background:'#f4f7fb',text:'#111827',songLayout:'masonry',songCardPadding:24
   };
@@ -338,7 +395,7 @@
     if ($('accentColor')) setVal('accentColor', cloud.accent || '#5f73a5');
     if ($('backgroundColor')) setVal('backgroundColor', cloud.background || '#f4f7fb');
     if ($('textColor')) setVal('textColor', cloud.text || '#111827');
-    setVal('heroTitle', cloud.title || 'רואי'); setVal('heroSubtitle', cloud.subtitle || 'A study of ordinary days.'); setVal('heroDescription', cloud.description || 'Light shifts across familiar places. A song returns with the weather.'); setVal('heroImageUrl', cloud.image || '');
+    setVal('heroTitle', cloud.title || 'רואי'); setVal('heroSubtitle', cloud.subtitle || 'A study of ordinary days.'); setVal('heroDescription', cloud.description || 'Light shifts across familiar places. A song returns with the weather.'); setVal('heroImageUrl', cloud.image || '');setVal('heroMobileImageUrl', cloud.mobileImage || '');
     setVal('songLayout',cloud.songLayout==='grid'?'grid':'masonry');setVal('songCardPadding',Math.max(12,Math.min(32,Number(cloud.songCardPadding)||24)));
     const spacing=$('songCardPaddingValue');if(spacing)spacing.value=`${$('songCardPadding').value} px`;
     renderAdminPhotoPosts(cloud.blogPosts);
@@ -353,10 +410,16 @@
     result.blogPosts=cloud.blogPosts||[];delete result.galleryImages;delete result.galleryCaptions;delete result.notes;
     result.theme='noir'; result.layout='left';
     result.accent=$('accentColor')?.value || '#5f73a5'; result.background='#ffffff'; result.text='#090a0c';
-    result.title=$('heroTitle')?.value || 'רואי'; result.subtitle=$('heroSubtitle')?.value || ''; result.description=$('heroDescription')?.value || ''; result.image=$('heroImageUrl')?.value || '';
+    result.title=$('heroTitle')?.value || 'רואי'; result.subtitle=$('heroSubtitle')?.value || ''; result.description=$('heroDescription')?.value || ''; result.image=$('heroImageUrl')?.value || '';result.mobileImage=$('heroMobileImageUrl')?.value || '';
     result.songLayout=$('songLayout')?.value==='grid'?'grid':'masonry';result.songCardPadding=Math.max(12,Math.min(32,Number($('songCardPadding')?.value)||24));
     return result;
   }
+  let dirty=false;
+  const updateBar=()=>{const bar=$('publishBar');if(bar)bar.hidden=!dirty;};
+  window.archiveMarkDirty=()=>{dirty=true;updateBar();};
+  ['contentFields','visualManager'].forEach(id=>$(id)?.addEventListener('input',()=>window.archiveMarkDirty()));
+  ['contentFields','visualManager'].forEach(id=>$(id)?.addEventListener('change',()=>window.archiveMarkDirty()));
+  window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
   const previewFrame=$('pagePreview');
   function sendPreview(){
     if(!previewFrame?.contentWindow)return;
@@ -371,51 +434,69 @@
   });
   previewFrame?.addEventListener('load',sendPreview);
 
+  function journalMode(){return $('editJournalOrder')?.value||cloud.journalOrder||'date';}
+  function orderedPhotoPosts(posts){const list=[...(posts||[])];return journalMode()==='manual'?list:list.sort((a,b)=>(b.date||'').localeCompare(a.date||''));}
+  function stagePhotoPosts(list,message){cloud={...cloud,blogPosts:list};window.archiveMarkDirty();renderAdminPhotoPosts();sendPreview();if(message)$('photoPostStatus').textContent=message;}
+  const mkButton=(label,fn,danger,aria)=>{const b=document.createElement('button');b.type='button';b.className='small-action'+(danger?' danger':'');b.textContent=label;b.setAttribute('aria-label',aria||label);b.addEventListener('click',fn);return b;};
   function renderAdminPhotoPosts(posts=cloud.blogPosts||[]){
-    const root=$('adminPhotoPostList');if(!root)return;root.replaceChildren();const ordered=[...(posts||[])].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    const root=$('adminPhotoPostList');if(!root)return;root.replaceChildren();
+    const ordered=orderedPhotoPosts(posts),manual=journalMode()==='manual';
     $('photoPostCount').textContent=`${ordered.length} POST${ordered.length===1?'':'S'}`;
     if(!ordered.length){const empty=document.createElement('div');empty.className='admin-empty';empty.textContent='No photo posts yet. Add the first one above.';root.append(empty);return;}
-    ordered.forEach(post=>{const row=document.createElement('article');row.className='admin-item photo-post-admin-item';const img=document.createElement('img');img.className='photo-post-thumb';img.src=validPostUrl(post.image)||'';img.alt='';img.loading='lazy';const main=document.createElement('div');main.className='admin-item-main';const title=document.createElement('div');title.className='admin-item-title';title.textContent=post.caption||'Untitled photo';const meta=document.createElement('div');meta.className='admin-item-meta';meta.textContent=post.date||'Undated archive';main.append(title,meta);const actions=document.createElement('div');actions.className='admin-item-actions';const remove=document.createElement('button');remove.type='button';remove.className='small-action danger';remove.textContent='Delete';remove.setAttribute('aria-label',`Delete photo post: ${post.caption||'Untitled photo'}`);remove.addEventListener('click',()=>deletePhotoPost(post));actions.append(remove);row.append(img,main,actions);root.append(row);});
+    ordered.forEach(post=>{
+      const row=document.createElement('article');row.className='admin-item photo-post-admin-item';
+      const img=document.createElement('img');img.className='photo-post-thumb';img.src=validPostUrl(post.image)||'';img.alt='';img.loading='lazy';
+      const main=document.createElement('div');main.className='admin-item-main';
+      const title=document.createElement('div');title.className='admin-item-title';title.textContent=post.caption||'Untitled photo';
+      const meta=document.createElement('div');meta.className='admin-item-meta';meta.textContent=[post.date||'Undated archive',post.alt?'ALT TEXT SET':'NO ALT TEXT (USES CAPTION)'].join(' · ');
+      main.append(title,meta);
+      const actions=document.createElement('div');actions.className='admin-item-actions';
+      const label=post.caption||'photo';
+      actions.append(mkButton('Edit',()=>editPhotoPost(post,row),false,`Edit photo post: ${label}`));
+      if(manual)actions.append(mkButton('↑',()=>movePhotoPost(post.id,-1),false,`Move ${label} up`),mkButton('↓',()=>movePhotoPost(post.id,1),false,`Move ${label} down`));
+      actions.append(mkButton('Delete',()=>deletePhotoPost(post),true,`Delete photo post: ${label}`));
+      row.append(img,main,actions);root.append(row);
+    });
+  }
+  function editPhotoPost(post,row){
+    if(row.querySelector('.inline-edit'))return;
+    const form=window.archiveInlineEdit([{key:'caption',label:'CAPTION',value:post.caption||'',rows:2,max:220},{key:'alt',label:'ALT TEXT',value:post.alt||'',max:220},{key:'date',label:'DATE',value:post.date||'',type:'date'}],values=>{
+      if(!values.caption){$('photoPostStatus').textContent='A caption is required.';return;}
+      stagePhotoPosts((cloud.blogPosts||[]).map(p=>p.id===post.id?{...p,caption:values.caption.slice(0,220),alt:values.alt.slice(0,220),date:values.date||p.date}:p),'Edit staged. Publish all changes to go live.');
+    },()=>form.remove());
+    row.append(form);form.querySelector('textarea,input').focus();
+  }
+  function movePhotoPost(id,dir){const list=[...(cloud.blogPosts||[])];const i=list.findIndex(p=>p.id===id),j=i+dir;if(i<0||j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];stagePhotoPosts(list);}
+  function deletePhotoPost(post){
+    if(!confirm(`Delete “${post.caption||'this photo post'}” from the journal?`))return;
+    if(post.path?.startsWith('assets/archive/'))window.archiveStaging.deletes.add(post.path);
+    stagePhotoPosts((cloud.blogPosts||[]).filter(item=>item.id!==post.id),'Photo post removed. Publish all changes to delete the file.');
   }
   async function readSupabaseContent(){const {data,error}=await db.from('archive_content').select('content').eq('id',true).single();if(error)throw error;return normalizeContent(data?.content||cloud);}
   async function readLatestContent(){if(window.archiveGitHub?.connected){const content=await window.archiveGitHub.getJson('archive-data.json');if(!content)throw new Error('Copy the existing archive to GitHub once before editing it.');return normalizeContent(content);}if(archiveFromGitHub)throw new Error('Reconnect GitHub in the admin dashboard before editing the archive.');return readSupabaseContent();}
-  async function persistPhotoPost(post){
-    if(!window.archiveGitHub?.connected||!contentLoaded)throw new Error('Connect GitHub before publishing photo posts.');
-    const next=await readLatestContent();next.blogPosts=[...(next.blogPosts||[]),post].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-    const published=await save(next);if(!published)throw new Error($('contentStatus').textContent||'Could not publish the photo post to GitHub.');
-    renderAdminPhotoPosts();return true;
-  }
   $('photoPostForm')?.addEventListener('submit',async event=>{
-    event.preventDefault();const form=event.currentTarget,file=$('photoPostFile').files?.[0],caption=$('photoPostCaption').value.trim(),date=$('photoPostDate').value,status=$('photoPostStatus'),button=$('publishPhotoPost');
+    event.preventDefault();const form=event.currentTarget,file=$('photoPostFile').files?.[0],caption=$('photoPostCaption').value.trim(),alt=$('photoPostAlt').value.trim(),date=$('photoPostDate').value,status=$('photoPostStatus'),button=$('publishPhotoPost');
     if(!file||!caption||!date)return;
     const allowed=['image/jpeg','image/png','image/webp','image/gif','image/avif'];
     if(!allowed.includes(file.type)){status.textContent='Choose a JPG, PNG, WebP, GIF, or AVIF image.';return;}
-    if(file.size>10*1024*1024){status.textContent='Images must be 10 MB or smaller.';return;}
-    if(!window.archiveGitHub?.connected){status.textContent='Connect GitHub before uploading a photo.';return;}
-    button.disabled=true;status.textContent='Uploading image…';let objectPath='';
+    if(file.size>25*1024*1024){status.textContent='Images must be 25 MB or smaller.';return;}
+    if(!window.archiveGitHub?.connected||!contentLoaded){status.textContent='Connect GitHub before uploading a photo.';return;}
+    button.disabled=true;status.textContent='Optimizing image…';let objectPath='';
     try{
-      const extension=file.type.split('/')[1].replace('jpeg','jpg'),slug=caption.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'photo';
-      objectPath=`assets/archive/photos/${Date.now()}-${slug}.${extension}`;
-      await window.archiveGitHub.upload(objectPath,file,`Add journal photo: ${caption.slice(0,60)}`);
-      const image=window.archiveGitHub.pagesUrl(objectPath);
-      const post={id:crypto.randomUUID(),image,path:objectPath,caption:caption.slice(0,220),date};
-      try{await persistPhotoPost(post);}catch(error){await window.archiveGitHub.delete(objectPath,'Remove unpublished photo upload');throw error;}
-      form.reset();status.textContent='Photo post published to the journal.';
-    }catch(error){status.textContent=error.message||'Upload failed. Check the GitHub token and repository permissions.';}
+      const opt=await window.archiveCompressImage(file,2000);
+      const slug=caption.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'photo';
+      objectPath=`assets/archive/photos/${Date.now()}-${slug}.${opt.ext}`;
+      status.textContent='Uploading image…';
+      await window.archiveGitHub.upload(objectPath,opt.blob,`Add journal photo: ${caption.slice(0,60)}`);
+      window.archiveStaging.uploads.add(objectPath);
+      const post={id:crypto.randomUUID(),image:window.archiveGitHub.pagesUrl(objectPath),path:objectPath,caption:caption.slice(0,220),alt:alt.slice(0,220),date};
+      const list=cloud.blogPosts||[];
+      const note=opt.optimized?` Optimized ${(file.size/1048576).toFixed(1)} MB → ${(opt.blob.size/1048576).toFixed(1)} MB.`:'';
+      stagePhotoPosts(journalMode()==='manual'?[post,...list]:[...list,post],'Photo staged.'+note+' Publish all changes to add it to the journal.');
+      form.reset();
+    }catch(error){if(objectPath)try{await window.archiveGitHub.delete(objectPath,'Remove failed photo upload');window.archiveStaging.uploads.delete(objectPath);}catch(_){}status.textContent=error.message||'Upload failed. Check the GitHub token and repository permissions.';}
     finally{button.disabled=false;}
   });
-  async function deletePhotoPost(post){
-    if(!confirm(`Delete “${post.caption||'this photo post'}” from the journal?`))return;
-    const status=$('photoPostStatus');status.textContent='Removing photo post…';
-    try{
-      if(!window.archiveGitHub?.connected)throw new Error('Connect GitHub before deleting a photo post.');
-      const next=await readLatestContent();next.blogPosts=(next.blogPosts||[]).filter(item=>item.id!==post.id);
-      if(!await save(next))throw new Error($('contentStatus').textContent||'Could not remove the photo post from GitHub.');
-      if(post.path?.startsWith('assets/archive/'))await window.archiveGitHub.delete(post.path,`Remove journal photo: ${(post.caption||'photo').slice(0,60)}`);
-      renderAdminPhotoPosts();
-      status.textContent='Photo post deleted.';
-    }catch(error){status.textContent=error.message||'Could not delete this photo post.';}
-  }
 
   async function load() {
     db=window.archiveSupabase; if(!db) return;
@@ -431,21 +512,62 @@
     sendPreview();
     await loadComments();
   }
+  const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  async function publishSeoFiles(next){
+    const gh=window.archiveGitHub,base=gh.pagesUrl('').replace(/\/+$/,''),notes=[];
+    const title=(next.title||'רואי')+' — Biggest Fan Archive';
+    const desc=[next.subtitle,next.description].filter(Boolean).join(' ').replace(/\s+/g,' ').trim()||'A personal archive of photographs, music, and notes.';
+    try{
+      const html=await gh.getText('index.html');
+      if(html&&html.includes('<!-- og:start -->')){
+        const image=validPostUrl(next.image);
+        const block=['<!-- og:start -->','<meta property="og:type" content="website">',`<meta property="og:title" content="${esc(title)}">`,`<meta property="og:description" content="${esc(desc)}">`,`<meta property="og:url" content="${esc(base+'/')}">`,...(image?[`<meta property="og:image" content="${esc(image)}">`]:[]),`<meta name="twitter:card" content="${image?'summary_large_image':'summary'}">`,`<link rel="alternate" type="application/rss+xml" title="${esc(next.momentsHeading||'Photo journal')}" href="feed.xml">`,'<!-- og:end -->'].join('\n  ');
+        let out=html.replace(/<!-- og:start -->[\s\S]*?<!-- og:end -->/,()=>block);
+        out=out.replace(/<title>[^<]*<\/title>/,()=>`<title>${esc(title)}</title>`).replace(/<meta name="description" content="[^"]*">/,()=>`<meta name="description" content="${esc(desc)}">`);
+        if(out!==html)await gh.putText('index.html',out,'Update page metadata');
+      }else notes.push('index.html has no og:start marker, so link-preview tags were not updated.');
+    }catch(error){notes.push('Link-preview tags could not be updated.');}
+    try{
+      const mime={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',avif:'image/avif'};
+      const posts=(next.blogPosts||[]).filter(p=>p&&validPostUrl(p.image)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,30);
+      const items=posts.map(p=>{
+        const ext=(new URL(p.image).pathname.split('.').pop()||'').toLowerCase();
+        const when=/^\d{4}-\d{2}-\d{2}$/.test(p.date||'')?new Date(p.date+'T12:00:00Z').toUTCString():'';
+        const id=String(p.id||'').replace(/[^\w-]/g,'');
+        return `<item><title>${esc((p.caption||'Untitled photo').slice(0,80))}</title><link>${esc(base+'/#post-'+id)}</link><guid isPermaLink="false">${esc(id||p.image)}</guid>${when?`<pubDate>${when}</pubDate>`:''}<description>${esc(p.alt||p.caption||'')}</description><media:content url="${esc(validPostUrl(p.image))}" medium="image"${mime[ext]?` type="${mime[ext]}"`:''}/></item>`;
+      }).join('\n');
+      const latest=/^\d{4}-\d{2}-\d{2}$/.test(posts[0]?.date||'')?new Date(posts[0].date+'T12:00:00Z').toUTCString():'';
+      const xml=`<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">\n<channel>\n<title>${esc(title)}</title>\n<link>${esc(base+'/')}</link>\n<description>${esc(desc)}</description>${latest?`\n<lastBuildDate>${latest}</lastBuildDate>`:''}\n${items}\n</channel>\n</rss>\n`;
+      const previous=await gh.getText('feed.xml');
+      if(previous!==xml)await gh.putText('feed.xml',xml,'Update RSS feed');
+    }catch(error){notes.push('The RSS feed could not be updated.');}
+    return notes.length?' '+notes.join(' '):'';
+  }
+  async function cleanupStagedMedia(next){
+    const gh=window.archiveGitHub,stg=window.archiveStaging;
+    const referenced=new Set([next.image,next.mobileImage,...(next.blogPosts||[]).map(p=>p.image),...(next.noises||[]).map(n=>n.url)].map(u=>u?gh.repoPathFromPagesUrl(u):null).filter(Boolean));
+    for(const path of new Set([...stg.deletes,...stg.uploads])){if(referenced.has(path))continue;try{await gh.delete(path,'Remove unused archive media');}catch(_){}}
+    stg.deletes.clear();stg.uploads.clear();
+  }
   async function save(override) {
     const status=$('contentStatus');
     try {
       if(!contentLoaded)throw new Error('Wait for shared content to finish loading before publishing.');
       const next=override||readFields();
-      const imageUrls=[next.image,...(next.blogPosts||[]).map(post=>post.image)].filter(Boolean);
+      const imageUrls=[next.image,next.mobileImage,...(next.blogPosts||[]).map(post=>post.image)].filter(Boolean);
       if(imageUrls.some(value=>!validPostUrl(value)))throw new Error('Images must use public HTTPS URLs.');
       status.textContent='Publishing…';
       if(!window.archiveGitHub?.connected)throw new Error('Connect GitHub in the admin dashboard before publishing.');
       await window.archiveGitHub.putJson('archive-data.json',next,'Update archive content');
       const previousMedia=window.archiveGitHub.repoPathFromPagesUrl(cloud.image||'');
       const nextMedia=window.archiveGitHub.repoPathFromPagesUrl(next.image||'');
-      cloud=next;archiveFromGitHub=true; status.textContent='Published to the shared site.';$('visualStatus').textContent='Visual settings published for all visitors.';
+      const prevMobile=window.archiveGitHub.repoPathFromPagesUrl(cloud.mobileImage||''),nextMobile=window.archiveGitHub.repoPathFromPagesUrl(next.mobileImage||'');
+      const seoNote=await publishSeoFiles(next);
+      cloud=next;archiveFromGitHub=true; status.textContent='Published to the shared site.'+seoNote;$('visualStatus').textContent='Visual settings published for all visitors.';
       if(previousMedia&&previousMedia!==nextMedia)try{await window.archiveGitHub.delete(previousMedia,'Remove replaced hero image');}catch(error){$('visualStatus').textContent='Content is published, but the replaced hero image could not be removed from the repository.';}
-      try{localStorage.setItem('biggestFanArchiveVisuals', JSON.stringify({theme:next.theme,layout:next.layout,accent:next.accent,background:next.background,text:next.text,title:next.title,subtitle:next.subtitle,description:next.description,image:next.image,songLayout:next.songLayout,songCardPadding:next.songCardPadding}));}catch(_){}
+      if(prevMobile&&prevMobile!==nextMobile)try{await window.archiveGitHub.delete(prevMobile,'Remove replaced mobile hero image');}catch(_){}
+      await cleanupStagedMedia(next);dirty=false;updateBar();
+      try{localStorage.setItem('biggestFanArchiveVisuals', JSON.stringify({theme:next.theme,layout:next.layout,accent:next.accent,background:next.background,text:next.text,title:next.title,subtitle:next.subtitle,description:next.description,image:next.image,mobileImage:next.mobileImage,songLayout:next.songLayout,songCardPadding:next.songCardPadding}));}catch(_){}
       sendPreview();
       return true;
     } catch(e) { status.textContent=e.message || 'Could not publish. Check permissions and database setup.'; $('visualStatus').textContent=e.message||'Could not publish visual settings.'; return false; }
@@ -498,16 +620,27 @@
       button.disabled=true;
     }catch(error){status.textContent=error.message||'The archive could not be copied. Check the GitHub token and try again.';button.disabled=false;}
   });
-  $('saveVisualSettings')?.addEventListener('click',async event=>{
-    const button=event.currentTarget,status=$('visualStatus');button.disabled=true;status.textContent='Saving visual changes…';
+  $('saveVisualSettings')?.addEventListener('click',()=>{
+    window.archiveMarkDirty();sendPreview();
+    $('visualStatus').textContent='Visual changes staged and shown in the preview. Use “Publish all changes” to go live.';
+  });
+  $('publishAll')?.addEventListener('click',async event=>{
+    const button=event.currentTarget,text=$('publishBarText');button.disabled=true;text.textContent='Publishing…';
+    const ok=await save();button.disabled=false;
+    text.textContent=ok?'Unpublished changes':($('contentStatus').textContent||'Could not publish.');
+  });
+  $('discardStaged')?.addEventListener('click',async()=>{
+    if(!confirm('Discard all unpublished changes? Files uploaded since your last publish will be removed.'))return;
+    const text=$('publishBarText');text.textContent='Discarding…';
     try{
-      if(!contentLoaded)throw new Error('Wait for shared content to finish loading before saving.');
-      const latest=await readLatestContent();
-      const next={...latest,theme:'noir',layout:'left',accent:$('accentColor').value,background:'#ffffff',text:'#090a0c',title:$('heroTitle').value.trim()||'רואי',subtitle:$('heroSubtitle').value.trim(),description:$('heroDescription').value.trim(),image:$('heroImageUrl').value.trim(),songLayout:$('songLayout').value,songCardPadding:Number($('songCardPadding').value)};
-      const saved=await save(next);
-      if(saved)status.textContent='Visual changes saved and published to the homepage.';
-    }catch(error){status.textContent=error.message||'Could not save visual changes.';}
-    finally{button.disabled=false;}
+      const content=await readLatestContent(),stg=window.archiveStaging;
+      for(const path of stg.uploads){try{await window.archiveGitHub.delete(path,'Remove unpublished upload');}catch(_){}}
+      stg.uploads.clear();stg.deletes.clear();
+      fillFields(content);
+      window.dispatchEvent(new CustomEvent('archive-github-content-loaded',{detail:{content:cloud}}));
+      window.dispatchEvent(new CustomEvent('archive-visual-settings-changed',{detail:cloud}));
+      dirty=false;updateBar();sendPreview();
+    }catch(error){text.textContent=error.message||'Could not discard changes.';}
   });
   async function loadComments() {
     const list=$('adminGuestList'); if(!list) return;
@@ -517,7 +650,7 @@
     $('guestbookModerationStatus').textContent=`${(data||[]).filter(c=>!c.approved).length} pending · ${(data||[]).filter(c=>c.approved).length} published`;
     if(!data?.length){list.textContent='No visitor comments yet.';return;}
     data.forEach(c=>{
-      const item=document.createElement('article'); item.className='admin-item';
+      const item=document.createElement('article'); item.className='admin-item';item.dataset.status=c.approved?'published':'pending';
       const body=document.createElement('div'); body.className='admin-item-copy';
       const title=document.createElement('strong'); title.textContent=c.display_name+(c.approved?' · PUBLISHED':' · PENDING');
       const msg=document.createElement('p'); msg.textContent=c.message;
@@ -545,10 +678,10 @@
     } catch(error) { $('contentStatus').textContent='Could not read this draft. Save a new draft to replace it.'; }
   });
   $('resetVisuals')?.addEventListener('click',()=>{
-    const visualDefaults={theme:'noir',layout:'left',accent:'#5f73a5',background:'#ffffff',text:'#090a0c',title:'רואי',subtitle:'A study of ordinary days.','description':'Light shifts across familiar places. A song returns with the weather.',image:''};
+    const visualDefaults={theme:'noir',layout:'left',accent:'#5f73a5',background:'#ffffff',text:'#090a0c',title:'רואי',subtitle:'A study of ordinary days.','description':'Light shifts across familiar places. A song returns with the weather.',image:'',mobileImage:''};
     cloud={...cloud,...visualDefaults};
     window.dispatchEvent(new CustomEvent('archive-visual-settings-changed',{detail:visualDefaults}));
-    sendPreview();$('visualStatus').textContent='Visual defaults loaded. Publish changes to apply them.';
+    window.archiveMarkDirty();sendPreview();$('visualStatus').textContent='Visual defaults loaded. Publish all changes to apply them.';
   });
   // Keep old local editor from treating local storage as the authoritative shared source.
   window.addEventListener('archive-content-loaded', e=>{fillFields(e.detail.content);});
