@@ -7,13 +7,14 @@
       document.body.dataset.theme=v.theme==='noir'?'noir':(v.theme||'noir');
       document.body.dataset.layout=v.layout||'center';
       const root=document.documentElement;
-      if(v.accent)root.style.setProperty('--rose',v.accent==='#778173'?'#2456d7':v.accent);
+      if(v.accent)root.style.setProperty('--rose',['#778173','#2456d7','#315bff'].includes(v.accent.toLowerCase())?'#5f73a5':v.accent);
       const title=document.querySelector('.hero h1');
       if(title){title.textContent=v.title||'רואי';title.setAttribute('lang',/[\u0590-\u05FF]/.test(v.title||'')?'he':'en');}
       const subtitle=document.querySelector('.hero-subtitle');if(subtitle)subtitle.textContent=v.subtitle||'';
       const description=document.querySelector('.hero-description');if(description)description.textContent=v.description||'';
       const image=document.querySelector('.hero-image');
-      if(image&&v.image){image.style.backgroundImage=`linear-gradient(90deg,#0007,transparent),url("${String(v.image).replace(/"/g,'%22')}")`;image.style.backgroundSize='cover';image.style.backgroundPosition='center';}
+      if(image&&v.image){image.style.backgroundImage=`linear-gradient(90deg,#0007,transparent),url("${String(v.image).replace(/"/g,'%22')}")`;image.style.backgroundSize='cover';image.style.backgroundPosition='center';image.setAttribute('aria-label','Main photograph from the personal archive');}
+      else if(image)image.setAttribute('aria-label','Abstract blue and white hero artwork');
       const logo=document.querySelector('.logo [lang="he"]');if(logo)logo.textContent=v.title||'רואי';
       document.title=(v.title||'רואי')+' — Biggest Fan Archive';
     }
@@ -32,13 +33,41 @@
   }));
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  const revealTargets = document.querySelectorAll('.section-label, .intro-copy, .quality, .blog-post, .note, .guestbook-form, .guest-note');
+  let revealObserver=null;
   if ('IntersectionObserver' in window) {
-    const observer = new IntersectionObserver(entries => entries.forEach(entry => {
-      if (entry.isIntersecting) { entry.target.classList.add('revealed'); observer.unobserve(entry.target); }
+    revealObserver = new IntersectionObserver(entries => entries.forEach(entry => {
+      if (entry.isIntersecting) { entry.target.classList.add('revealed'); revealObserver.unobserve(entry.target); }
     }), { threshold: .12 });
-    revealTargets.forEach(el => { el.classList.add('will-reveal'); observer.observe(el); });
   }
+  window.archiveReveal=(root=document)=>{if(!revealObserver)return;root.querySelectorAll?.('.section-label, .section-heading, .intro-copy, .quality, .blog-post, .archive-song, .archive-noise, .archive-thought, .note, .guestbook-form, .guest-note').forEach(el=>{if(el.classList.contains('will-reveal'))return;el.classList.add('will-reveal');revealObserver.observe(el);});};
+  window.archiveReveal();
+
+  const pageSections=[...document.querySelectorAll('main section[id]')];
+  const sectionLinks=[...document.querySelectorAll('.nav a[href^="#"]')];
+  if('IntersectionObserver' in window&&pageSections.length){
+    const sectionObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{
+      if(!entry.isIntersecting)return;
+      sectionLinks.forEach(link=>{
+        const active=link.hash==='#'+entry.target.id;
+        if(active)link.setAttribute('aria-current','location');else link.removeAttribute('aria-current');
+      });
+    }),{rootMargin:'-24% 0px -62% 0px',threshold:0});
+    pageSections.forEach(section=>sectionObserver.observe(section));
+  }
+  let scrollFrame=0;
+  const updateScrollMotion=()=>{
+    if(scrollFrame)return;
+    scrollFrame=requestAnimationFrame(()=>{
+      const maxScroll=document.documentElement.scrollHeight-innerHeight;
+      document.documentElement.style.setProperty('--scroll-progress',maxScroll>0?String(scrollY/maxScroll):'0');
+      const hero=document.querySelector('.hero-content');
+      if(hero&&matchMedia('(prefers-reduced-motion: no-preference)').matches)hero.style.setProperty('--hero-shift',`${Math.min(scrollY*.08,28)}px`);
+      scrollFrame=0;
+    });
+  };
+  addEventListener('scroll',updateScrollMotion,{passive:true});
+  addEventListener('resize',updateScrollMotion,{passive:true});
+  updateScrollMotion();
 
   const form = document.getElementById('guestbookForm');
   const nameField = document.getElementById('guestName');
@@ -93,6 +122,7 @@
       if(/^\d{4}-\d{2}-\d{2}$/.test(post.date||'')){date.dateTime=post.date;date.textContent=new Intl.DateTimeFormat(undefined,{year:'numeric',month:'long',day:'numeric',timeZone:'UTC'}).format(new Date(`${post.date}T12:00:00Z`));}else date.textContent='FROM THE ARCHIVE';
       const caption=document.createElement('h3');caption.textContent=post.caption||'Untitled photo';copy.append(date,caption);article.append(figure,copy);root.append(article);
     });
+    window.archiveReveal(root);
   }
   function apply(data){if(!data)return;
     const v={...fallback,...data};
@@ -103,29 +133,32 @@
     text('.intro-title h2',v.aboutHeading); text('.intro-copy .lead',v.aboutLead); if(v.momentsHeading&&v.momentsHeading!=='Photo journal.')text('#journalHeading',v.momentsHeading); text('.journal-heading>p',v.momentsIntro); text('.footer>p',v.footerText);renderBlogPosts(legacyPosts(v));
     const body=document.querySelector('.intro-copy'); if(body&&Array.isArray(v.aboutBody)){body.replaceChildren(...v.aboutBody.map(p=>{const el=document.createElement('p');el.textContent=p;return el;}));} else if(body&&typeof v.aboutBody==='string'&&v.aboutBody.trim()){const paras=v.aboutBody.split(/\n\s*\n/); const lead=body.querySelector('.lead'); body.replaceChildren(); if(lead)body.append(lead); paras.forEach((p,i)=>{if(i===0&&p===v.aboutLead)return;const el=document.createElement('p');el.textContent=p;body.append(el);});}
     if(Array.isArray(v.qualities))document.querySelectorAll('.qualities .quality p').forEach((el,i)=>{if(v.qualities[i])el.textContent=v.qualities[i];});
-    const root=document.documentElement; if(v.accent)root.style.setProperty('--rose',v.accent==='#778173'?'#2456d7':v.accent);
+    const root=document.documentElement; if(v.accent)root.style.setProperty('--rose',['#778173','#2456d7','#315bff'].includes(v.accent.toLowerCase())?'#5f73a5':v.accent);
     document.body.dataset.theme=v.theme||'editorial';document.body.dataset.layout=v.layout||'left';
     const title=document.querySelector('.hero h1');if(title&&v.title){title.textContent=v.title;title.setAttribute('lang',/[\u0590-\u05FF]/.test(v.title)?'he':'en');}
     const logo=document.querySelector('.logo [lang="he"]');if(logo&&v.title)logo.textContent=v.title;
     text('.hero-subtitle',v.subtitle);text('.hero-description',v.description);
     const hero=document.querySelector('.hero-image');
-    if(hero){if(typeof v.image!=='string'||!v.image.trim()){hero.style.backgroundImage='';hero.style.backgroundSize='';}else try{const image=new URL(v.image);if(image.protocol!=='https:'||!image.hostname||image.username||image.password)throw new Error();hero.style.backgroundImage=`linear-gradient(90deg,#0007,transparent),url("${image.href.replace(/"/g,'%22')}")`;hero.style.backgroundSize='cover';hero.style.backgroundPosition='center';}catch(_){hero.style.backgroundImage='';hero.style.backgroundSize='';}}
+    if(hero){if(typeof v.image!=='string'||!v.image.trim()){hero.style.backgroundImage='';hero.style.backgroundSize='';hero.setAttribute('aria-label','Abstract blue and white hero artwork');}else try{const image=new URL(v.image);if(image.protocol!=='https:'||!image.hostname||image.username||image.password)throw new Error();hero.style.backgroundImage=`linear-gradient(90deg,#0007,transparent),url("${image.href.replace(/"/g,'%22')}")`;hero.style.backgroundSize='cover';hero.style.backgroundPosition='center';hero.setAttribute('aria-label','Main photograph from the personal archive');}catch(_){hero.style.backgroundImage='';hero.style.backgroundSize='';hero.setAttribute('aria-label','Abstract blue and white hero artwork');}}
     document.title=(v.title||'רואי')+' — Biggest Fan Archive';
   }
   function ensureCollectionSections(){
     const moments=document.querySelector('#moments');
     if(moments&&!document.getElementById('publicSongs')){const sec=document.createElement('section');sec.id='songsSection';sec.className='section archive-collection songs-section';sec.innerHTML='<div class="section-label"><span>03</span><span>AUDIO INDEX</span></div><div class="section-heading"><h2>Soundtrack.</h2><p>Tracks and listening notes from the archive.</p></div><div id="publicSongs" class="archive-song-grid" aria-live="polite"></div>';moments.after(sec);}
-    if(!document.getElementById('publicThoughts')){const sec=document.createElement('section');sec.id='notes';sec.className='section archive-collection';sec.innerHTML='<div class="section-label"><span>04</span><span>TEXT INDEX</span></div><div class="section-heading"><h2>Notes.</h2><p>Short observations, gathered along the way.</p></div><div id="publicThoughts" class="archive-thought-grid"></div>';const songs=document.getElementById('songsSection');(songs||moments)?.after(sec);}
+    if(!document.getElementById('publicNoises')){const sec=document.createElement('section');sec.id='noises';sec.className='section archive-collection noises-section';sec.innerHTML='<div class="section-label"><span>04</span><span>FIELD RECORDINGS</span></div><div class="section-heading"><h2>Noises.</h2><p>Small sounds, saved as voice notes.</p></div><div id="publicNoises" class="archive-noise-list" aria-live="polite"></div>';const songs=document.getElementById('songsSection');(songs||moments)?.after(sec);}
+    if(!document.getElementById('publicThoughts')){const sec=document.createElement('section');sec.id='notes';sec.className='section archive-collection';sec.innerHTML='<div class="section-label"><span>05</span><span>TEXT INDEX</span></div><div class="section-heading"><h2>Notes.</h2><p>Short observations, gathered along the way.</p></div><div id="publicThoughts" class="archive-thought-grid"></div>';const noises=document.getElementById('noises');(noises||document.getElementById('songsSection')||moments)?.after(sec);}
   }
   function safeEmbedUrl(value){try{const url=new URL(value);if(url.protocol==='https:'&&!url.username&&!url.password&&((url.hostname==='open.spotify.com'&&url.pathname.startsWith('/embed/'))||(url.hostname==='www.youtube-nocookie.com'&&url.pathname.startsWith('/embed/'))))return url.href;}catch(_){}return null;}
-  function renderSongs(items){ensureCollectionSections();const root=$('publicSongs');if(!root)return;root.replaceChildren();(items||[]).forEach(song=>{const embed=safeEmbedUrl(song.embed);if(!embed)return;const card=document.createElement('article');card.className='archive-song';const label=document.createElement('h3');label.textContent=song.label||song.title||'A song for you';const frame=document.createElement('iframe');frame.src=embed;frame.title=label.textContent;frame.loading='lazy';frame.allow='autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';frame.referrerPolicy='strict-origin-when-cross-origin';frame.style.width='100%';frame.style.border='0';frame.style.borderRadius='12px';frame.style.minHeight=song.kind==='spotify'?'152px':'190px';card.append(label,frame);root.append(card);});if(!items?.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='The soundtrack is waiting for its first song.';root.append(p);}}
-  function renderThoughts(items){ensureCollectionSections();const root=$('publicThoughts');if(!root)return;root.replaceChildren();(items||[]).forEach(t=>{const card=document.createElement('article');card.className='archive-thought';const mark=document.createElement('span');mark.className='archive-thought-index';mark.textContent='—';const p=document.createElement('p');p.textContent=t.text;card.append(mark,p);root.append(card);});if(!items?.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='A few observations are waiting to be added.';root.append(p);}}
-  async function loadContent(){ensureCollectionSections();if(adminPreviewActive)return;try{const {data,error}=await db.from('archive_content').select('content').eq('id',true).maybeSingle();if(error)throw error;if(data?.content){apply(data.content);renderSongs(data.content.songs||[]);renderThoughts(data.content.thoughts||[]);}else{renderSongs([]);renderThoughts([]);}}catch(error){console.error('Could not load archive content:',error);renderSongs([]);renderThoughts([]);}}
+  function renderSongs(items){ensureCollectionSections();const root=$('publicSongs');if(!root)return;root.replaceChildren();(items||[]).forEach(song=>{const embed=safeEmbedUrl(song.embed);if(!embed)return;const card=document.createElement('article');card.className='archive-song';const label=document.createElement('h3');label.textContent=song.label||song.title||'A song for you';const frame=document.createElement('iframe');frame.src=embed;frame.title=label.textContent;frame.loading='lazy';frame.allow='autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';frame.referrerPolicy='strict-origin-when-cross-origin';frame.style.width='100%';frame.style.border='0';frame.style.borderRadius='12px';frame.style.minHeight=song.kind==='spotify'?'152px':'190px';card.append(frame,label);root.append(card);});if(!items?.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='The soundtrack is waiting for its first song.';root.append(p);}window.archiveReveal(root);}
+  function safeAudioUrl(value){try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password?u.href:null;}catch(_){return null;}}
+  function renderNoises(items){ensureCollectionSections();const root=$('publicNoises');if(!root)return;root.replaceChildren();(items||[]).forEach(noise=>{const url=safeAudioUrl(noise.url);if(!url)return;const row=document.createElement('article');row.className='archive-noise';const icon=document.createElement('span');icon.className='noise-mark';icon.setAttribute('aria-hidden','true');icon.textContent='▂▅▇▅▃';const body=document.createElement('div');body.className='noise-content';const title=document.createElement('h3');title.textContent=noise.title||'Untitled recording';const caption=document.createElement('p');caption.className='noise-caption';caption.textContent=noise.caption||'';const player=document.createElement('audio');player.controls=true;player.preload='none';player.src=url;player.setAttribute('aria-label','Play '+title.textContent);body.append(title);if(caption.textContent)body.append(caption);if(noise.date){const date=document.createElement('time');date.className='noise-date';date.dateTime=noise.date;date.textContent=noise.date;body.append(date);}body.append(player);row.append(icon,body);root.append(row);});if(!root.children.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='No sounds in the archive yet.';root.append(p);}window.archiveReveal(root);}
+  function renderThoughts(items){ensureCollectionSections();const root=$('publicThoughts');if(!root)return;root.replaceChildren();(items||[]).forEach(t=>{const card=document.createElement('article');card.className='archive-thought';const mark=document.createElement('span');mark.className='archive-thought-index';mark.textContent='—';const p=document.createElement('p');p.textContent=t.text;card.append(mark,p);root.append(card);});if(!items?.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='A few observations are waiting to be added.';root.append(p);}window.archiveReveal(root);}
+  async function loadContent(){ensureCollectionSections();if(adminPreviewActive)return;try{const response=await fetch(new URL('archive-data.json',location.href),{cache:'no-store'});if(response.ok){const content=await response.json();if(content&&typeof content==='object'){apply(content);renderSongs(content.songs||[]);renderNoises(content.noises||[]);renderThoughts(content.thoughts||[]);return;}}}catch(error){console.warn('GitHub archive file is not available yet; using the initial Supabase copy.',error);}try{const {data,error}=await db.from('archive_content').select('content').eq('id',true).maybeSingle();if(error)throw error;if(data?.content){apply(data.content);renderSongs(data.content.songs||[]);renderNoises(data.content.noises||[]);renderThoughts(data.content.thoughts||[]);}else{renderSongs([]);renderNoises([]);renderThoughts([]);}}catch(error){console.error('Could not load archive content:',error);renderSongs([]);renderNoises([]);renderThoughts([]);}}
   window.addEventListener('message',event=>{
     if(window.parent===window||event.source!==window.parent||event.origin!==location.origin||event.data?.type!=='biggest-fan-admin-preview')return;
     const content=event.data.content;if(!content||typeof content!=='object')return;
     adminPreviewActive=true;
-    apply(content);renderSongs(content.songs||[]);renderThoughts(content.thoughts||[]);
+    apply(content);renderSongs(content.songs||[]);renderNoises(content.noises||[]);renderThoughts(content.thoughts||[]);
   });
   function makeComment(c){const article=document.createElement('article');article.className='guest-note';const avatar=document.createElement('span');avatar.className='note-avatar';avatar.textContent=(c.display_name?.[0]||'•').toUpperCase();const body=document.createElement('div'),meta=document.createElement('div');meta.className='guest-meta';const name=document.createElement('strong');name.textContent=c.display_name;const time=document.createElement('time');time.textContent=new Date(c.created_at).toLocaleDateString();const msg=document.createElement('p');msg.textContent=c.message;meta.append(name,time);body.append(meta,msg);article.append(avatar,body);return article;}
   async function loadComments(){const list=$('guestbookList');if(!list)return;const {data,error}=await db.from('archive_comments').select('id,display_name,message,created_at').eq('approved',true).order('created_at',{ascending:false}).limit(30);if(error)return;list.replaceChildren();(data||[]).forEach(c=>list.append(makeComment(c)));}
