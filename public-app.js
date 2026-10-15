@@ -6,14 +6,16 @@
     if(v){
       document.body.dataset.theme=v.theme==='noir'?'noir':(v.theme||'noir');
       document.body.dataset.layout=v.layout||'center';
+      document.body.dataset.songLayout=v.songLayout==='grid'?'grid':'masonry';
       const root=document.documentElement;
       if(v.accent)root.style.setProperty('--rose',['#778173','#2456d7','#315bff'].includes(v.accent.toLowerCase())?'#5f73a5':v.accent);
+      root.style.setProperty('--song-card-padding',`${Math.max(12,Math.min(32,Number(v.songCardPadding)||24))}px`);
       const title=document.querySelector('.hero h1');
       if(title){title.textContent=v.title||'רואי';title.setAttribute('lang',/[\u0590-\u05FF]/.test(v.title||'')?'he':'en');}
       const subtitle=document.querySelector('.hero-subtitle');if(subtitle)subtitle.textContent=v.subtitle||'';
       const description=document.querySelector('.hero-description');if(description)description.textContent=v.description||'';
       const image=document.querySelector('.hero-image');
-      if(image&&v.image){image.style.backgroundImage=`linear-gradient(90deg,#0007,transparent),url("${String(v.image).replace(/"/g,'%22')}")`;image.style.backgroundSize='cover';image.style.backgroundPosition='center';image.setAttribute('aria-label','Main photograph from the personal archive');}
+      if(image&&v.image){image.style.backgroundImage=`url("${String(v.image).replace(/"/g,'%22')}")`;image.style.backgroundSize='cover';image.style.backgroundPosition='center';image.setAttribute('aria-label','Main photograph from the personal archive');}
       else if(image)image.setAttribute('aria-label','Abstract blue and white hero artwork');
       const logo=document.querySelector('.logo [lang="he"]');if(logo)logo.textContent=v.title||'רואי';
       document.title=(v.title||'רואי')+' — Biggest Fan Archive';
@@ -134,12 +136,13 @@
     const body=document.querySelector('.intro-copy'); if(body&&Array.isArray(v.aboutBody)){body.replaceChildren(...v.aboutBody.map(p=>{const el=document.createElement('p');el.textContent=p;return el;}));} else if(body&&typeof v.aboutBody==='string'&&v.aboutBody.trim()){const paras=v.aboutBody.split(/\n\s*\n/); const lead=body.querySelector('.lead'); body.replaceChildren(); if(lead)body.append(lead); paras.forEach((p,i)=>{if(i===0&&p===v.aboutLead)return;const el=document.createElement('p');el.textContent=p;body.append(el);});}
     if(Array.isArray(v.qualities))document.querySelectorAll('.qualities .quality p').forEach((el,i)=>{if(v.qualities[i])el.textContent=v.qualities[i];});
     const root=document.documentElement; if(v.accent)root.style.setProperty('--rose',['#778173','#2456d7','#315bff'].includes(v.accent.toLowerCase())?'#5f73a5':v.accent);
-    document.body.dataset.theme=v.theme||'editorial';document.body.dataset.layout=v.layout||'left';
+    document.body.dataset.theme=v.theme||'editorial';document.body.dataset.layout=v.layout||'left';document.body.dataset.songLayout=v.songLayout==='grid'?'grid':'masonry';
+    root.style.setProperty('--song-card-padding',`${Math.max(12,Math.min(32,Number(v.songCardPadding)||24))}px`);
     const title=document.querySelector('.hero h1');if(title&&v.title){title.textContent=v.title;title.setAttribute('lang',/[\u0590-\u05FF]/.test(v.title)?'he':'en');}
     const logo=document.querySelector('.logo [lang="he"]');if(logo&&v.title)logo.textContent=v.title;
     text('.hero-subtitle',v.subtitle);text('.hero-description',v.description);
     const hero=document.querySelector('.hero-image');
-    if(hero){if(typeof v.image!=='string'||!v.image.trim()){hero.style.backgroundImage='';hero.style.backgroundSize='';hero.setAttribute('aria-label','Abstract blue and white hero artwork');}else try{const image=new URL(v.image);if(image.protocol!=='https:'||!image.hostname||image.username||image.password)throw new Error();hero.style.backgroundImage=`linear-gradient(90deg,#0007,transparent),url("${image.href.replace(/"/g,'%22')}")`;hero.style.backgroundSize='cover';hero.style.backgroundPosition='center';hero.setAttribute('aria-label','Main photograph from the personal archive');}catch(_){hero.style.backgroundImage='';hero.style.backgroundSize='';hero.setAttribute('aria-label','Abstract blue and white hero artwork');}}
+    if(hero){if(typeof v.image!=='string'||!v.image.trim()){hero.style.backgroundImage='';hero.style.backgroundSize='';hero.setAttribute('aria-label','Abstract blue and white hero artwork');}else try{const image=new URL(v.image);if(image.protocol!=='https:'||!image.hostname||image.username||image.password)throw new Error();hero.style.backgroundImage=`url("${image.href.replace(/"/g,'%22')}")`;hero.style.backgroundSize='cover';hero.style.backgroundPosition='center';hero.setAttribute('aria-label','Main photograph from the personal archive');}catch(_){hero.style.backgroundImage='';hero.style.backgroundSize='';hero.setAttribute('aria-label','Abstract blue and white hero artwork');}}
     document.title=(v.title||'רואי')+' — Biggest Fan Archive';
   }
   function ensureCollectionSections(){
