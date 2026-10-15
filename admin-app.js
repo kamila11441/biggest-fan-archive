@@ -31,14 +31,12 @@
 /* Admin content editor and local collection tools. */
 
 (() => {
-  const KEYS = { songs: 'biggestFanArchiveSongs', thoughts: 'biggestFanArchiveThoughts', guestbook: 'biggestFanArchiveNotes' };
+  const KEYS = { songs: 'biggestFanArchiveSongs', thoughts: 'biggestFanArchiveThoughts' };
   const $ = id => document.getElementById(id);
   const safeRead = key => { try { const v = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(v) ? v : []; } catch (_) { return []; } };
   const safeWrite = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch (_) { return false; } };
   let songs = safeRead(KEYS.songs).filter(x => x && typeof x.embed === 'string');
   let thoughts = safeRead(KEYS.thoughts).filter(x => x && typeof x.text === 'string');
-  let guestbook = safeRead(KEYS.guestbook).filter(x => x && typeof x.message === 'string');
-  if (!guestbook.length) guestbook = safeRead('biggestFanArchiveGuestbook').filter(x => x && typeof x.message === 'string');
   let editingThoughtId = null;
 
   function parseLink(raw) {
@@ -116,8 +114,7 @@
   $('cancelEdit').addEventListener('click',resetEdit);
   $('adminThoughtForm').addEventListener('submit',e=>{e.preventDefault();const text=$('adminThoughtText').value.trim();const status=$('adminThoughtStatus');if(!text){status.textContent='Write something before saving.';return;}if(editingThoughtId){const t=thoughts.find(x=>x.id===editingThoughtId);if(t)t.text=text;}else{thoughts.unshift({id:`${Date.now()}-${Math.random().toString(36).slice(2,8)}`,text,at:Date.now()});}thoughts=thoughts.slice(0,50);safeWrite(KEYS.thoughts,thoughts);persistSharedCollections().then(ok=>{const s=$('adminThoughtStatus');if(s)s.textContent=ok?'Published for all visitors. ':'Saved locally, but shared publishing failed. Check Supabase permissions.';});renderThoughts();resetEdit();status.textContent='Publishing note…';});
 
-  function renderGuestbook(){const root=$('adminGuestList');root.replaceChildren();$('guestStat').textContent=guestbook.length;if(!guestbook.length){const e=document.createElement('div');e.className='admin-empty';e.textContent='No locally saved guestbook messages found.';root.append(e);return;}guestbook.forEach((g,i)=>{const row=document.createElement('article');row.className='admin-item';const main=document.createElement('div');main.className='admin-item-main';const title=document.createElement('div');title.className='admin-item-title';title.textContent=g.name||'Anonymous';const msg=document.createElement('div');msg.className='admin-item-text';msg.textContent=g.message;main.append(title,msg);const actions=document.createElement('div');actions.className='admin-item-actions';actions.append(makeButton('Delete',()=>{guestbook.splice(i,1);safeWrite(KEYS.guestbook,guestbook);renderGuestbook();},true));row.append(main,actions);root.append(row);});}
-  function refreshAll(){renderSongs();renderThoughts();renderGuestbook();}
+  function refreshAll(){renderSongs();renderThoughts();}
   refreshAll();
 
   function attachListFilter(inputId, listId, countId, statusId) {
@@ -152,19 +149,17 @@
   });
 
   const VISUAL_KEY = 'biggestFanArchiveVisuals';
-  const visualDefaults = {theme:'editorial',layout:'left',accent:'#2456d7',background:'#f4f7fb',text:'#111827',title:'רואי',subtitle:'A study of ordinary days.',description:'Light shifts across familiar places. A song returns with the weather.',image:''};
+  const visualDefaults = {theme:'noir',layout:'left',accent:'#2456d7',background:'#ffffff',text:'#090a0c',title:'רואי',subtitle:'A study of ordinary days.',description:'Light shifts across familiar places. A song returns with the weather.',image:''};
   let visuals = {...visualDefaults};
   try { visuals = {...visualDefaults, ...JSON.parse(localStorage.getItem(VISUAL_KEY) || '{}')}; } catch (_) {}
-  if(visuals.accent==='#778173')visuals.accent='#2456d7';if(visuals.background==='#f4f1ea')visuals.background='#f4f7fb';if(visuals.text==='#292a27')visuals.text='#111827';
-  const visualEls = {theme:'themePreset',layout:'layoutPreset',accent:'accentColor',background:'backgroundColor',text:'textColor',title:'heroTitle',subtitle:'heroSubtitle',description:'heroDescription',image:'heroImageUrl'};
+  if(visuals.accent==='#778173')visuals.accent='#2456d7';
+  const visualEls = {accent:'accentColor',title:'heroTitle',subtitle:'heroSubtitle',description:'heroDescription',image:'heroImageUrl'};
   function applyVisuals(v) {
     const body=document.body;
     body.dataset.theme=v.theme==='noir'?'noir':v.theme;
     body.dataset.layout=v.layout||'center';
     const root=document.documentElement;
     root.style.setProperty('--rose',v.accent||visualDefaults.accent);
-    root.style.setProperty('--paper',v.background||visualDefaults.background);
-    root.style.setProperty('--ink',v.text||visualDefaults.text);
     const title=document.querySelector('.hero h1');
     if(title){title.textContent=v.title||'רואי';title.setAttribute('lang',/[\u0590-\u05FF]/.test(v.title||'')?'he':'en');}
     const subtitle=document.querySelector('.hero-subtitle');
@@ -177,7 +172,7 @@
     const titleTag=document.querySelector('title');if(titleTag)titleTag.textContent=(v.title||'רואי')+' — Biggest Fan Archive';
   }
   function readVisualInputs(){
-    return {theme:$('themePreset').value,layout:$('layoutPreset').value,accent:$('accentColor').value,background:$('backgroundColor').value,text:$('textColor').value,title:$('heroTitle').value.trim()||'רואי',subtitle:$('heroSubtitle').value.trim(),description:$('heroDescription').value.trim(),image:$('heroImageUrl').value.trim()};
+    return {theme:'noir',layout:'left',accent:$('accentColor').value,background:'#ffffff',text:'#090a0c',title:$('heroTitle').value.trim()||'רואי',subtitle:$('heroSubtitle').value.trim(),description:$('heroDescription').value.trim(),image:$('heroImageUrl').value.trim()};
   }
   function fillVisualInputs(){
     Object.entries(visualEls).forEach(([key,id])=>{if($(id))$(id).value=visuals[key]||visualDefaults[key]||'';});
@@ -198,11 +193,11 @@
   }
   function updateContrastStatus(){
     const output=$('contrastStatus');if(!output)return;
-    const bg=colorLuminance($('backgroundColor').value),fg=colorLuminance($('textColor').value),accent=colorLuminance($('accentColor').value);
+    const white=1,black=0,accent=colorLuminance($('accentColor').value);
     const ratio=(a,b)=>{const hi=Math.max(a,b),lo=Math.min(a,b);return (hi+.05)/(lo+.05);};
-    const textRatio=ratio(bg,fg),accentRatio=ratio(bg,accent);
-    output.textContent=`Text/background contrast ${textRatio.toFixed(1)}:1 ${textRatio>=4.5?'meets':'below'} WCAG AA for normal text. Accent/background ${accentRatio.toFixed(1)}:1 ${accentRatio>=3?'meets':'below'} the 3:1 UI target.`;
-    output.classList.toggle('contrast-warning',textRatio<4.5||accentRatio<3);
+    const lightRatio=ratio(white,accent),darkRatio=ratio(black,accent);
+    output.textContent=`Accent contrast: ${lightRatio.toFixed(1)}:1 on white and ${darkRatio.toFixed(1)}:1 on black. Choose a deeper or lighter accent if text needs stronger contrast.`;
+    output.classList.remove('contrast-warning');
   }
   fillVisualInputs();applyVisuals(visuals);updateContrastStatus();
   function syncVisualEditor(content){
@@ -211,13 +206,13 @@
   }
   window.addEventListener('archive-content-loaded',event=>syncVisualEditor(event.detail?.content));
   window.addEventListener('archive-visual-settings-changed',event=>syncVisualEditor(event.detail));
-  ['accentColor','backgroundColor','textColor'].forEach(id=>$(id)?.addEventListener('input',updateContrastStatus));
+  ['accentColor'].forEach(id=>$(id)?.addEventListener('input',updateContrastStatus));
 
 
   $('exportBackup').addEventListener('click',()=>{
     const sharedContent=window.archiveGetPublishedContent?.();
     if(!sharedContent){$('backupStatus').textContent='Wait for shared content to load before exporting a complete backup.';return;}
-    const backup={app:'biggest-fan-archive',formatVersion:2,exportedAt:new Date().toISOString(),content:sharedContent,localFallback:{guestbook}};
+    const backup={app:'biggest-fan-archive',formatVersion:2,exportedAt:new Date().toISOString(),content:sharedContent};
     const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='biggest-fan-archive-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('backupStatus').textContent='Published content and collections exported. Visitor submissions are excluded.';
   });
   $('importBackup').addEventListener('change',async e=>{
@@ -229,15 +224,13 @@
       if(!Array.isArray(content.songs)||!Array.isArray(content.thoughts))throw new Error('The backup is missing its songs or reminders.');
       const importedSongs=content.songs.filter(x=>x&&typeof x.embed==='string').slice(0,15);
       const importedThoughts=content.thoughts.filter(x=>x&&typeof x.text==='string').slice(0,50);
-      const local=data.localFallback?.guestbook??data.guestbook;
-      const importedGuestbook=Array.isArray(local)?local.filter(x=>x&&typeof x.message==='string').slice(0,20):[];
-      if(!confirm('Restore this backup? Published page content, songs, and reminders will be replaced in the shared archive. Local fallback guestbook notes on this device will also be replaced.'))return;
+      if(!confirm('Restore this backup? Published page content, songs, and reminders will be replaced in the shared archive. Visitor submissions remain in guestbook moderation.'))return;
       const current=window.archiveGetPublishedContent?.();
       if(!current)throw new Error('Wait for shared content to load before importing a backup.');
       await window.archiveRestorePublishedContent({...current,...(data.content||{}),songs:importedSongs,thoughts:importedThoughts});
-      songs=importedSongs;thoughts=importedThoughts;guestbook=importedGuestbook;
-      safeWrite(KEYS.songs,songs);safeWrite(KEYS.thoughts,thoughts);safeWrite(KEYS.guestbook,guestbook);refreshAll();
-      $('backupStatus').textContent='Shared page content and collections restored. Local fallback notes were restored on this device.';
+      songs=importedSongs;thoughts=importedThoughts;
+      safeWrite(KEYS.songs,songs);safeWrite(KEYS.thoughts,thoughts);refreshAll();
+      $('backupStatus').textContent='Shared page content and collections restored. Visitor submissions are unchanged.';
     }catch(err){$('backupStatus').textContent=err.message||'Could not read that backup.';}
     finally{e.target.value='';}
   });
@@ -279,8 +272,6 @@
       const el = document.querySelector(`[data-content="${k}"]`); if (!el) return;
       const v=cloud[k]; el.value = Array.isArray(v) ? (k==='notes' ? JSON.stringify(v,null,2) : v.join('\n')) : String(v ?? '');
     });
-    if ($('themePreset')) setVal('themePreset', cloud.theme || 'editorial');
-    if ($('layoutPreset')) setVal('layoutPreset', cloud.layout || 'center');
     if ($('accentColor')) setVal('accentColor', cloud.accent || '#2456d7');
     if ($('backgroundColor')) setVal('backgroundColor', cloud.background || '#f4f7fb');
     if ($('textColor')) setVal('textColor', cloud.text || '#111827');
@@ -295,8 +286,8 @@
       else result[k]=el.value;
     });
     result.blogPosts=cloud.blogPosts||[];delete result.galleryImages;delete result.galleryCaptions;delete result.notes;
-    result.theme=$('themePreset')?.value || 'editorial'; result.layout=$('layoutPreset')?.value || 'left';
-    result.accent=$('accentColor')?.value || '#2456d7'; result.background=$('backgroundColor')?.value || '#f4f7fb'; result.text=$('textColor')?.value || '#111827';
+    result.theme='noir'; result.layout='left';
+    result.accent=$('accentColor')?.value || '#2456d7'; result.background='#ffffff'; result.text='#090a0c';
     result.title=$('heroTitle')?.value || 'רואי'; result.subtitle=$('heroSubtitle')?.value || ''; result.description=$('heroDescription')?.value || ''; result.image=$('heroImageUrl')?.value || '';
     return result;
   }
@@ -422,7 +413,7 @@
     } catch(error) { $('contentStatus').textContent='Could not read this draft. Save a new draft to replace it.'; }
   });
   $('resetVisuals')?.addEventListener('click',()=>{
-    const visualDefaults={theme:'editorial',layout:'left',accent:'#2456d7',background:'#f4f7fb',text:'#111827',title:'רואי',subtitle:'A study of ordinary days.',description:'Light shifts across familiar places. A song returns with the weather.',image:''};
+    const visualDefaults={theme:'noir',layout:'left',accent:'#2456d7',background:'#ffffff',text:'#090a0c',title:'רואי',subtitle:'A study of ordinary days.',description:'Light shifts across familiar places. A song returns with the weather.',image:''};
     cloud={...cloud,...visualDefaults};
     window.dispatchEvent(new CustomEvent('archive-visual-settings-changed',{detail:visualDefaults}));
     sendPreview();$('visualStatus').textContent='Visual defaults loaded. Publish changes to apply them.';
