@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#f4f1ea">
+    <meta name="theme-color" content="#f4f7fb">
   <title>Archive Admin — Biggest Fan Archive</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -53,9 +53,9 @@
           <div class="visual-field"><label for="layoutPreset">HERO LAYOUT</label>
             <select id="layoutPreset"><option value="center">Centered statement</option><option value="left">Editorial left</option><option value="split">Split composition</option></select>
           </div>
-          <div class="visual-field"><label for="accentColor">ACCENT COLOR</label><input id="accentColor" type="color" aria-describedby="contrastStatus" value="#778173"></div>
-          <div class="visual-field"><label for="backgroundColor">BACKGROUND COLOR</label><input id="backgroundColor" type="color" aria-describedby="contrastStatus" value="#f4f1ea"></div>
-          <div class="visual-field"><label for="textColor">TEXT COLOR</label><input id="textColor" type="color" aria-describedby="contrastStatus" value="#292a27"></div><div class="full-visual-field"><p class="contrast-check" id="contrastStatus" role="status" aria-live="polite"></p></div>
+          <div class="visual-field"><label for="accentColor">ACCENT COLOR</label><input id="accentColor" type="color" aria-describedby="contrastStatus" value="#2456d7"></div>
+          <div class="visual-field"><label for="backgroundColor">BACKGROUND COLOR</label><input id="backgroundColor" type="color" aria-describedby="contrastStatus" value="#f4f7fb"></div>
+          <div class="visual-field"><label for="textColor">TEXT COLOR</label><input id="textColor" type="color" aria-describedby="contrastStatus" value="#111827"></div><div class="full-visual-field"><p class="contrast-check" id="contrastStatus" role="status" aria-live="polite"></p></div>
           <div class="visual-field"><label for="heroTitle">MAIN TITLE</label><input id="heroTitle" maxlength="60" value="רואי"></div>
           <div class="visual-field"><label for="heroSubtitle">SUBTITLE</label><input id="heroSubtitle" maxlength="120" value="A study of ordinary days."></div>
           <div class="visual-field"><label for="heroDescription">INTRO TEXT</label><textarea id="heroDescription" rows="3" maxlength="240">Light shifts across familiar places. A song returns with the weather.</textarea></div>
@@ -66,30 +66,30 @@
 
     <section class="admin-panel full-panel" id="pageContentManager" aria-labelledby="contentHeading">
       <div class="panel-heading"><div><span class="panel-index">02 / SITE CONTENT</span><h2 id="contentHeading">Edit the whole page</h2></div><span class="panel-icon">✎</span></div>
-      <p class="panel-description">Edit public copy, navigation, gallery captions, notes, qualities and footer from here. Changes publish to the shared database.</p>
+      <p class="panel-description">Edit the page copy and manage dated photo journal posts here. Photo posts upload to shared storage and publish immediately.</p>
       <div class="visual-editor-grid" id="contentFields">
         <div class="visual-field"><label for="editNavAbout">NAVIGATION — ABOUT</label><input id="editNavAbout" data-content="navAbout" value="About"></div>
-        <div class="visual-field"><label for="editNavMoments">NAVIGATION — MOMENTS</label><input id="editNavMoments" data-content="navMoments" value="Moments"></div>
+        <div class="visual-field"><label for="editNavMoments">NAVIGATION — PHOTO JOURNAL</label><input id="editNavMoments" data-content="navMoments" value="Journal"></div>
         <div class="visual-field"><label for="editNavNotes">NAVIGATION — NOTES</label><input id="editNavNotes" data-content="navNotes" value="Notes"></div>
         <div class="visual-field"><label for="editNavGuestbook">NAVIGATION — GUESTBOOK</label><input id="editNavGuestbook" data-content="navGuestbook" value="Guestbook"></div>
         <div class="visual-field"><label for="editAboutHeading">ABOUT HEADING</label><input id="editAboutHeading" data-content="aboutHeading" value="A record of ordinary days."></div>
         <div class="visual-field"><label for="editAboutLead">ABOUT LEAD</label><input id="editAboutLead" data-content="aboutLead" value="Everyday life leaves its marks in unexpected places."></div>
         <div class="visual-field full-visual-field"><label for="editAboutBody">ABOUT TEXT</label><textarea id="editAboutBody" data-content="aboutBody" rows="4"></textarea></div>
-        <div class="visual-field"><label for="editMomentsHeading">MOMENTS HEADING</label><input id="editMomentsHeading" data-content="momentsHeading" value="Selected frames."></div>
-        <div class="visual-field"><label for="editMomentsIntro">MOMENTS INTRO</label><input id="editMomentsIntro" data-content="momentsIntro" value="Photographs and fragments from the archive."></div>
-        <div class="visual-field full-visual-field"><label for="editGalleryCaptions">GALLERY CAPTIONS — ONE PER LINE (5)</label><textarea id="editGalleryCaptions" data-content="galleryCaptions" aria-describedby="galleryCaptionHelp" rows="5"></textarea><small id="galleryCaptionHelp">Keep one caption on each line to match the five gallery images.</small></div>
-        <div class="visual-field full-visual-field"><label for="editGalleryImages">GALLERY IMAGE URLS — ONE PER LINE (5)</label><textarea id="editGalleryImages" data-content="galleryImages" aria-describedby="galleryImageHelp" rows="5" placeholder="https://example.com/photo-1.jpg"></textarea><small id="galleryImageHelp">Use public HTTPS image URLs. Leave a line blank to keep that memory illustration.</small></div>
-        <fieldset class="note-editor full-visual-field"><legend>NOTE CARDS — FOUR CARDS</legend>
-          <div class="note-editor-grid">
-            <div class="visual-field"><label for="noteTitle1">CARD 1 TITLE</label><input id="noteTitle1" data-note-title="0" maxlength="70"><label for="noteText1">CARD 1 TEXT</label><textarea id="noteText1" data-note-text="0" rows="3" maxlength="300"></textarea></div>
-            <div class="visual-field"><label for="noteTitle2">CARD 2 TITLE</label><input id="noteTitle2" data-note-title="1" maxlength="70"><label for="noteText2">CARD 2 TEXT</label><textarea id="noteText2" data-note-text="1" rows="3" maxlength="300"></textarea></div>
-            <div class="visual-field"><label for="noteTitle3">CARD 3 TITLE</label><input id="noteTitle3" data-note-title="2" maxlength="70"><label for="noteText3">CARD 3 TEXT</label><textarea id="noteText3" data-note-text="2" rows="3" maxlength="300"></textarea></div>
-            <div class="visual-field"><label for="noteTitle4">CARD 4 TITLE</label><input id="noteTitle4" data-note-title="3" maxlength="70"><label for="noteText4">CARD 4 TEXT</label><textarea id="noteText4" data-note-text="3" rows="3" maxlength="300"></textarea></div>
-          </div>
-        </fieldset>
         <div class="visual-field full-visual-field"><label for="editQualities">QUALITIES — ONE PER LINE</label><textarea id="editQualities" data-content="qualities" rows="3"></textarea></div>
         <div class="visual-field full-visual-field"><label for="editFooter">FOOTER MESSAGE</label><input id="editFooter" data-content="footerText" value="A personal archive of photographs, music, and notes."></div>
       </div>
+      <section class="photo-post-manager" aria-labelledby="photoPostManagerHeading">
+        <div class="panel-heading"><div><span class="panel-index">PHOTO JOURNAL / PUBLISH</span><h3 id="photoPostManagerHeading">Add a photo post</h3></div></div>
+        <p class="panel-description">Choose a photo, write a caption, and set its date. Posts publish to the journal immediately.</p>
+        <form id="photoPostForm" class="admin-form photo-post-form">
+          <label for="photoPostFile">PHOTO</label><input id="photoPostFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" aria-describedby="photoPostFileHelp" required><small id="photoPostFileHelp">JPG, PNG, WebP, GIF, or AVIF · up to 10 MB</small>
+          <label for="photoPostCaption">CAPTION</label><textarea id="photoPostCaption" maxlength="220" rows="2" placeholder="Write a short caption…" required></textarea>
+          <label for="photoPostDate">POST DATE</label><input id="photoPostDate" type="date" required>
+          <button type="submit" class="primary-button" id="publishPhotoPost">Publish photo post ↗</button><p id="photoPostStatus" class="admin-message" role="status" aria-live="polite"></p>
+        </form>
+        <div class="photo-post-list-heading"><h3>Published photo posts</h3><span id="photoPostCount">0 POSTS</span></div>
+        <div id="adminPhotoPostList" class="admin-item-list" aria-label="Published photo posts"></div>
+      </section>
       <div class="visual-actions"><button type="button" class="primary-button" id="savePageContent">Publish changes ↗</button><button type="button" class="secondary-button" id="saveContentDraft">Save draft</button><button type="button" class="secondary-button" id="restoreContentDraft">Restore draft</button><p id="contentStatus" class="admin-message" role="status" aria-live="polite"></p></div>
     </section>
     <details class="admin-panel live-preview-panel" id="previewPanel"><summary>Live page preview <span>Updates as you edit · changes are not published until you publish</span></summary><iframe id="pagePreview" title="Preview of the public archive page" src="index.html?preview=1#home" loading="lazy"></iframe></details>
