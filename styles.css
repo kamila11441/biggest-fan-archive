@@ -364,6 +364,37 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex}
   word-break: normal;
 }
 
+/* Desktop footer: two columns */
+.footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 32px;
+}
+
+.footer-logo { grid-column: 1; }
+.footer > p { grid-column: 2; }
+.footer > .back-top[href="admin.html"] { grid-column: 1; }
+.footer > .back-top[href="#home"]:not(.footer-logo) { grid-column: 2; }
+.footer-bottom { grid-column: 1 / -1; }
+
+/* Mobile footer: stack into one column */
+@media (max-width: 620px) {
+  .footer {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "brand admin"
+      "description description"
+      "top top"
+      "meta meta";
+  }
+
+  .footer-logo { grid-area: brand; }
+  .footer > p { grid-area: description; }
+  .footer > .back-top[href="admin.html"] { grid-area: admin; }
+  .footer > .back-top[href="#home"]:not(.footer-logo) { grid-area: top; }
+  .footer-bottom { grid-area: meta; }
+}
+
 @media (max-width: 620px) {
   .songs-section .archive-song-grid {
     columns: 2;
