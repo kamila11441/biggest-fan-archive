@@ -43,14 +43,14 @@
   ],
   "noises": [
     {
-      "id": "noise-1792094132844-oj4xm",
+      "id": "noise-1792094874720-x37n7",
       "title": "your majesty forgive my stupidity",
-      "caption": "I should, in fact, listen more, but not all the time!!!",
+      "caption": "",
       "date": "2024-11-26",
-      "url": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/noises/1792094130763-your-majesty-forgive-my-stupidity.mp3",
-      "path": "assets/archive/noises/1792094130763-your-majesty-forgive-my-stupidity.mp3",
+      "url": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/noises/1792094872589-your-majesty-forgive-my-stupidity.mp3",
+      "path": "assets/archive/noises/1792094872589-your-majesty-forgive-my-stupidity.mp3",
       "mime": "audio/mpeg",
-      "addedAt": 1792094132844
+      "addedAt": 1792094874720
     }
   ],
   "thoughts": [
@@ -89,10 +89,10 @@
       "date": "2026-10-15"
     }
   ],
+  "journalOrder": "date",
   "aboutBody": "This archive gathers photographs, music, and brief notes from shared places and familiar routines.\n\nSome days return as a particular light through a window; others arrive by way of a song heard again years later.\n\nA collection still in progress.",
   "momentsHeading": "Photo journal.",
   "momentsIntro": "Images, captions, and dates. One entry at a time.",
-  "qualities": [],
   "footerText": "shabish fanpage",
   "theme": "noir",
   "layout": "left",
@@ -101,9 +101,11 @@
   "text": "#090a0c",
   "songLayout": "grid",
   "songCardPadding": 14,
+  "qualities": [],
   "isTrusted": true,
   "title": "רואי",
   "subtitle": "MY FAVORITE HOOMAN EVER",
   "description": "Light shifts across familiar places. A song returns with the weather.",
-  "image": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/hero/1792089875020.jpg"
+  "image": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/hero/1792089875020.jpg",
+  "mobileImage": ""
 }
