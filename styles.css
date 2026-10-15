@@ -69,7 +69,7 @@ h1,h2,h3{text-transform:uppercase}
 
 /* 3 · HERO ---------------------------------------------------------------- */
 .hero{position:relative;display:grid;place-items:end start;overflow:hidden;min-height:620px;height:min(780px,84svh);margin:12px;background:#edf3fb;border:1px solid #e3eaf3;border-radius:30px;box-shadow:0 24px 80px #263d5d0b}
-.hero-image{position:absolute;inset:0;background-size:cover;background-position:center;
+.hero-image{position:absolute;inset:0;background-size:cover!important;background-position:center!important;background-repeat:no-repeat!important;
   background-image:
     radial-gradient(circle at 78% 37%,color-mix(in srgb,var(--rose) 40%,white) 0 8%,color-mix(in srgb,var(--rose) 20%,white) 8.2% 15%,transparent 15.2%),
     radial-gradient(ellipse at 73% 31%,#ffffffdd 0,transparent 27%),
@@ -97,6 +97,9 @@ h1,h2,h3{text-transform:uppercase}
 @keyframes hero-rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 @media(max-width:620px){
   .hero{--pad:20px;place-items:center start;height:auto;min-height:min(760px,calc(100svh - 78px));margin:7px;border-radius:22px}
+  /* optional phone photo: only paints when --hero-mobile-image is set (by the page script);
+     otherwise this layer is empty and the desktop photo underneath shows, same as desktop */
+  .hero-image::before{content:"";position:absolute;inset:0;background-image:var(--hero-mobile-image);background-size:cover;background-position:center;background-repeat:no-repeat}
   /* blue-tinted veil on top (pale sky), dark base for the link bar, faint column hairlines */
   .hero::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background:repeating-linear-gradient(90deg,#ffffff14 0 1px,transparent 1px 25%),linear-gradient(180deg,#0a1a3a70 0%,#0a1a3a1f 32%,transparent 48%,transparent 62%,#000000b0 100%)}
   /* corner registration marks */
@@ -107,7 +110,7 @@ h1,h2,h3{text-transform:uppercase}
     linear-gradient(var(--m),var(--m)) bottom right/14px 1px no-repeat,linear-gradient(var(--m),var(--m)) bottom right/1px 14px no-repeat}
 
   .hero-content{align-self:stretch;width:100%;max-width:none;height:100%;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto auto auto;padding:34px var(--pad) 24px;transform:none!important}
-  .hero .eyebrow,.hero-index{display:none}   /* top and bottom captions hidden on phones */
+  .hero .eyebrow,.hero .hero-index,.hero .hero-side-note{display:none!important}   /* top and bottom captions hidden on phones */
   .hero h1{grid-row:2;margin:16px 0 0;padding:0;text-align:center;font-size:clamp(88px,34vw,168px);font-weight:800;line-height:.8;letter-spacing:-.04em;overflow-wrap:normal}
   .hero-subtitle{grid-row:4;width:min-content;max-width:100%;font:400 clamp(30px,9.5vw,42px)/.9 var(--display);letter-spacing:.01em}
   .hero-description{grid-row:5;max-width:22ch;margin:14px 0 18px;font:500 10px/1.9 var(--mono);letter-spacing:.16em}
