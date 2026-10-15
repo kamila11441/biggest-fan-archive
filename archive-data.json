@@ -55,7 +55,15 @@
   "navGuestbook": "Contact",
   "aboutHeading": "A record of ordinary days.",
   "aboutLead": "Everyday life leaves its marks in unexpected places.",
-  "blogPosts": [],
+  "blogPosts": [
+    {
+      "id": "6116ae92-1f0b-4b92-a2a6-6a328bcd7cbc",
+      "image": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/photos/1792084076217-incredibly-rare-fairy.jpg",
+      "path": "assets/archive/photos/1792084076217-incredibly-rare-fairy.jpg",
+      "caption": "incredibly rare fairy 🧚🧚",
+      "date": "2026-10-15"
+    }
+  ],
   "aboutBody": "This archive gathers photographs, music, and brief notes from shared places and familiar routines.\n\nSome days return as a particular light through a window; others arrive by way of a song heard again years later.\n\nA collection still in progress.",
   "momentsHeading": "Photo journal.",
   "momentsIntro": "Images, captions, and dates. One entry at a time.",
