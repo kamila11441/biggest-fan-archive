@@ -41,7 +41,18 @@
       "original": "https://open.spotify.com/track/3TgwB0fQ3QajJV7DLwBhYv?si=ab99e5c5e44743bc"
     }
   ],
-  "noises": [],
+  "noises": [
+    {
+      "id": "noise-1792096130148-oec2k",
+      "title": "your majesty forgive my stupidity",
+      "caption": "",
+      "date": "2024-11-26",
+      "url": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/noises/1792096127783-your-majesty-forgive-my-stupidity.mp3",
+      "path": "assets/archive/noises/1792096127783-your-majesty-forgive-my-stupidity.mp3",
+      "mime": "audio/mpeg",
+      "addedAt": 1792096130148
+    }
+  ],
   "thoughts": [
     {
       "id": "1792095119769-ct3bgy",
