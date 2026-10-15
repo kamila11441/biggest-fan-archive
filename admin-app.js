@@ -24,7 +24,7 @@
     if (error) { status.textContent = 'Sign-in failed. Check the email/password and Supabase Auth settings.'; return; }
     $('adminPassword').value = ''; showApp(data.user);
   });
-  $('adminSignOut')?.addEventListener('click', async () => { if (supabase) await supabase.auth.signOut(); app.hidden = true; gate.hidden = false; status.textContent = 'Signed out.'; });
+  $('adminSignOut')?.addEventListener('click', async () => { if (supabase) await supabase.auth.signOut(); window.archiveGitHub?.disconnect(); app.hidden = true; gate.hidden = false; status.textContent = 'Signed out.'; });
   if (supabase) supabase.auth.getSession().then(({ data }) => { if (data.session) showApp(data.session.user); });
 })();
 
@@ -35,7 +35,8 @@
   const $ = id => document.getElementById(id);
   const safeRead = key => { try { const v = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(v) ? v : []; } catch (_) { return []; } };
   const safeWrite = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch (_) { return false; } };
-  const githubConfigKey='biggestFanGitHubConfig';let githubToken='';
+  const githubConfigKey='biggestFanGitHubConfig',githubTokenKey='biggestFanGitHubTokenSession';let githubToken='';
+  try{githubToken=sessionStorage.getItem(githubTokenKey)||'';}catch(_){}
   let githubConfig={owner:'kamila11441',repo:'biggest-fan-archive',branch:'main'};
   try{githubConfig={...githubConfig,...JSON.parse(localStorage.getItem(githubConfigKey)||'{}')};}catch(_){}
   const githubApiBase=()=>`https://api.github.com/repos/${encodeURIComponent(githubConfig.owner)}/${encodeURIComponent(githubConfig.repo)}`;
@@ -53,8 +54,8 @@
   async function putGitHubBytes(path,bytes,message){const previous=await githubFile(path);return githubRequest(`/contents/${githubPath(path)}`,'PUT',{message,content:bytesToBase64(bytes),branch:githubConfig.branch,...(previous?.sha?{sha:previous.sha}:{})});}
   window.archiveGitHub={
     get connected(){return Boolean(githubToken)},get config(){return {...githubConfig}},
-    configure(owner,repo,branch,token){if(!/^[A-Za-z0-9-]+$/.test(owner)||!/^[A-Za-z0-9_.-]+$/.test(repo)||!/^[A-Za-z0-9._/-]+$/.test(branch))throw new Error('Enter a valid GitHub owner, repository, and branch.');githubConfig={owner,repo,branch};githubToken=token.trim();localStorage.setItem(githubConfigKey,JSON.stringify(githubConfig));},
-    disconnect(){githubToken='';},
+    configure(owner,repo,branch,token){if(!/^[A-Za-z0-9-]+$/.test(owner)||!/^[A-Za-z0-9_.-]+$/.test(repo)||!/^[A-Za-z0-9._/-]+$/.test(branch))throw new Error('Enter a valid GitHub owner, repository, and branch.');githubConfig={owner,repo,branch};githubToken=token.trim();localStorage.setItem(githubConfigKey,JSON.stringify(githubConfig));try{if(githubToken)sessionStorage.setItem(githubTokenKey,githubToken);else sessionStorage.removeItem(githubTokenKey);}catch(_){}},
+    disconnect(){githubToken='';try{sessionStorage.removeItem(githubTokenKey);}catch(_){}},
     async connect(){const repo=await githubRequest('');if(repo.permissions?.push===false)throw new Error('This token can read the repository but cannot write to it. Enable Contents read/write.');return repo;},
     async getJson(path){const file=await githubFile(path);if(!file)return null;return JSON.parse(decodeGitHubText(file.content));},
     async putJson(path,value,message='Update archive content'){const text=JSON.stringify(value,null,2);return putGitHubBytes(path,new TextEncoder().encode(text),message);},
@@ -209,7 +210,7 @@
     const description=document.querySelector('.hero-description');
     if(description)description.textContent=v.description||'';
     const image=document.querySelector('.hero-image');
-    if(image){image.style.backgroundImage=v.image?`linear-gradient(90deg,#0007,transparent),url("${v.image.replace(/"/g,'%22')}")`:'';image.style.backgroundSize=v.image?'cover':'';image.style.backgroundPosition='center';image.setAttribute('aria-label',v.image?'Main photograph from the personal archive':'Abstract blue and white hero artwork');}
+    if(image){image.style.backgroundImage=v.image?`linear-gradient(90deg,#0003,transparent),url("${v.image.replace(/"/g,'%22')}")`:'';image.style.backgroundSize=v.image?'cover':'';image.style.backgroundPosition='center';image.setAttribute('aria-label',v.image?'Main photograph from the personal archive':'Abstract blue and white hero artwork');}
     const logo=document.querySelector('.logo [lang="he"]'); if(logo)logo.textContent=v.title||'רואי';
     const titleTag=document.querySelector('title');if(titleTag)titleTag.textContent=(v.title||'רואי')+' — Biggest Fan Archive';
   }
@@ -340,7 +341,6 @@
     setVal('heroTitle', cloud.title || 'רואי'); setVal('heroSubtitle', cloud.subtitle || 'A study of ordinary days.'); setVal('heroDescription', cloud.description || 'Light shifts across familiar places. A song returns with the weather.'); setVal('heroImageUrl', cloud.image || '');
     setVal('songLayout',cloud.songLayout==='grid'?'grid':'masonry');setVal('songCardPadding',Math.max(12,Math.min(32,Number(cloud.songCardPadding)||24)));
     const spacing=$('songCardPaddingValue');if(spacing)spacing.value=`${$('songCardPadding').value} px`;
-    visuals={...visuals,...cloud};applyVisuals(visuals);
     renderAdminPhotoPosts(cloud.blogPosts);
   }
   function readFields() {
@@ -420,7 +420,7 @@
   async function load() {
     db=window.archiveSupabase; if(!db) return;
     let githubSource=false,content=null;
-    if(window.archiveGitHub?.connected){try{content=await window.archiveGitHub.getJson('archive-data.json');githubSource=Boolean(content&&typeof content==='object');}catch(_){}}
+    if(window.archiveGitHub?.connected){try{const repo=await window.archiveGitHub.connect();content=await window.archiveGitHub.getJson('archive-data.json');githubSource=Boolean(content&&typeof content==='object');const connectionStatus=$('githubLoginStatus');if(connectionStatus)connectionStatus.textContent=`GitHub connection restored for ${repo.full_name}.`;}catch(error){window.archiveGitHub.disconnect();const connectionStatus=$('githubLoginStatus');if(connectionStatus)connectionStatus.textContent=`Saved GitHub connection needs attention: ${error.message||'paste the token again.'}`;}}
     if(!githubSource)try{const response=await fetch(new URL('archive-data.json',location.href),{cache:'no-store'});if(response.ok){content=await response.json();githubSource=Boolean(content&&typeof content==='object');}}catch(_){}
     if(!githubSource){const {data,error}=await db.from('archive_content').select('content').eq('id',true).single();if(error){$('contentStatus').textContent='Could not load the initial archive. Check Supabase setup, or connect GitHub if archive-data.json is already published.';return;}content=data?.content||{};}
     archiveFromGitHub=githubSource;fillFields(content);
