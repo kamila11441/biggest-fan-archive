@@ -1,5 +1,6 @@
 # Biggest Fan Archive
 https://kamila11441.github.io/biggest-fan-archive/
+
 A personal appreciation website for רואי, built with plain HTML/CSS/JavaScript and hosted on GitHub Pages. Shared content, protected administration, and shared visitor comments use Supabase (hosted Postgres + Auth). GitHub login is not required for visitors.
 
 ## Files
