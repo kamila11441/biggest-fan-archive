@@ -8,7 +8,7 @@
   <title>רואי — Biggest Fan Archive</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Heebo:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@300;400;500;600;700&family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="backend-config.js"></script>
@@ -20,7 +20,7 @@
     <a class="logo" href="#home"><span lang="he">רואי</span><span class="logo-heart" aria-hidden="true">/</span></a>
     <button class="menu-toggle" aria-label="Open navigation" aria-expanded="false"><span></span><span></span></button>
     <nav class="nav" aria-label="Main navigation">
-      <a href="#about">About</a><a href="#moments">Journal</a><a href="#songsSection">Songs</a><a href="#notes">Notes</a><a href="#guestbook">Contact</a>
+      <a href="#about">About</a><a href="#moments">Journal</a><a href="#songsSection">Songs</a><a href="#noises">Noises</a><a href="#notes">Notes</a><a href="#guestbook">Contact</a>
     </nav>
     <a class="header-link" href="#guestbook">LEAVE A NOTE <span>↗</span></a>
   </header>
@@ -46,9 +46,6 @@
         <div class="intro-title"><h2>A record of<br>ordinary <em>days.</em></h2><p class="hand-note">small details,<br>kept in passing.</p></div>
         <div class="intro-copy"><p class="lead">Everyday life leaves its marks in unexpected places.</p><p>This archive gathers photographs, music, and brief notes from shared places and familiar routines.</p><p>Some days return as a particular light through a window; others arrive by way of a song heard again years later.</p><p class="signature">A collection still in progress.</p></div>
       </div>
-      <div class="qualities">
-        <div class="quality"><span>01</span><p>PLACES</p></div><div class="quality"><span>02</span><p>PEOPLE</p></div><div class="quality"><span>03</span><p>SOUND</p></div><div class="quality"><span>04</span><p>OBSERVATIONS</p></div><div class="quality"><span>05</span><p>DETAILS</p></div>
-      </div>
     </section>
 
     <section class="photo-journal section" id="moments" aria-labelledby="journalHeading">
@@ -63,14 +60,20 @@
       <div id="publicSongs" class="archive-song-grid" aria-live="polite"><p class="collection-empty">The soundtrack is waiting for its first song.</p></div>
     </section>
 
+    <section class="section archive-collection noises-section" id="noises" aria-labelledby="noisesHeading">
+      <div class="section-label"><span>04</span><span>FIELD RECORDINGS</span></div>
+      <div class="section-heading"><h2 id="noisesHeading">Noises.</h2><p>Small sounds, saved as voice notes.</p></div>
+      <div id="publicNoises" class="archive-noise-list" aria-live="polite"><p class="collection-empty">No sounds in the archive yet.</p></div>
+    </section>
+
     <section class="section archive-collection" id="notes" aria-labelledby="notesHeading">
-      <div class="section-label"><span>04</span><span>TEXT INDEX</span></div>
+      <div class="section-label"><span>05</span><span>TEXT INDEX</span></div>
       <div class="section-heading"><h2 id="notesHeading">Notes.</h2><p>Short observations, gathered along the way.</p></div>
       <div id="publicThoughts" class="archive-thought-grid"></div>
     </section>
 
     <section class="guestbook-section section" id="guestbook">
-      <div class="section-label"><span>05</span><span>GUESTBOOK / CONTRIBUTIONS</span></div>
+      <div class="section-label"><span>06</span><span>GUESTBOOK / CONTRIBUTIONS</span></div>
       <div class="guestbook-layout">
         <div class="guestbook-heading"><h2>Leave a<br><em>line.</em></h2><p>A few words from visitors become part of the archive.</p><div class="guestbook-stamp">OPEN<br>CONTRIBUTIONS <span>↗</span></div></div>
         <div class="guestbook-content">
