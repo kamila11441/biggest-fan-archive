@@ -536,3 +536,35 @@ body[data-song-layout="grid"] .songs-section .archive-song-grid{grid-template-co
   .songs-section .archive-song-grid{columns:1;column-gap:0}
   body[data-song-layout="grid"] .songs-section .archive-song-grid{grid-template-columns:minmax(0,1fr)}
 }
+
+/* Blog captions: no caps */
+.blog-post h3{text-transform:none;letter-spacing:.005em}
+
+/* Mobile: heavier, bolder, app-style titles */
+@media(max-width:620px){
+  .hero h1,
+  .intro-title h2,
+  .section-heading h2,
+  .journal-heading h2,
+  .archive-collection .section-heading h2,
+  .guestbook-heading h2,
+  .songs-heading h2,
+  .thoughts-layout h2{
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:-.01em;
+    line-height:1.02;
+    font-size:clamp(34px,10vw,56px);
+  }
+  .hero h1{font-size:clamp(56px,17vw,96px);letter-spacing:0}
+
+  .section-label,.journal-kicker{font-weight:800;text-transform:uppercase;letter-spacing:.12em}
+
+  .nav a{font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:13px}
+  .logo{font-weight:800}
+
+  /* App-like controls and cards */
+  .hero-link,.form-footer button,.primary-button{font-weight:800;text-transform:uppercase;letter-spacing:.06em;border-radius:14px;min-height:48px}
+  .blog-post,.archive-song,.archive-thought,.guestbook-form,.guest-note{border-radius:20px}
+  .blog-post h3{font-weight:800;font-size:clamp(20px,6vw,26px);line-height:1.2}
+}
