@@ -297,97 +297,49 @@ body::before{height:2px;opacity:.45}.hero-image{background:radial-gradient(circl
 .footer{margin:22px 12px 12px;border-radius:24px;overflow:hidden}
 @media(max-width:620px){.footer{margin:22px 8px 12px;border-radius:22px}}
 
-/* More visible hero photo with a lighter cloud treatment */
-.hero-image {
-  isolation: isolate;
-}
+/* Homepage photo treatment: soft cloud forms under a translucent atmospheric veil. */
+.hero-image{isolation:isolate}
+.hero-image:before{inset:-12%;clip-path:none;opacity:.62;filter:blur(22px);background:radial-gradient(ellipse 34% 18% at 18% 29%,#ffffffb8 0%,#ffffff66 34%,transparent 75%),radial-gradient(ellipse 32% 20% at 44% 18%,#f7fbffd4 0%,#ffffff72 38%,transparent 76%),radial-gradient(ellipse 38% 21% at 75% 28%,#ffffffbd 0%,#f5f8ff66 38%,transparent 78%),radial-gradient(ellipse 42% 18% at 55% 49%,#dce7f1a8 0%,transparent 75%);z-index:1;pointer-events:none}
+.hero-image:after{inset:0;opacity:1;background:linear-gradient(115deg,#111b2b52 0%,#dce5ee24 47%,#dbe5f138 100%),linear-gradient(0deg,#151e2a4a 0%,transparent 64%);z-index:2;pointer-events:none}
+.hero-overlay{z-index:3}
+.hero-content,.hero-index,.hero-side-note{z-index:4}
 
-.hero-image:before {
-  inset: -12%;
-  clip-path: none;
-  opacity: .30;
-  filter: blur(20px);
-  background:
-    radial-gradient(ellipse 34% 18% at 18% 29%, #ffffff70 0%, #ffffff38 36%, transparent 76%),
-    radial-gradient(ellipse 32% 20% at 44% 18%, #f7fbff80 0%, #ffffff40 40%, transparent 78%),
-    radial-gradient(ellipse 38% 21% at 75% 28%, #ffffff70 0%, #f5f8ff38 38%, transparent 78%),
-    radial-gradient(ellipse 42% 18% at 55% 49%, #dce7f15a 0%, transparent 75%);
-  z-index: 1;
-  pointer-events: none;
-}
+/* Song cards: even player inset and captions centered in the lower card area. */
+.songs-section .archive-song{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:24px}
+.songs-section .archive-song iframe{width:100%;max-width:100%;margin:0 auto;align-self:center}
+.songs-section .archive-song h3{display:grid;place-items:center;flex:1 0 76px;min-height:76px;width:100%;margin:16px 0 0;font-family:var(--serif);font-size:clamp(15px,1.6vw,19px);font-weight:400;line-height:1.45;letter-spacing:0;text-align:center;overflow-wrap:anywhere}
+@media(max-width:620px){.songs-section .archive-song{padding:16px}.songs-section .archive-song h3{flex-basis:68px;min-height:68px;margin-top:12px;font-size:15px}}
 
-.hero-image:after {
-  inset: 0;
-  opacity: .55;
-  background:
-    linear-gradient(115deg, #111b2b24 0%, #dce5ee12 47%, #dbe5f11c 100%),
-    linear-gradient(0deg, #151e2a24 0%, transparent 64%);
-  z-index: 2;
-  pointer-events: none;
-}
+/* Pinterest-style song masonry: two flowing columns at every screen size. */
+.songs-section .archive-song-grid{display:block;columns:2;column-gap:16px;column-fill:balance;margin-top:24px}
+.songs-section .archive-song{display:inline-flex;width:100%;margin:0 0 16px;vertical-align:top;break-inside:avoid;flex-direction:column;align-items:stretch;gap:0;padding:24px;border-radius:20px}
+.songs-section .archive-song iframe{display:block;width:100%;max-width:100%;margin:0 auto;align-self:center}
+.songs-section .archive-song h3{display:grid;place-items:center;flex:1 0 76px;min-height:76px;width:100%;margin:16px 0 0;padding:20px 8px;font-family:var(--serif);font-size:clamp(14px,1.5vw,19px);font-weight:400;line-height:1.45;letter-spacing:0;text-align:center;overflow-wrap:anywhere}
+.songs-section .archive-song-grid>.collection-empty{display:block;column-span:all;text-align:center}
+@media(max-width:620px){.songs-section .archive-song-grid{column-gap:12px;margin-top:18px}.songs-section .archive-song{margin-bottom:12px;padding:14px;border-radius:16px}.songs-section .archive-song h3{flex-basis:68px;min-height:68px;margin-top:12px;padding:16px 6px;font-size:14px}}
 
-.hero-overlay {
-  z-index: 3;
-  background:
-    linear-gradient(90deg, #f9fbfe66 0%, #f9fbfe30 45%, transparent 87%),
-    linear-gradient(0deg, #f5f8fc40, transparent 50%);
-}
+/* Song layout and spacing are controlled by the signed-in admin visual editor. */
+.songs-section .archive-song{padding:var(--song-card-padding,24px)}
+body[data-song-layout="grid"] .songs-section .archive-song-grid{display:grid;columns:unset;column-gap:0;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:16px}
+body[data-song-layout="grid"] .songs-section .archive-song{display:flex;width:auto;margin:0;break-inside:auto}
+@media(max-width:620px){.songs-section .archive-song{padding:var(--song-card-padding,24px)}body[data-song-layout="grid"] .songs-section .archive-song-grid{gap:12px}}
 
-.hero-content,
-.hero-index,
-.hero-side-note {
-  z-index: 4;
-}
-/* Refined song masonry and caption typography */
-.songs-section .archive-song {
-  display: inline-block;
-  vertical-align: top;
-  width: 100%;
-  margin: 0 0 16px;
-  padding: var(--song-card-padding, 24px);
-  text-align: center;
-  break-inside: avoid;
-}
+/* Refined song masonry and caption typography. */
+.songs-section .archive-song{display:inline-block;vertical-align:top;width:100%;margin:0 0 16px;padding:var(--song-card-padding,24px);text-align:center;break-inside:avoid}
+.songs-section .archive-song iframe{display:block;width:100%;max-width:100%;margin:0 auto}
+.songs-section .archive-song h3{display:flex;align-items:center;justify-content:center;min-height:68px;width:100%;margin:12px 0 0;padding:14px 8px;font-family:var(--sans);font-size:clamp(13px,1.4vw,17px);font-weight:700;line-height:1.4;letter-spacing:0;text-align:center;text-transform:none;overflow-wrap:anywhere}
+body[data-song-layout="grid"] .songs-section .archive-song{display:flex}
+@media(max-width:620px){.songs-section .archive-song{margin-bottom:12px;padding:var(--song-card-padding,24px)}.songs-section .archive-song h3{min-height:62px;margin-top:10px;padding:12px 6px;font-size:13px}}
 
-.songs-section .archive-song iframe {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-}
+/* Let more of the uploaded hero photo show through the clouds and veil. */
+.hero-image:before{opacity:.30;filter:blur(20px);background:radial-gradient(ellipse 34% 18% at 18% 29%,#ffffff70 0%,#ffffff38 36%,transparent 76%),radial-gradient(ellipse 32% 20% at 44% 18%,#f7fbff80 0%,#ffffff40 40%,transparent 78%),radial-gradient(ellipse 38% 21% at 75% 28%,#ffffff70 0%,#f5f8ff38 38%,transparent 78%),radial-gradient(ellipse 42% 18% at 55% 49%,#dce7f15a 0%,transparent 75%)}
+.hero-image:after{opacity:.55;background:linear-gradient(115deg,#111b2b24 0%,#dce5ee12 47%,#dbe5f11c 100%),linear-gradient(0deg,#151e2a24 0%,transparent 64%)}
+.hero-overlay{background:linear-gradient(90deg,#f9fbfe66 0%,#f9fbfe30 45%,transparent 87%),linear-gradient(0deg,#f5f8fc40,transparent 50%)}
 
-.songs-section .archive-song h3 {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 68px;
-  width: 100%;
-  margin: 12px 0 0;
-  padding: 14px 8px;
-  font-family: var(--sans);
-  font-size: clamp(13px, 1.4vw, 17px);
-  font-weight: 700;
-  line-height: 1.4;
-  letter-spacing: 0;
-  text-align: center;
-  text-transform: none;
-  overflow-wrap: anywhere;
-}
-
-body[data-song-layout="grid"] .songs-section .archive-song {
-  display: flex;
-}
-
-@media (max-width: 620px) {
-  .songs-section .archive-song {
-    margin-bottom: 12px;
-    padding: var(--song-card-padding, 24px);
-  }
-
-  .songs-section .archive-song h3 {
-    min-height: 62px;
-    margin-top: 10px;
-    padding: 12px 6px;
-    font-size: 13px;
-  }
-}
+/* Full-opacity homepage photo with bold white hero typography. */
+.hero-image{filter:none!important;opacity:1!important;background-blend-mode:normal!important;background-size:cover!important;background-position:center!important}
+.hero-image:before,.hero-image:after{content:none!important;display:none!important}
+.hero-overlay{display:none!important;background:none!important}
+.hero .eyebrow,.hero h1,.hero-subtitle,.hero-description,.hero-link,.hero-index,.hero-side-note{color:#fff!important;font-weight:700!important;text-shadow:0 2px 12px #000b,0 1px 3px #000c}
+.hero .hero-link{background:transparent!important;border:1px solid #ffffffcc!important;backdrop-filter:none!important;box-shadow:none!important}
+.hero .hero-link span,.hero .eyebrow-dot{color:#fff!important;background:#fff!important}
