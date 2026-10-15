@@ -41,7 +41,18 @@
       "original": "https://open.spotify.com/track/3TgwB0fQ3QajJV7DLwBhYv?si=ab99e5c5e44743bc"
     }
   ],
-  "noises": [],
+  "noises": [
+    {
+      "id": "noise-1792094132844-oj4xm",
+      "title": "your majesty forgive my stupidity",
+      "caption": "I should, in fact, listen more, but not all the time!!!",
+      "date": "2024-11-26",
+      "url": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/noises/1792094130763-your-majesty-forgive-my-stupidity.mp3",
+      "path": "assets/archive/noises/1792094130763-your-majesty-forgive-my-stupidity.mp3",
+      "mime": "audio/mpeg",
+      "addedAt": 1792094132844
+    }
+  ],
   "thoughts": [
     {
       "at": 1792069476312,
