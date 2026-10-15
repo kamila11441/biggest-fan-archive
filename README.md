@@ -1,4 +1,4 @@
-[README.md](https://github.com/user-attachments/files/33499444/README.md)# Biggest Fan Archive
+# Biggest Fan Archive
 
 A personal appreciation website for רואי, built with plain HTML/CSS/JavaScript and hosted on GitHub Pages. Shared content, protected administration, and shared visitor comments use Supabase (hosted Postgres + Auth). GitHub login is not required for visitors.
 
@@ -43,7 +43,7 @@ GitHub Pages cannot run a private server or protect an admin page on its own. Th
 
 ## What can be edited in admin
 
-The visual editor supports design preset, hero layout, colors, title, subtitle, intro text, and a public hero image URL. Its preview updates as you edit. The page editor supports navigation labels, about copy, and footer text. The photo journal manager uploads images (up to 10 MB), captions, and dates to Supabase Storage and publishes them immediately; admins can remove published posts. Save draft stores a browser-local draft; Publish changes the shared page content. Songs and page notes are shared with visitors. Guestbook comments are separate, moderated records; approving a comment makes it public. The backup contains shared page content and collections plus local fallback notes; it excludes visitor submissions.
+The visual editor keeps the public page black and white while letting you change its shared accent, title, subtitle, intro text, and public hero image. Its preview updates as you edit. The page editor supports navigation labels, about copy, and footer text. The photo journal manager uploads images (up to 10 MB), captions, and dates to Supabase Storage and publishes them immediately; admins can remove published posts. Save draft stores a browser-local draft; Publish changes the shared page content. Songs and page notes are shared with visitors. Guestbook comments are separate, moderated records; approving a comment makes it public. The backup contains shared page content and collections, and excludes visitor submissions.
 
 For the hero image, use a public HTTPS image URL. Photo journal posts are uploaded to the `archive-photos` Supabase Storage bucket and delivered using public image URLs. Previously saved gallery URLs are migrated into the journal when the page content is next published.
 
@@ -58,4 +58,3 @@ Upload the contents of this folder to the repository root, then open **Settings 
 ## Privacy and rights
 
 Use photos, music, and other media only when you have permission to publish them. This is an unofficial personal appreciation page and is not affiliated with or endorsed by the person featured.
-
