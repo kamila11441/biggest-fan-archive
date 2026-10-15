@@ -1,3 +1,8 @@
+/* Shared helpers */
+function setLines(el,str){el.replaceChildren();String(str).split('\n').forEach((line,i)=>{if(i)el.append(document.createElement('br'));el.append(document.createTextNode(line));});}
+function heroCssUrl(value){try{const u=new URL(value);return u.protocol==='https:'&&u.hostname&&!u.username&&!u.password?`url("${u.href.replace(/"/g,'%22')}")`:'none';}catch(_){return 'none';}}
+function retryMedia(el,max=6){const src=el.getAttribute('src');let n=0;if(!src)return;el.addEventListener('error',()=>{if(n>=max)return;n++;setTimeout(()=>{el.src=src+(src.includes('?')?'&':'?')+'r='+n;},15000);});}
+
 (() => {
 
   // Apply saved visual editor settings on the public page too.
@@ -13,7 +18,7 @@
       const title=document.querySelector('.hero h1');
       if(title){title.textContent=v.title||'רואי';title.setAttribute('lang',/[\u0590-\u05FF]/.test(v.title||'')?'he':'en');}
       const subtitle=document.querySelector('.hero-subtitle');if(subtitle)subtitle.textContent=v.subtitle||'';
-      const description=document.querySelector('.hero-description');if(description)description.textContent=v.description||'';
+      const description=document.querySelector('.hero-description');if(description)setLines(description,v.description||'');root.style.setProperty('--hero-mobile-image',heroCssUrl(v.mobileImage));
       const image=document.querySelector('.hero-image');
       if(image&&v.image){image.style.backgroundImage=`url("${String(v.image).replace(/"/g,'%22')}")`;image.style.backgroundSize='cover';image.style.backgroundPosition='center';image.setAttribute('aria-label','Main photograph from the personal archive');}
       else if(image)image.setAttribute('aria-label','Abstract blue and white hero artwork');
@@ -78,10 +83,6 @@
   const status = document.getElementById('formStatus');
   const list = document.getElementById('guestbookList');
   messageField.addEventListener('input', () => count.textContent = `${messageField.value.length} / 240`);
-  form.addEventListener('submit', event => {
-    event.preventDefault();
-    status.textContent = 'Guestbook submissions are temporarily unavailable. Please try again later.';
-  });
 
   const dialog = document.getElementById('photoLightbox');
   const lightboxImage = document.getElementById('photoLightboxImage');
@@ -90,7 +91,7 @@
     const button = event.target.closest('.blog-photo-button');
     if (!button || !dialog?.showModal) return;
     lightboxImage.src = button.dataset.photo;
-    lightboxImage.alt = button.dataset.caption || 'Photo journal image';
+    lightboxImage.alt = button.dataset.alt || button.dataset.caption || 'Photo journal image';
     lightboxCaption.textContent = button.dataset.caption || '';
     dialog.showModal();
   });
@@ -103,28 +104,44 @@
 /* Shared Supabase content and comment integration. */
 
 (() => {
-  if (!window.archiveBackendReady?.() || !window.supabase?.createClient) return;
-  const c=window.ARCHIVE_BACKEND, db=window.supabase.createClient(c.supabaseUrl,c.supabaseAnonKey);
+  const backendReady=Boolean(window.archiveBackendReady?.()&&window.supabase?.createClient);
+  const c=window.ARCHIVE_BACKEND, db=backendReady?window.supabase.createClient(c.supabaseUrl,c.supabaseAnonKey):null;
   const $=id=>document.getElementById(id);
   let adminPreviewActive=false;
   const fallback={navAbout:'About',navMoments:'Journal',navNotes:'Notes',navGuestbook:'Contact',aboutHeading:'A record of ordinary days.',aboutLead:'Everyday life leaves its marks in unexpected places.',momentsHeading:'Photo journal.',momentsIntro:'Images, captions, and dates. One entry at a time.',blogPosts:[],footerText:'A personal archive of photographs, music, and notes.'};
   function text(selector,value){const el=document.querySelector(selector);if(el&&typeof value==='string'&&value.trim())el.textContent=value;}
   function validPhotoUrl(value){try{const url=new URL(value);return url.protocol==='https:'&&url.hostname&&!url.username&&!url.password?url.href:null;}catch(_){return null;}}
   function legacyPosts(v){if(Array.isArray(v.blogPosts)&&v.blogPosts.length)return v.blogPosts;const images=v.galleryImages||[],captions=v.galleryCaptions||[];const migrated=images.map((image,i)=>({id:`legacy-${i}`,image,path:'',caption:captions[i]||'From the archive',date:''})).filter(post=>validPhotoUrl(post.image));return migrated.length?migrated:(Array.isArray(v.blogPosts)?v.blogPosts:[]);}
-  function renderBlogPosts(posts){
+  const BLOG_PAGE=9;
+  function renderBlogPosts(posts,order){
     const root=$('blogPosts');if(!root)return;root.replaceChildren();
-    const ordered=[...(posts||[])].filter(post=>post&&validPhotoUrl(post.image)).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    const more=$('blogMore'),moreBtn=$('blogMoreButton');if(more)more.hidden=true;
+    let ordered=(posts||[]).filter(post=>post&&validPhotoUrl(post.image));
+    if(order!=='manual')ordered=[...ordered].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
     if(!ordered.length){const empty=document.createElement('p');empty.className='collection-empty';empty.textContent='Photo posts will appear here.';root.append(empty);return;}
-    ordered.forEach((post,index)=>{
+    let shown=0;
+    const build=(post,index)=>{
       const article=document.createElement('article');article.className=`blog-post${index===0?' blog-post-featured':''}`;article.dataset.postId=String(post.id||'');
+      if(post.id)article.id='post-'+String(post.id).replace(/[^\w-]/g,'');
       const figure=document.createElement('figure');figure.className='blog-figure';
-      const zoom=document.createElement('button');zoom.type='button';zoom.className='blog-photo-button';zoom.dataset.photo=validPhotoUrl(post.image);zoom.dataset.caption=post.caption||'';zoom.setAttribute('aria-label',`Open photo: ${post.caption||'Photo journal image'}`);
-      const image=document.createElement('img');image.src=validPhotoUrl(post.image);image.alt=post.caption||'Photo journal image';image.loading='lazy';image.decoding='async';zoom.append(image);figure.append(zoom);
+      const alt=post.alt||post.caption||'Photo journal image';
+      const zoom=document.createElement('button');zoom.type='button';zoom.className='blog-photo-button';zoom.dataset.photo=validPhotoUrl(post.image);zoom.dataset.caption=post.caption||'';zoom.dataset.alt=post.alt||'';zoom.setAttribute('aria-label',`Open photo: ${post.caption||'Photo journal image'}`);
+      const image=document.createElement('img');image.src=validPhotoUrl(post.image);image.alt=alt;image.loading='lazy';image.decoding='async';retryMedia(image);zoom.append(image);figure.append(zoom);
       const copy=document.createElement('div');copy.className='blog-post-copy';const date=document.createElement('time');date.className='blog-post-date';
       if(/^\d{4}-\d{2}-\d{2}$/.test(post.date||'')){date.dateTime=post.date;date.textContent=new Intl.DateTimeFormat(undefined,{year:'numeric',month:'long',day:'numeric',timeZone:'UTC'}).format(new Date(`${post.date}T12:00:00Z`));}else date.textContent='FROM THE ARCHIVE';
-      const caption=document.createElement('h3');caption.textContent=post.caption||'Untitled photo';copy.append(date,caption);article.append(figure,copy);root.append(article);
-    });
-    window.archiveReveal(root);
+      const caption=document.createElement('h3');caption.textContent=post.caption||'Untitled photo';copy.append(date,caption);article.append(figure,copy);
+      return article;
+    };
+    const showMore=()=>{
+      const next=ordered.slice(shown,shown+BLOG_PAGE),firstNew=shown;
+      next.forEach((post,i)=>root.append(build(post,shown+i)));shown+=next.length;
+      window.archiveReveal(root);
+      if(more)more.hidden=shown>=ordered.length;
+      if(moreBtn)moreBtn.textContent=`Load more entries (${ordered.length-shown} left)`;
+      if(firstNew>0)root.children[firstNew]?.querySelector('.blog-photo-button')?.focus({preventScroll:true});
+    };
+    if(moreBtn)moreBtn.onclick=showMore;
+    showMore();
   }
   function apply(data){if(!data)return;
     const v={...fallback,...data};
@@ -132,17 +149,17 @@
     if(v.momentsHeading==='Selected frames.')v.momentsHeading='Photo journal.';
     if(v.momentsIntro==='Photographs and fragments from the archive.')v.momentsIntro='Images, captions, and dates. One entry at a time.';
     const navLabels={'#about':v.navAbout,'#moments':v.navMoments,'#notes':v.navNotes,'#guestbook':v.navGuestbook};document.querySelectorAll('.nav a').forEach(link=>{if(navLabels[link.hash])link.textContent=navLabels[link.hash];});
-    text('.intro-title h2',v.aboutHeading); text('.intro-copy .lead',v.aboutLead); if(v.momentsHeading&&v.momentsHeading!=='Photo journal.')text('#journalHeading',v.momentsHeading); text('.journal-heading>p',v.momentsIntro); text('.footer>p',v.footerText);renderBlogPosts(legacyPosts(v));
-    const body=document.querySelector('.intro-copy'); if(body&&Array.isArray(v.aboutBody)){body.replaceChildren(...v.aboutBody.map(p=>{const el=document.createElement('p');el.textContent=p;return el;}));} else if(body&&typeof v.aboutBody==='string'&&v.aboutBody.trim()){const paras=v.aboutBody.split(/\n\s*\n/); const lead=body.querySelector('.lead'); body.replaceChildren(); if(lead)body.append(lead); paras.forEach((p,i)=>{if(i===0&&p===v.aboutLead)return;const el=document.createElement('p');el.textContent=p;body.append(el);});}
-    if(Array.isArray(v.qualities))document.querySelectorAll('.qualities .quality p').forEach((el,i)=>{if(v.qualities[i])el.textContent=v.qualities[i];});
+    text('.intro-title h2',v.aboutHeading); text('.intro-copy .lead',v.aboutLead); if(v.momentsHeading&&v.momentsHeading!=='Photo journal.')text('#journalHeading',v.momentsHeading); text('.journal-heading>p',v.momentsIntro); text('.footer>p',v.footerText);renderBlogPosts(legacyPosts(v),v.journalOrder);
+    const body=document.querySelector('.intro-copy'); if(body&&Array.isArray(v.aboutBody)){body.replaceChildren(...v.aboutBody.map((p,i,all)=>{const el=document.createElement('p');el.textContent=p;if(i===all.length-1&&all.length>1)el.className='signature';return el;}));} else if(body&&typeof v.aboutBody==='string'&&v.aboutBody.trim()){const paras=v.aboutBody.split(/\n\s*\n/); const lead=body.querySelector('.lead'); body.replaceChildren(); if(lead)body.append(lead); paras.forEach((p,i)=>{if(i===0&&p===v.aboutLead)return;const el=document.createElement('p');el.textContent=p;if(i===paras.length-1&&paras.length>1)el.className='signature';body.append(el);});}
     const root=document.documentElement; if(v.accent)root.style.setProperty('--rose',['#778173','#2456d7','#315bff'].includes(v.accent.toLowerCase())?'#5f73a5':v.accent);
     document.body.dataset.theme=v.theme||'editorial';document.body.dataset.layout=v.layout||'left';document.body.dataset.songLayout=v.songLayout==='grid'?'grid':'masonry';
     root.style.setProperty('--song-card-padding',`${Math.max(12,Math.min(32,Number(v.songCardPadding)||24))}px`);
     const title=document.querySelector('.hero h1');if(title&&v.title){title.textContent=v.title;title.setAttribute('lang',/[\u0590-\u05FF]/.test(v.title)?'he':'en');}
     const logo=document.querySelector('.logo [lang="he"]');if(logo&&v.title)logo.textContent=v.title;
-    text('.hero-subtitle',v.subtitle);text('.hero-description',v.description);
+    {const s=document.querySelector('.hero-subtitle');if(s&&typeof v.subtitle==='string')s.textContent=v.subtitle;const d=document.querySelector('.hero-description');if(d&&typeof v.description==='string')setLines(d,v.description);}
     const hero=document.querySelector('.hero-image');
     if(hero){if(typeof v.image!=='string'||!v.image.trim()){hero.style.backgroundImage='';hero.style.backgroundSize='';hero.setAttribute('aria-label','Abstract blue and white hero artwork');}else try{const image=new URL(v.image);if(image.protocol!=='https:'||!image.hostname||image.username||image.password)throw new Error();hero.style.backgroundImage=`url("${image.href.replace(/"/g,'%22')}")`;hero.style.backgroundSize='cover';hero.style.backgroundPosition='center';hero.setAttribute('aria-label','Main photograph from the personal archive');}catch(_){hero.style.backgroundImage='';hero.style.backgroundSize='';hero.setAttribute('aria-label','Abstract blue and white hero artwork');}}
+    document.documentElement.style.setProperty('--hero-mobile-image',heroCssUrl(v.mobileImage));
     document.title=(v.title||'רואי')+' — Biggest Fan Archive';
   }
   function ensureCollectionSections(){
@@ -154,9 +171,9 @@
   function safeEmbedUrl(value){try{const url=new URL(value);if(url.protocol==='https:'&&!url.username&&!url.password&&((url.hostname==='open.spotify.com'&&url.pathname.startsWith('/embed/'))||(url.hostname==='www.youtube-nocookie.com'&&url.pathname.startsWith('/embed/'))))return url.href;}catch(_){}return null;}
   function renderSongs(items){ensureCollectionSections();const root=$('publicSongs');if(!root)return;root.replaceChildren();(items||[]).forEach(song=>{const embed=safeEmbedUrl(song.embed);if(!embed)return;const card=document.createElement('article');card.className='archive-song';const label=document.createElement('h3');label.textContent=song.label||song.title||'A song for you';const frame=document.createElement('iframe');frame.src=embed;frame.title=label.textContent;frame.loading='lazy';frame.allow='autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';frame.referrerPolicy='strict-origin-when-cross-origin';frame.style.width='100%';frame.style.border='0';frame.style.borderRadius='12px';frame.style.minHeight=song.kind==='spotify'?'152px':'190px';card.append(frame,label);root.append(card);});if(!items?.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='The soundtrack is waiting for its first song.';root.append(p);}window.archiveReveal(root);}
   function safeAudioUrl(value){try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password?u.href:null;}catch(_){return null;}}
-  function renderNoises(items){ensureCollectionSections();const root=$('publicNoises');if(!root)return;root.replaceChildren();(items||[]).forEach(noise=>{const url=safeAudioUrl(noise.url);if(!url)return;const row=document.createElement('article');row.className='archive-noise';const icon=document.createElement('span');icon.className='noise-mark';icon.setAttribute('aria-hidden','true');icon.textContent='▂▅▇▅▃';const body=document.createElement('div');body.className='noise-content';const title=document.createElement('h3');title.textContent=noise.title||'Untitled recording';const caption=document.createElement('p');caption.className='noise-caption';caption.textContent=noise.caption||'';const player=document.createElement('audio');player.controls=true;player.preload='none';player.src=url;player.setAttribute('aria-label','Play '+title.textContent);body.append(title);if(caption.textContent)body.append(caption);if(noise.date){const date=document.createElement('time');date.className='noise-date';date.dateTime=noise.date;date.textContent=noise.date;body.append(date);}body.append(player);row.append(icon,body);root.append(row);});if(!root.children.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='No sounds in the archive yet.';root.append(p);}window.archiveReveal(root);}
+  function renderNoises(items){ensureCollectionSections();const root=$('publicNoises');if(!root)return;root.replaceChildren();(items||[]).forEach(noise=>{const url=safeAudioUrl(noise.url);if(!url)return;const row=document.createElement('article');row.className='archive-noise';const icon=document.createElement('span');icon.className='noise-mark';icon.setAttribute('aria-hidden','true');icon.textContent='▂▅▇▅▃';const body=document.createElement('div');body.className='noise-content';const title=document.createElement('h3');title.textContent=noise.title||'Untitled recording';const caption=document.createElement('p');caption.className='noise-caption';caption.textContent=noise.caption||'';const player=document.createElement('audio');player.controls=true;player.preload='none';player.src=url;retryMedia(player);player.setAttribute('aria-label','Play '+title.textContent);body.append(title);if(caption.textContent)body.append(caption);if(noise.date){const date=document.createElement('time');date.className='noise-date';date.dateTime=noise.date;date.textContent=noise.date;body.append(date);}body.append(player);row.append(icon,body);root.append(row);});if(!root.children.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='No sounds in the archive yet.';root.append(p);}window.archiveReveal(root);}
   function renderThoughts(items){ensureCollectionSections();const root=$('publicThoughts');if(!root)return;root.replaceChildren();(items||[]).forEach(t=>{const card=document.createElement('article');card.className='archive-thought';const mark=document.createElement('span');mark.className='archive-thought-index';mark.textContent='—';const p=document.createElement('p');p.textContent=t.text;card.append(mark,p);root.append(card);});if(!items?.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='A few observations are waiting to be added.';root.append(p);}window.archiveReveal(root);}
-  async function loadContent(){ensureCollectionSections();if(adminPreviewActive)return;try{const response=await fetch(new URL('archive-data.json',location.href),{cache:'no-store'});if(response.ok){const content=await response.json();if(content&&typeof content==='object'){apply(content);renderSongs(content.songs||[]);renderNoises(content.noises||[]);renderThoughts(content.thoughts||[]);return;}}}catch(error){console.warn('GitHub archive file is not available yet; using the initial Supabase copy.',error);}try{const {data,error}=await db.from('archive_content').select('content').eq('id',true).maybeSingle();if(error)throw error;if(data?.content){apply(data.content);renderSongs(data.content.songs||[]);renderNoises(data.content.noises||[]);renderThoughts(data.content.thoughts||[]);}else{renderSongs([]);renderNoises([]);renderThoughts([]);}}catch(error){console.error('Could not load archive content:',error);renderSongs([]);renderNoises([]);renderThoughts([]);}}
+  async function loadContent(){ensureCollectionSections();if(adminPreviewActive)return;try{const response=await fetch(new URL('archive-data.json',location.href),{cache:'no-store'});if(response.ok){const content=await response.json();if(content&&typeof content==='object'){apply(content);renderSongs(content.songs||[]);renderNoises(content.noises||[]);renderThoughts(content.thoughts||[]);return;}}}catch(error){console.warn('GitHub archive file is not available yet; using the initial Supabase copy.',error);}if(!db){renderSongs([]);renderNoises([]);renderThoughts([]);return;}try{const {data,error}=await db.from('archive_content').select('content').eq('id',true).maybeSingle();if(error)throw error;if(data?.content){apply(data.content);renderSongs(data.content.songs||[]);renderNoises(data.content.noises||[]);renderThoughts(data.content.thoughts||[]);}else{renderSongs([]);renderNoises([]);renderThoughts([]);}}catch(error){console.error('Could not load archive content:',error);renderSongs([]);renderNoises([]);renderThoughts([]);}}
   window.addEventListener('message',event=>{
     if(window.parent===window||event.source!==window.parent||event.origin!==location.origin||event.data?.type!=='biggest-fan-admin-preview')return;
     const content=event.data.content;if(!content||typeof content!=='object')return;
@@ -164,15 +181,27 @@
     apply(content);renderSongs(content.songs||[]);renderNoises(content.noises||[]);renderThoughts(content.thoughts||[]);
   });
   function makeComment(c){const article=document.createElement('article');article.className='guest-note';const avatar=document.createElement('span');avatar.className='note-avatar';avatar.textContent=(c.display_name?.[0]||'•').toUpperCase();const body=document.createElement('div'),meta=document.createElement('div');meta.className='guest-meta';const name=document.createElement('strong');name.textContent=c.display_name;const time=document.createElement('time');time.textContent=new Date(c.created_at).toLocaleDateString();const msg=document.createElement('p');msg.textContent=c.message;meta.append(name,time);body.append(meta,msg);article.append(avatar,body);return article;}
-  async function loadComments(){const list=$('guestbookList');if(!list)return;const {data,error}=await db.from('archive_comments').select('id,display_name,message,created_at').eq('approved',true).order('created_at',{ascending:false}).limit(30);if(error)return;list.replaceChildren();(data||[]).forEach(c=>list.append(makeComment(c)));}
-  document.addEventListener('DOMContentLoaded',()=>{
+  async function loadComments(){const list=$('guestbookList');if(!list||!db)return;const {data,error}=await db.from('archive_comments').select('id,display_name,message,created_at').eq('approved',true).order('created_at',{ascending:false}).limit(30);if(error)return;list.replaceChildren();(data||[]).forEach(c=>list.append(makeComment(c)));}
+  const init=()=>{
     loadContent();loadComments();
-    const form=$('guestbookForm');if(!form)return;
-    form.addEventListener('submit',async e=>{e.preventDefault();e.stopImmediatePropagation();const name=$('guestName').value.trim().replace(/\s+/g,' ').slice(0,32),message=$('guestMessage').value.trim().slice(0,240),status=$('formStatus');if(!name||!message)return;
-      const button=form.querySelector('button[type="submit"]');if(button)button.disabled=true;status.textContent='Sending your note for review…';
-      const {error}=await db.from('archive_comments').insert({display_name:name,message,approved:false});if(button)button.disabled=false;
-      if(error){status.textContent='Could not send the note. Please try again later.';return;}form.reset();$('charCount').textContent='0 / 240';status.textContent='Thank you — your note was sent for approval.';
-    },true);
+    const form=$('guestbookForm');
+    if(form)form.addEventListener('submit',async e=>{
+      e.preventDefault();
+      const status=$('formStatus'),button=form.querySelector('button[type="submit"]');
+      if(!db){status.textContent='Guestbook submissions are temporarily unavailable. Please try again later.';return;}
+      if($('guestWebsite')?.value){form.reset();status.textContent='Thank you — your note was sent for approval.';return;}
+      let last=0;try{last=Number(localStorage.getItem('archiveLastNote')||0);}catch(_){}
+      if(Date.now()-last<60000){status.textContent='Please wait a minute before sending another note.';return;}
+      const name=$('guestName').value.trim().replace(/\s+/g,' ').slice(0,32),message=$('guestMessage').value.trim().slice(0,240);
+      if(!name||!message)return;
+      if(button)button.disabled=true;status.textContent='Sending your note for review…';
+      const {error}=await db.from('archive_comments').insert({display_name:name,message,approved:false});
+      if(button)button.disabled=false;
+      if(error){status.textContent='Could not send the note. Please try again later.';return;}
+      try{localStorage.setItem('archiveLastNote',String(Date.now()));}catch(_){}
+      form.reset();$('charCount').textContent='0 / 240';status.textContent='Thank you — your note was sent for approval.';
+    });
     if(window.parent!==window)window.parent.postMessage({type:'biggest-fan-preview-ready'},location.origin==='null'?'*':location.origin);
-  });
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
