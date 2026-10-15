@@ -20,7 +20,7 @@
     <a class="logo" href="#home"><span lang="he">רואי</span><span class="logo-heart" aria-hidden="true">/</span></a>
     <button class="menu-toggle" aria-label="Open navigation" aria-expanded="false"><span></span><span></span></button>
     <nav class="nav" aria-label="Main navigation">
-      <a href="#moments">Journal</a><a href="#about">About</a><a href="#notes">Notes</a><a href="#guestbook">Contact</a>
+      <a href="#about">About</a><a href="#moments">Journal</a><a href="#songsSection">Songs</a><a href="#notes">Notes</a><a href="#guestbook">Contact</a>
     </nav>
     <a class="header-link" href="#guestbook">LEAVE A NOTE <span>↗</span></a>
   </header>
@@ -57,6 +57,12 @@
       <div class="blog-grid" id="blogPosts" aria-live="polite"><p class="collection-empty">Photo posts will appear here.</p></div>
     </section>
 
+    <section class="section archive-collection songs-section" id="songsSection" aria-labelledby="songsHeading">
+      <div class="section-label"><span>03</span><span>AUDIO INDEX</span></div>
+      <div class="section-heading"><h2 id="songsHeading">Soundtrack.</h2><p>Tracks and listening notes from the archive.</p></div>
+      <div id="publicSongs" class="archive-song-grid" aria-live="polite"><p class="collection-empty">The soundtrack is waiting for its first song.</p></div>
+    </section>
+
     <section class="section archive-collection" id="notes" aria-labelledby="notesHeading">
       <div class="section-label"><span>04</span><span>TEXT INDEX</span></div>
       <div class="section-heading"><h2 id="notesHeading">Notes.</h2><p>Short observations, gathered along the way.</p></div>
@@ -69,7 +75,7 @@
         <div class="guestbook-heading"><h2>Leave a<br><em>line.</em></h2><p>A few words from visitors become part of the archive.</p><div class="guestbook-stamp">OPEN<br>CONTRIBUTIONS <span>↗</span></div></div>
         <div class="guestbook-content">
           <form id="guestbookForm" class="guestbook-form"><label for="guestName">YOUR NAME OR NICKNAME</label><input id="guestName" name="guestName" maxlength="32" placeholder="Name" required><label for="guestMessage">YOUR NOTE</label><textarea id="guestMessage" name="guestMessage" aria-describedby="charCount" maxlength="240" rows="3" placeholder="Add a note to the collection..." required></textarea><div class="form-footer"><span id="charCount" aria-live="off">0 / 240</span><button type="submit">Add a note <span>↗</span></button></div><p id="formStatus" role="status" class="form-status"></p></form>
-          <div class="guestbook-list" id="guestbookList" aria-live="polite"><article class="guest-note"><span class="note-avatar">A</span><div><div class="guest-meta"><strong>Archive visitor</strong><time>recently</time></div><p>By the time the light turns, the whole street has changed.</p></div></article><article class="guest-note"><span class="note-avatar avatar-sage">M</span><div><div class="guest-meta"><strong>Archive visitor</strong><time>recently</time></div><p>Some places stay with you long after you leave them.</p></div></article></div>
+          <div class="guestbook-list" id="guestbookList" aria-live="polite"><p class="collection-empty">No approved visitor notes yet.</p></div>
           <p class="privacy-note">Comments are shared after approval. Please keep notes kind and respectful.</p>
         </div>
       </div>
