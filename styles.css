@@ -528,3 +528,11 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex}
   }
 }
 
+/* Songs: 2 columns on desktop, 1 column on mobile */
+.songs-section .archive-song-grid{columns:2;column-gap:16px}
+body[data-song-layout="grid"] .songs-section .archive-song-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+@media(max-width:620px){
+  .songs-section .archive-song-grid{columns:1;column-gap:0}
+  body[data-song-layout="grid"] .songs-section .archive-song-grid{grid-template-columns:minmax(0,1fr)}
+}
