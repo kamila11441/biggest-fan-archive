@@ -297,11 +297,97 @@ body::before{height:2px;opacity:.45}.hero-image{background:radial-gradient(circl
 .footer{margin:22px 12px 12px;border-radius:24px;overflow:hidden}
 @media(max-width:620px){.footer{margin:22px 8px 12px;border-radius:22px}}
 
-/* Homepage photo treatment: soft cloud forms under a translucent atmospheric veil. */
-.hero-image{isolation:isolate}
-.hero-image:before{inset:-12%;clip-path:none;opacity:.62;filter:blur(22px);background:radial-gradient(ellipse 34% 18% at 18% 29%,#ffffffb8 0%,#ffffff66 34%,transparent 75%),radial-gradient(ellipse 32% 20% at 44% 18%,#f7fbffd4 0%,#ffffff72 38%,transparent 76%),radial-gradient(ellipse 38% 21% at 75% 28%,#ffffffbd 0%,#f5f8ff66 38%,transparent 78%),radial-gradient(ellipse 42% 18% at 55% 49%,#dce7f1a8 0%,transparent 75%);z-index:1;pointer-events:none}
-.hero-image:after{inset:0;opacity:1;background:linear-gradient(115deg,#111b2b52 0%,#dce5ee24 47%,#dbe5f138 100%),linear-gradient(0deg,#151e2a4a 0%,transparent 34%);z-index:2;pointer-events:none}
-.hero-overlay{z-index:3}
-.hero-content,.hero-index,.hero-side-note{z-index:4}
+/* More visible hero photo with a lighter cloud treatment */
+.hero-image {
+  isolation: isolate;
+}
 
+.hero-image:before {
+  inset: -12%;
+  clip-path: none;
+  opacity: .30;
+  filter: blur(20px);
+  background:
+    radial-gradient(ellipse 34% 18% at 18% 29%, #ffffff70 0%, #ffffff38 36%, transparent 76%),
+    radial-gradient(ellipse 32% 20% at 44% 18%, #f7fbff80 0%, #ffffff40 40%, transparent 78%),
+    radial-gradient(ellipse 38% 21% at 75% 28%, #ffffff70 0%, #f5f8ff38 38%, transparent 78%),
+    radial-gradient(ellipse 42% 18% at 55% 49%, #dce7f15a 0%, transparent 75%);
+  z-index: 1;
+  pointer-events: none;
+}
 
+.hero-image:after {
+  inset: 0;
+  opacity: .55;
+  background:
+    linear-gradient(115deg, #111b2b24 0%, #dce5ee12 47%, #dbe5f11c 100%),
+    linear-gradient(0deg, #151e2a24 0%, transparent 64%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.hero-overlay {
+  z-index: 3;
+  background:
+    linear-gradient(90deg, #f9fbfe66 0%, #f9fbfe30 45%, transparent 87%),
+    linear-gradient(0deg, #f5f8fc40, transparent 50%);
+}
+
+.hero-content,
+.hero-index,
+.hero-side-note {
+  z-index: 4;
+}
+/* Refined song masonry and caption typography */
+.songs-section .archive-song {
+  display: inline-block;
+  vertical-align: top;
+  width: 100%;
+  margin: 0 0 16px;
+  padding: var(--song-card-padding, 24px);
+  text-align: center;
+  break-inside: avoid;
+}
+
+.songs-section .archive-song iframe {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.songs-section .archive-song h3 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 68px;
+  width: 100%;
+  margin: 12px 0 0;
+  padding: 14px 8px;
+  font-family: var(--sans);
+  font-size: clamp(13px, 1.4vw, 17px);
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+body[data-song-layout="grid"] .songs-section .archive-song {
+  display: flex;
+}
+
+@media (max-width: 620px) {
+  .songs-section .archive-song {
+    margin-bottom: 12px;
+    padding: var(--song-card-padding, 24px);
+  }
+
+  .songs-section .archive-song h3 {
+    min-height: 62px;
+    margin-top: 10px;
+    padding: 12px 6px;
+    font-size: 13px;
+  }
+}
