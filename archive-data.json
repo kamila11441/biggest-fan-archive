@@ -81,14 +81,8 @@
   "aboutBody": "This archive gathers photographs, music, and brief notes from shared places and familiar routines.\n\nSome days return as a particular light through a window; others arrive by way of a song heard again years later.\n\nA collection still in progress.",
   "momentsHeading": "Photo journal.",
   "momentsIntro": "Images, captions, and dates. One entry at a time.",
-  "qualities": [
-    "places",
-    "people",
-    "sound",
-    "observations",
-    "details"
-  ],
-  "footerText": "A personal archive of photographs, music, and notes.",
+  "qualities": [],
+  "footerText": "",
   "theme": "noir",
   "layout": "left",
   "accent": "#536593",
