@@ -210,7 +210,7 @@
     const description=document.querySelector('.hero-description');
     if(description)description.textContent=v.description||'';
     const image=document.querySelector('.hero-image');
-    if(image){image.style.backgroundImage=v.image?`linear-gradient(90deg,#0003,transparent),url("${v.image.replace(/"/g,'%22')}")`:'';image.style.backgroundSize=v.image?'cover':'';image.style.backgroundPosition='center';image.setAttribute('aria-label',v.image?'Main photograph from the personal archive':'Abstract blue and white hero artwork');}
+    if(image){image.style.backgroundImage=v.image?`url("${v.image.replace(/"/g,'%22')}")`:'';image.style.backgroundSize=v.image?'cover':'';image.style.backgroundPosition='center';image.setAttribute('aria-label',v.image?'Main photograph from the personal archive':'Abstract blue and white hero artwork');}
     const logo=document.querySelector('.logo [lang="he"]'); if(logo)logo.textContent=v.title||'רואי';
     const titleTag=document.querySelector('title');if(titleTag)titleTag.textContent=(v.title||'רואי')+' — Biggest Fan Archive';
   }
