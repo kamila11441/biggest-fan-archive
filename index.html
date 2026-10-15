@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f4f1ea">
-  <meta name="description" content="A personal archive of photographs, songs, and notes for רואי.">
+  <meta name="theme-color" content="#f4f7fb">
+  <meta name="description" content="A photo journal and personal archive of images, songs, and notes for רואי.">
   <title>רואי — Biggest Fan Archive</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,7 @@
     <a class="logo" href="#home"><span lang="he">רואי</span><span class="logo-heart" aria-hidden="true">/</span></a>
     <button class="menu-toggle" aria-label="Open navigation" aria-expanded="false"><span></span><span></span></button>
     <nav class="nav" aria-label="Main navigation">
-      <a href="#moments">Work</a><a href="#about">About</a><a href="#notes">Notes</a><a href="#guestbook">Contact</a>
+      <a href="#moments">Journal</a><a href="#about">About</a><a href="#notes">Notes</a><a href="#guestbook">Contact</a>
     </nav>
     <a class="header-link" href="#guestbook">LEAVE A NOTE <span>↗</span></a>
   </header>
@@ -40,17 +40,6 @@
       <div class="hero-side-note">the day leaves<br>its trace.</div>
     </section>
 
-    <section class="featured-reel" aria-label="Featured frames">
-      <div class="reel-heading"><span>FEATURED FRAMES / 05 ENTRIES</span><div class="reel-controls"><button type="button" data-reel-move="-1" aria-label="Scroll featured frames left">←</button><button type="button" data-reel-move="1" aria-label="Scroll featured frames right">→</button></div></div>
-      <div class="feature-track" id="featureTrack">
-        <a class="feature-card" href="#frame-001"><span class="feature-art sunset-art"></span><small>FRAME 001 / PLACE</small></a>
-        <a class="feature-card" href="#frame-002"><span class="feature-art window-art"></span><small>FRAME 002 / INTERIOR</small></a>
-        <a class="feature-card" href="#frame-003"><span class="feature-art music-art"></span><small>ENTRY 003 / SOUND</small></a>
-        <a class="feature-card" href="#frame-004"><span class="feature-art leaves-art"></span><small>FRAME 004 / OUTDOORS</small></a>
-        <a class="feature-card" href="#frame-005"><span class="feature-art night-art"></span><small>FRAME 005 / EVENING</small></a>
-      </div>
-    </section>
-
     <section class="intro section" id="about">
         <div class="section-label"><span>01</span><span>ABOUT THE ARCHIVE</span></div>
       <div class="intro-grid">
@@ -62,34 +51,20 @@
       </div>
     </section>
 
-    <section class="moments section" id="moments">
-      <div class="section-label"><span>02</span><span>THE COLLECTION</span></div>
-      <div class="section-heading"><h2>Selected <em>frames.</em></h2><p>Photographs and fragments from the archive.</p></div>
-      <div class="work-filters" role="group" aria-label="Filter the collection"><button type="button" data-gallery-filter="all" aria-pressed="true">All</button><button type="button" data-gallery-filter="places" aria-pressed="false">Places</button><button type="button" data-gallery-filter="sound" aria-pressed="false">Sound</button><button type="button" data-gallery-filter="notes" aria-pressed="false">Notes</button></div>
-      <div class="gallery">
-        <button class="gallery-item gallery-large" id="frame-001" data-category="places" data-caption="Last light along the water." aria-label="View waterside photograph"><span class="gallery-art sunset-art"><i></i></span><span class="gallery-caption"><small>FRAME 001 / PLACE</small><strong>Last light along the water.</strong><b>↗</b></span></button>
-        <button class="gallery-item" id="frame-002" data-category="places" data-caption="Morning light, before the city stirred." aria-label="View interior photograph"><span class="gallery-art window-art"><i></i></span><span class="gallery-caption"><small>FRAME 002 / INTERIOR</small><strong>Before the city stirred.</strong><b>↗</b></span></button>
-        <button class="gallery-item" id="frame-003" data-category="sound" data-caption="A familiar song, heard anew." aria-label="View music entry"><span class="gallery-art music-art"><i>♫</i></span><span class="gallery-caption"><small>ENTRY 003 / SOUND</small><strong>A song heard anew.</strong><b>↗</b></span></button>
-        <button class="gallery-item" id="frame-004" data-category="notes" data-caption="Green after the rain." aria-label="View nature photograph"><span class="gallery-art leaves-art"><i></i></span><span class="gallery-caption"><small>FRAME 004 / OUTDOORS</small><strong>Green after the rain.</strong><b>↗</b></span></button>
-        <button class="gallery-item gallery-wide" id="frame-005" data-category="places" data-caption="The same sky, seen on another afternoon." aria-label="View evening sky photograph"><span class="gallery-art night-art"><i>✧　·　✦　·　✧</i></span><span class="gallery-caption"><small>FRAME 005 / EVENING</small><strong>Another afternoon under the same sky.</strong><b>↗</b></span></button>
-      </div>
-      <p class="gallery-note">An index of places, sounds, and passing details.</p>
+    <section class="photo-journal section" id="moments" aria-labelledby="journalHeading">
+      <div class="section-label"><span>02</span><span>PHOTO JOURNAL / LATEST ENTRIES</span></div>
+      <div class="section-heading journal-heading"><div><p class="journal-kicker">A LIVING ARCHIVE</p><h2 id="journalHeading">Photo<br><em>journal.</em></h2></div><p>Images, captions, and dates.<br>One entry at a time.</p></div>
+      <div class="blog-grid" id="blogPosts" aria-live="polite"><p class="collection-empty">Photo posts will appear here.</p></div>
     </section>
 
-    <section class="notes-section section" id="notes">
-      <div class="section-label"><span>03</span><span>NOTES FROM THE MARGIN</span></div>
-      <div class="notes-layout"><div><h2>Field<br><em>notes.</em></h2><p class="notes-intro">Short observations, gathered along the way.</p></div>
-        <div class="note-list">
-          <article class="note"><span class="note-number">01</span><div><h3>Light changes the room.</h3><p>By late afternoon, even familiar walls hold a different story.</p></div><span class="note-symbol">↗</span></article>
-          <article class="note"><span class="note-number">02</span><div><h3>Places keep their weather.</h3><p>A street can bring back the temperature of a day, years later.</p></div><span class="note-symbol">↗</span></article>
-          <article class="note"><span class="note-number">03</span><div><h3>Some songs mark a season.</h3><p>One opening note, and the old light comes back.</p></div><span class="note-symbol">↗</span></article>
-          <article class="note"><span class="note-number">04</span><div><h3>The ordinary is never empty.</h3><p>Look closer: there is always something changing at the edges.</p></div><span class="note-symbol">↗</span></article>
-        </div>
-      </div>
+    <section class="section archive-collection" id="notes" aria-labelledby="notesHeading">
+      <div class="section-label"><span>04</span><span>TEXT INDEX</span></div>
+      <div class="section-heading"><h2 id="notesHeading">Notes.</h2><p>Short observations, gathered along the way.</p></div>
+      <div id="publicThoughts" class="archive-thought-grid"></div>
     </section>
 
     <section class="guestbook-section section" id="guestbook">
-      <div class="section-label"><span>04</span><span>GUESTBOOK / CONTRIBUTIONS</span></div>
+      <div class="section-label"><span>05</span><span>GUESTBOOK / CONTRIBUTIONS</span></div>
       <div class="guestbook-layout">
         <div class="guestbook-heading"><h2>Leave a<br><em>line.</em></h2><p>A few words from visitors become part of the archive.</p><div class="guestbook-stamp">OPEN<br>CONTRIBUTIONS <span>↗</span></div></div>
         <div class="guestbook-content">
@@ -103,6 +78,6 @@
 
   <footer class="footer"><a href="#home" class="footer-logo" lang="he">רואי <span>/</span></a><p>A personal archive of photographs, music, and notes.</p><a href="admin.html" class="back-top">ADMIN ↗</a><a href="#home" class="back-top">BACK TO THE TOP ↑</a><div class="footer-bottom"><span>רואי / ARCHIVE</span><span>PHOTOGRAPHS · AUDIO · TEXT</span><span>© <span id="year"></span></span></div></footer>
 
-  <dialog class="lightbox" id="lightbox" aria-labelledby="lightboxCaption"><button class="lightbox-close" aria-label="Close preview">×</button><div class="lightbox-art" id="lightboxArt"></div><p id="lightboxCaption"></p></dialog>
+  <dialog class="photo-lightbox" id="photoLightbox" aria-labelledby="photoLightboxCaption"><button class="lightbox-close" aria-label="Close photo preview">×</button><img id="photoLightboxImage" alt=""><p id="photoLightboxCaption"></p></dialog>
 </body>
 </html>
