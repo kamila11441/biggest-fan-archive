@@ -190,17 +190,18 @@
   });
 
   const VISUAL_KEY = 'biggestFanArchiveVisuals';
-  const visualDefaults = {theme:'noir',layout:'left',accent:'#5f73a5',background:'#ffffff',text:'#090a0c',title:'רואי',subtitle:'A study of ordinary days.',description:'Light shifts across familiar places. A song returns with the weather.',image:''};
+  const visualDefaults = {theme:'noir',layout:'left',accent:'#5f73a5',background:'#ffffff',text:'#090a0c',title:'רואי',subtitle:'A study of ordinary days.',description:'Light shifts across familiar places. A song returns with the weather.',image:'',songLayout:'masonry',songCardPadding:24};
   let visuals = {...visualDefaults};
   try { visuals = {...visualDefaults, ...JSON.parse(localStorage.getItem(VISUAL_KEY) || '{}')}; } catch (_) {}
   if(['#778173','#2456d7','#315bff'].includes((visuals.accent||'').toLowerCase()))visuals.accent='#5f73a5';
-  const visualEls = {accent:'accentColor',title:'heroTitle',subtitle:'heroSubtitle',description:'heroDescription',image:'heroImageUrl'};
+  const visualEls = {accent:'accentColor',title:'heroTitle',subtitle:'heroSubtitle',description:'heroDescription',image:'heroImageUrl',songLayout:'songLayout',songCardPadding:'songCardPadding'};
   function applyVisuals(v) {
     const body=document.body;
     body.dataset.theme=v.theme==='noir'?'noir':v.theme;
-    body.dataset.layout=v.layout||'center';
+    body.dataset.layout=v.layout||'center';body.dataset.songLayout=v.songLayout==='grid'?'grid':'masonry';
     const root=document.documentElement;
     root.style.setProperty('--rose',v.accent||visualDefaults.accent);
+    root.style.setProperty('--song-card-padding',`${Math.max(12,Math.min(32,Number(v.songCardPadding)||24))}px`);
     const title=document.querySelector('.hero h1');
     if(title){title.textContent=v.title||'רואי';title.setAttribute('lang',/[\u0590-\u05FF]/.test(v.title||'')?'he':'en');}
     const subtitle=document.querySelector('.hero-subtitle');
@@ -213,7 +214,7 @@
     const titleTag=document.querySelector('title');if(titleTag)titleTag.textContent=(v.title||'רואי')+' — Biggest Fan Archive';
   }
   function readVisualInputs(){
-    return {theme:'noir',layout:'left',accent:$('accentColor').value,background:'#ffffff',text:'#090a0c',title:$('heroTitle').value.trim()||'רואי',subtitle:$('heroSubtitle').value.trim(),description:$('heroDescription').value.trim(),image:$('heroImageUrl').value.trim()};
+    return {theme:'noir',layout:'left',accent:$('accentColor').value,background:'#ffffff',text:'#090a0c',title:$('heroTitle').value.trim()||'רואי',subtitle:$('heroSubtitle').value.trim(),description:$('heroDescription').value.trim(),image:$('heroImageUrl').value.trim(),songLayout:$('songLayout')?.value||'masonry',songCardPadding:Number($('songCardPadding')?.value||24)};
   }
   function fillVisualInputs(){
     Object.entries(visualEls).forEach(([key,id])=>{if($(id))$(id).value=visuals[key]||visualDefaults[key]||'';});
@@ -242,6 +243,7 @@
     finally{input.disabled=false;input.value='';}
   });
   Object.values(visualEls).forEach(id=>{const el=$(id);if(el){el.addEventListener('input',()=>{visuals=readVisualInputs();applyVisuals(visuals);if(id==='heroImageUrl')updateImagePreview();});el.addEventListener('change',()=>{visuals=readVisualInputs();applyVisuals(visuals);});}});
+  $('songCardPadding')?.addEventListener('input',event=>{const label=$('songCardPaddingValue');if(label)label.value=`${event.currentTarget.value} px`;});
 
   function colorLuminance(hex){
     const parts=(hex.match(/[0-9a-f]{2}/ig)||[]).map(v=>parseInt(v,16)/255);
@@ -309,7 +311,7 @@
     momentsHeading:'Photo journal.', momentsIntro:'Images, captions, and dates. One entry at a time.',
     qualities:['places','people','sound','observations','details'],
     footerText:'A personal archive of photographs, music, and notes.',
-    theme:'editorial',layout:'left',accent:'#5f73a5',background:'#f4f7fb',text:'#111827'
+    theme:'editorial',layout:'left',accent:'#5f73a5',background:'#f4f7fb',text:'#111827',songLayout:'masonry',songCardPadding:24
   };
   function validPostUrl(value){try{const u=new URL(value);return u.protocol==='https:'&&u.hostname&&!u.username&&!u.password?u.href:null;}catch(_){return null;}}
   function normalizeContent(value={}){
@@ -318,6 +320,7 @@
     if(!value?.accent||['#778173','#2456d7','#315bff'].includes(String(value.accent).toLowerCase()))next.accent='#5f73a5';
     if(!value?.background||value.background==='#f4f1ea')next.background='#f4f7fb';
     if(!value?.text||value.text==='#292a27')next.text='#111827';
+    next.songLayout=value?.songLayout==='grid'?'grid':'masonry';next.songCardPadding=Math.max(12,Math.min(32,Number(value?.songCardPadding)||24));
     if(!value?.navMoments||['Work','Moments'].includes(value.navMoments))next.navMoments='Journal';
     if(!value?.momentsHeading||value.momentsHeading==='Selected frames.')next.momentsHeading='Photo journal.';
     if(!value?.momentsIntro||value.momentsIntro==='Photographs and fragments from the archive.')next.momentsIntro='Images, captions, and dates. One entry at a time.';
@@ -335,6 +338,9 @@
     if ($('backgroundColor')) setVal('backgroundColor', cloud.background || '#f4f7fb');
     if ($('textColor')) setVal('textColor', cloud.text || '#111827');
     setVal('heroTitle', cloud.title || 'רואי'); setVal('heroSubtitle', cloud.subtitle || 'A study of ordinary days.'); setVal('heroDescription', cloud.description || 'Light shifts across familiar places. A song returns with the weather.'); setVal('heroImageUrl', cloud.image || '');
+    setVal('songLayout',cloud.songLayout==='grid'?'grid':'masonry');setVal('songCardPadding',Math.max(12,Math.min(32,Number(cloud.songCardPadding)||24)));
+    const spacing=$('songCardPaddingValue');if(spacing)spacing.value=`${$('songCardPadding').value} px`;
+    visuals={...visuals,...cloud};applyVisuals(visuals);
     renderAdminPhotoPosts(cloud.blogPosts);
   }
   function readFields() {
@@ -348,6 +354,7 @@
     result.theme='noir'; result.layout='left';
     result.accent=$('accentColor')?.value || '#5f73a5'; result.background='#ffffff'; result.text='#090a0c';
     result.title=$('heroTitle')?.value || 'רואי'; result.subtitle=$('heroSubtitle')?.value || ''; result.description=$('heroDescription')?.value || ''; result.image=$('heroImageUrl')?.value || '';
+    result.songLayout=$('songLayout')?.value==='grid'?'grid':'masonry';result.songCardPadding=Math.max(12,Math.min(32,Number($('songCardPadding')?.value)||24));
     return result;
   }
   const previewFrame=$('pagePreview');
@@ -371,7 +378,7 @@
     ordered.forEach(post=>{const row=document.createElement('article');row.className='admin-item photo-post-admin-item';const img=document.createElement('img');img.className='photo-post-thumb';img.src=validPostUrl(post.image)||'';img.alt='';img.loading='lazy';const main=document.createElement('div');main.className='admin-item-main';const title=document.createElement('div');title.className='admin-item-title';title.textContent=post.caption||'Untitled photo';const meta=document.createElement('div');meta.className='admin-item-meta';meta.textContent=post.date||'Undated archive';main.append(title,meta);const actions=document.createElement('div');actions.className='admin-item-actions';const remove=document.createElement('button');remove.type='button';remove.className='small-action danger';remove.textContent='Delete';remove.setAttribute('aria-label',`Delete photo post: ${post.caption||'Untitled photo'}`);remove.addEventListener('click',()=>deletePhotoPost(post));actions.append(remove);row.append(img,main,actions);root.append(row);});
   }
   async function readSupabaseContent(){const {data,error}=await db.from('archive_content').select('content').eq('id',true).single();if(error)throw error;return normalizeContent(data?.content||cloud);}
-  async function readLatestContent(){if(window.archiveGitHub?.connected){const content=await window.archiveGitHub.getJson('archive-data.json');if(!content)throw new Error('Copy the existing Supabase archive to GitHub first.');return normalizeContent(content);}if(archiveFromGitHub)throw new Error('Reconnect GitHub on the admin sign-in screen before editing the archive.');return readSupabaseContent();}
+  async function readLatestContent(){if(window.archiveGitHub?.connected){const content=await window.archiveGitHub.getJson('archive-data.json');if(!content)throw new Error('Copy the existing archive to GitHub once before editing it.');return normalizeContent(content);}if(archiveFromGitHub)throw new Error('Reconnect GitHub in the admin dashboard before editing the archive.');return readSupabaseContent();}
   async function persistPhotoPost(post){
     if(!window.archiveGitHub?.connected||!contentLoaded)throw new Error('Connect GitHub before publishing photo posts.');
     const next=await readLatestContent();next.blogPosts=[...(next.blogPosts||[]),post].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
@@ -419,7 +426,7 @@
     archiveFromGitHub=githubSource;fillFields(content);
     contentLoaded = true;
     window.dispatchEvent(new CustomEvent('archive-content-loaded',{detail:{content:cloud,githubSource}}));
-    if(githubSource){const status=$('githubStorageStatus');if(status)status.textContent=window.archiveGitHub?.connected?'Loaded archive-data.json from GitHub. Your session is connected for publishing.':'Loaded archive-data.json from GitHub Pages. Connect on the sign-in screen to publish edits.';$('copyArchiveToGitHub').disabled=true;}
+    if(githubSource){const status=$('githubStorageStatus');if(status)status.textContent=window.archiveGitHub?.connected?'Loaded archive-data.json from GitHub. Content and media are ready to publish from admin.':'Loaded archive-data.json from GitHub Pages. Connect GitHub here to publish edits.';$('copyArchiveToGitHub').disabled=true;}
     else if($('copyArchiveToGitHub')){$('copyArchiveToGitHub').disabled=!window.archiveGitHub?.connected;const status=$('githubStorageStatus');if(status&&window.archiveGitHub?.connected)status.textContent='Current content is still in Supabase. Copy it once to GitHub to make GitHub the archive source.';}
     sendPreview();
     await loadComments();
@@ -432,13 +439,13 @@
       const imageUrls=[next.image,...(next.blogPosts||[]).map(post=>post.image)].filter(Boolean);
       if(imageUrls.some(value=>!validPostUrl(value)))throw new Error('Images must use public HTTPS URLs.');
       status.textContent='Publishing…';
-      if(!window.archiveGitHub?.connected)throw new Error('Connect GitHub on the admin sign-in screen before publishing.');
+      if(!window.archiveGitHub?.connected)throw new Error('Connect GitHub in the admin dashboard before publishing.');
       await window.archiveGitHub.putJson('archive-data.json',next,'Update archive content');
       const previousMedia=window.archiveGitHub.repoPathFromPagesUrl(cloud.image||'');
       const nextMedia=window.archiveGitHub.repoPathFromPagesUrl(next.image||'');
       cloud=next;archiveFromGitHub=true; status.textContent='Published to the shared site.';$('visualStatus').textContent='Visual settings published for all visitors.';
       if(previousMedia&&previousMedia!==nextMedia)try{await window.archiveGitHub.delete(previousMedia,'Remove replaced hero image');}catch(error){$('visualStatus').textContent='Content is published, but the replaced hero image could not be removed from the repository.';}
-      try{localStorage.setItem('biggestFanArchiveVisuals', JSON.stringify({theme:next.theme,layout:next.layout,accent:next.accent,background:next.background,text:next.text,title:next.title,subtitle:next.subtitle,description:next.description,image:next.image}));}catch(_){}
+      try{localStorage.setItem('biggestFanArchiveVisuals', JSON.stringify({theme:next.theme,layout:next.layout,accent:next.accent,background:next.background,text:next.text,title:next.title,subtitle:next.subtitle,description:next.description,image:next.image,songLayout:next.songLayout,songCardPadding:next.songCardPadding}));}catch(_){}
       sendPreview();
       return true;
     } catch(e) { status.textContent=e.message || 'Could not publish. Check permissions and database setup.'; $('visualStatus').textContent=e.message||'Could not publish visual settings.'; return false; }
@@ -452,9 +459,10 @@
       window.archiveGitHub.configure($('githubOwner').value.trim(),$('githubRepo').value.trim(),$('githubBranch').value.trim()||'main',token);
       const repo=await window.archiveGitHub.connect();$('githubToken').value='';
       const remote=await window.archiveGitHub.getJson('archive-data.json');archiveFromGitHub=Boolean(remote);
-      status.textContent=`Connected to ${repo.full_name}. Token remains in this tab only.`;
+      status.textContent=`Connected to ${repo.full_name}. Publishing is enabled for this admin session.`;
+      const cloudStatus=$('cloudStatus');if(cloudStatus)cloudStatus.textContent='Authenticated · GitHub publishing connected';
       const copy=$('copyArchiveToGitHub');if(copy)copy.disabled=Boolean(remote)||!contentLoaded;
-      const sharedStatus=$('githubStorageStatus');if(sharedStatus)sharedStatus.textContent=remote?'GitHub archive loaded. Changes now publish to the repository.':(contentLoaded?'Connected. Copy the current Supabase archive to GitHub to start.':'Connected. Sign in to load the existing archive, then copy it to GitHub.');
+      const sharedStatus=$('githubStorageStatus');if(sharedStatus)sharedStatus.textContent=remote?'Connected. Content and uploaded files publish directly to this repository.':(contentLoaded?'Connected. Copy the current archive to GitHub once to start.':'Connected. The current archive will load after sign-in.');
       if(remote){fillFields(remote);contentLoaded=true;window.dispatchEvent(new CustomEvent('archive-github-content-loaded',{detail:{content:cloud}}));sendPreview();if(copy)copy.disabled=true;}
     }catch(error){window.archiveGitHub.disconnect();status.textContent=error.message||'Could not connect to GitHub.';}
     finally{button.disabled=false;}
@@ -474,7 +482,7 @@
   }
   $('copyArchiveToGitHub')?.addEventListener('click',async event=>{
     const button=event.currentTarget,status=$('githubStorageStatus');
-    if(!window.archiveGitHub?.connected){status.textContent='Connect GitHub on the sign-in screen first.';return;}
+    if(!window.archiveGitHub?.connected){status.textContent='Connect GitHub in this admin panel first.';return;}
     if(!contentLoaded){status.textContent='Sign in to load the current Supabase archive before copying it.';return;}
     if(await window.archiveGitHub.getJson('archive-data.json')){status.textContent='A GitHub archive already exists. Connect loaded that version; it was not overwritten.';button.disabled=true;return;}
     if(!confirm('Copy the current Supabase archive and its downloadable photos/audio into GitHub? After this, GitHub becomes the source for page content.'))return;
@@ -495,7 +503,7 @@
     try{
       if(!contentLoaded)throw new Error('Wait for shared content to finish loading before saving.');
       const latest=await readLatestContent();
-      const next={...latest,theme:'noir',layout:'left',accent:$('accentColor').value,background:'#ffffff',text:'#090a0c',title:$('heroTitle').value.trim()||'רואי',subtitle:$('heroSubtitle').value.trim(),description:$('heroDescription').value.trim(),image:$('heroImageUrl').value.trim()};
+      const next={...latest,theme:'noir',layout:'left',accent:$('accentColor').value,background:'#ffffff',text:'#090a0c',title:$('heroTitle').value.trim()||'רואי',subtitle:$('heroSubtitle').value.trim(),description:$('heroDescription').value.trim(),image:$('heroImageUrl').value.trim(),songLayout:$('songLayout').value,songCardPadding:Number($('songCardPadding').value)};
       const saved=await save(next);
       if(saved)status.textContent='Visual changes saved and published to the homepage.';
     }catch(error){status.textContent=error.message||'Could not save visual changes.';}
