@@ -428,3 +428,25 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex}
     min-height: 152px !important;
   }
 }
+@media (max-width: 620px) {
+  .songs-section .archive-song-grid {
+    columns: 1;
+  }
+
+  .songs-section .archive-song {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .songs-section .archive-song iframe {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .songs-section .archive-song h3 {
+    width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: anywhere;
+  }
+}
