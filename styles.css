@@ -450,3 +450,27 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex}
     overflow-wrap: anywhere;
   }
 }
+
+/* Give Spotify song cards a full row; keep other songs in the two-column flow. */
+.songs-section .archive-song:has(iframe[src*="open.spotify.com"]) {
+  column-span: all;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+body[data-song-layout="grid"] .songs-section .archive-song:has(iframe[src*="open.spotify.com"]) {
+  grid-column: 1 / -1;
+  display: flex;
+}
+
+@media (max-width: 620px) {
+  .songs-section .archive-song-grid {
+    columns: 2;
+  }
+
+  .songs-section .archive-song:has(iframe[src*="open.spotify.com"]) {
+    column-span: all;
+  }
+}
