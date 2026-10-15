@@ -7,9 +7,9 @@
       document.body.dataset.theme=v.theme==='noir'?'noir':(v.theme||'noir');
       document.body.dataset.layout=v.layout||'center';
       const root=document.documentElement;
-      if(v.accent)root.style.setProperty('--rose',v.accent);
-      if(v.background)root.style.setProperty('--paper',v.background);
-      if(v.text)root.style.setProperty('--ink',v.text);
+      if(v.accent)root.style.setProperty('--rose',v.accent==='#778173'?'#2456d7':v.accent);
+      if(v.background)root.style.setProperty('--paper',v.background==='#f4f1ea'?'#f4f7fb':v.background);
+      if(v.text)root.style.setProperty('--ink',v.text==='#292a27'?'#111827':v.text);
       const title=document.querySelector('.hero h1');
       if(title){title.textContent=v.title||'רואי';title.setAttribute('lang',/[\u0590-\u05FF]/.test(v.title||'')?'he':'en');}
       const subtitle=document.querySelector('.hero-subtitle');if(subtitle)subtitle.textContent=v.subtitle||'';
@@ -32,21 +32,9 @@
     nav.classList.remove('open');
     toggle.setAttribute('aria-expanded', 'false');
   }));
-  document.querySelectorAll('[data-gallery-filter]').forEach(button => button.addEventListener('click', () => {
-    const filter = button.dataset.galleryFilter;
-    document.querySelectorAll('[data-gallery-filter]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
-    document.querySelectorAll('.gallery-item[data-category]').forEach(item => { item.hidden = filter !== 'all' && item.dataset.category !== filter; });
-  }));
-  const featureTrack = document.getElementById('featureTrack');
-  document.querySelectorAll('[data-reel-move]').forEach(button => button.addEventListener('click', () => {
-    if (!featureTrack) return;
-    const card = featureTrack.querySelector('.feature-card');
-    const gap = parseFloat(getComputedStyle(featureTrack).gap) || 0;
-    featureTrack.scrollBy({ left: Number(button.dataset.reelMove) * ((card?.getBoundingClientRect().width || featureTrack.clientWidth) + gap), behavior: 'smooth' });
-  }));
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  const revealTargets = document.querySelectorAll('.section-label, .intro-copy, .quality, .gallery-item, .note, .guestbook-form, .guest-note');
+  const revealTargets = document.querySelectorAll('.section-label, .intro-copy, .quality, .blog-post, .note, .guestbook-form, .guest-note');
   if ('IntersectionObserver' in window) {
     const observer = new IntersectionObserver(entries => entries.forEach(entry => {
       if (entry.isIntersecting) { entry.target.classList.add('revealed'); observer.unobserve(entry.target); }
@@ -92,17 +80,19 @@
     form.reset(); count.textContent = '0 / 240';
   });
 
-  const dialog = document.getElementById('lightbox');
-  const art = document.getElementById('lightboxArt');
-  const caption = document.getElementById('lightboxCaption');
-  document.querySelectorAll('.gallery-item').forEach(item => item.addEventListener('click', () => {
-    const source = item.querySelector('.gallery-art');
-    art.style.background = getComputedStyle(source).background;
-    caption.textContent = item.dataset.caption || 'A little moment.';
-    if (dialog.showModal) dialog.showModal();
-  }));
-  document.querySelector('.lightbox-close').addEventListener('click', () => dialog.close());
-  dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
+  const dialog = document.getElementById('photoLightbox');
+  const lightboxImage = document.getElementById('photoLightboxImage');
+  const lightboxCaption = document.getElementById('photoLightboxCaption');
+  document.getElementById('blogPosts')?.addEventListener('click', event => {
+    const button = event.target.closest('.blog-photo-button');
+    if (!button || !dialog?.showModal) return;
+    lightboxImage.src = button.dataset.photo;
+    lightboxImage.alt = button.dataset.caption || 'Photo journal image';
+    lightboxCaption.textContent = button.dataset.caption || '';
+    dialog.showModal();
+  });
+  document.querySelector('.lightbox-close')?.addEventListener('click', () => dialog.close());
+  dialog?.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
 
 
 })();
@@ -114,22 +104,34 @@
   const c=window.ARCHIVE_BACKEND, db=window.supabase.createClient(c.supabaseUrl,c.supabaseAnonKey);
   const $=id=>document.getElementById(id);
   let adminPreviewActive=false;
-  const fallback={navAbout:'About',navMoments:'Work',navNotes:'Notes',navGuestbook:'Contact',aboutHeading:'A record of ordinary days.',aboutLead:'Everyday life leaves its marks in unexpected places.',momentsHeading:'Selected frames.',momentsIntro:'Photographs and fragments from the archive.',galleryImages:['','','','',''],footerText:'A personal archive of photographs, music, and notes.'};
+  const fallback={navAbout:'About',navMoments:'Journal',navNotes:'Notes',navGuestbook:'Contact',aboutHeading:'A record of ordinary days.',aboutLead:'Everyday life leaves its marks in unexpected places.',momentsHeading:'Photo journal.',momentsIntro:'Images, captions, and dates. One entry at a time.',blogPosts:[],footerText:'A personal archive of photographs, music, and notes.'};
   function text(selector,value){const el=document.querySelector(selector);if(el&&typeof value==='string'&&value.trim())el.textContent=value;}
+  function validPhotoUrl(value){try{const url=new URL(value);return url.protocol==='https:'&&url.hostname&&!url.username&&!url.password?url.href:null;}catch(_){return null;}}
+  function legacyPosts(v){if(Array.isArray(v.blogPosts)&&v.blogPosts.length)return v.blogPosts;const images=v.galleryImages||[],captions=v.galleryCaptions||[];const migrated=images.map((image,i)=>({id:`legacy-${i}`,image,path:'',caption:captions[i]||'From the archive',date:''})).filter(post=>validPhotoUrl(post.image));return migrated.length?migrated:(Array.isArray(v.blogPosts)?v.blogPosts:[]);}
+  function renderBlogPosts(posts){
+    const root=$('blogPosts');if(!root)return;root.replaceChildren();
+    const ordered=[...(posts||[])].filter(post=>post&&validPhotoUrl(post.image)).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    if(!ordered.length){const empty=document.createElement('p');empty.className='collection-empty';empty.textContent='Photo posts will appear here.';root.append(empty);return;}
+    ordered.forEach((post,index)=>{
+      const article=document.createElement('article');article.className=`blog-post${index===0?' blog-post-featured':''}`;article.dataset.postId=String(post.id||'');
+      const figure=document.createElement('figure');figure.className='blog-figure';
+      const zoom=document.createElement('button');zoom.type='button';zoom.className='blog-photo-button';zoom.dataset.photo=validPhotoUrl(post.image);zoom.dataset.caption=post.caption||'';zoom.setAttribute('aria-label',`Open photo: ${post.caption||'Photo journal image'}`);
+      const image=document.createElement('img');image.src=validPhotoUrl(post.image);image.alt=post.caption||'Photo journal image';image.loading='lazy';image.decoding='async';zoom.append(image);figure.append(zoom);
+      const copy=document.createElement('div');copy.className='blog-post-copy';const date=document.createElement('time');date.className='blog-post-date';
+      if(/^\d{4}-\d{2}-\d{2}$/.test(post.date||'')){date.dateTime=post.date;date.textContent=new Intl.DateTimeFormat(undefined,{year:'numeric',month:'long',day:'numeric',timeZone:'UTC'}).format(new Date(`${post.date}T12:00:00Z`));}else date.textContent='FROM THE ARCHIVE';
+      const caption=document.createElement('h3');caption.textContent=post.caption||'Untitled photo';copy.append(date,caption);article.append(figure,copy);root.append(article);
+    });
+  }
   function apply(data){if(!data)return;
     const v={...fallback,...data};
+    if(['Work','Moments'].includes(v.navMoments))v.navMoments='Journal';
+    if(v.momentsHeading==='Selected frames.')v.momentsHeading='Photo journal.';
+    if(v.momentsIntro==='Photographs and fragments from the archive.')v.momentsIntro='Images, captions, and dates. One entry at a time.';
     const nav=document.querySelectorAll('.nav a'); [v.navAbout,v.navMoments,v.navNotes,v.navGuestbook].forEach((x,i)=>{if(nav[i])nav[i].textContent=x;});
-    text('.intro-title h2',v.aboutHeading); text('.intro-copy .lead',v.aboutLead); text('.section-heading h2',v.momentsHeading); text('.section-heading p',v.momentsIntro); text('.footer>p',v.footerText);
+    text('.intro-title h2',v.aboutHeading); text('.intro-copy .lead',v.aboutLead); if(v.momentsHeading&&v.momentsHeading!=='Photo journal.')text('#journalHeading',v.momentsHeading); text('.journal-heading>p',v.momentsIntro); text('.footer>p',v.footerText);renderBlogPosts(legacyPosts(v));
     const body=document.querySelector('.intro-copy'); if(body&&Array.isArray(v.aboutBody)){body.replaceChildren(...v.aboutBody.map(p=>{const el=document.createElement('p');el.textContent=p;return el;}));} else if(body&&typeof v.aboutBody==='string'&&v.aboutBody.trim()){const paras=v.aboutBody.split(/\n\s*\n/); const lead=body.querySelector('.lead'); body.replaceChildren(); if(lead)body.append(lead); paras.forEach((p,i)=>{if(i===0&&p===v.aboutLead)return;const el=document.createElement('p');el.textContent=p;body.append(el);});}
-    if(Array.isArray(v.galleryCaptions))document.querySelectorAll('.gallery-item').forEach((el,i)=>{if(v.galleryCaptions[i]){el.dataset.caption=v.galleryCaptions[i];const strong=el.querySelector('.gallery-caption strong');if(strong)strong.textContent=v.galleryCaptions[i];}});
-    if(Array.isArray(v.galleryImages))document.querySelectorAll('.gallery-item').forEach((el,i)=>{
-      const art=el.querySelector('.gallery-art'),raw=v.galleryImages[i];if(!art)return;if(typeof raw!=='string'||!raw.trim()){art.style.backgroundImage='';art.style.backgroundSize='';return;}
-      try{const image=new URL(raw);if(image.protocol!=='https:'||!image.hostname||image.username||image.password)throw new Error();art.style.backgroundImage=`linear-gradient(#0001,#0001),url("${image.href.replace(/"/g,'%22')}")`;art.style.backgroundSize='cover';art.style.backgroundPosition='center';}
-      catch(_){art.style.backgroundImage='';art.style.backgroundSize='';}
-    });
-    if(Array.isArray(v.notes))document.querySelectorAll('.note-list .note').forEach((el,i)=>{const n=v.notes[i];if(n){const h=el.querySelector('h3'),p=el.querySelector('p');if(h)h.textContent=n.title||'';if(p)p.textContent=n.text||'';}});
     if(Array.isArray(v.qualities))document.querySelectorAll('.qualities .quality p').forEach((el,i)=>{if(v.qualities[i])el.textContent=v.qualities[i];});
-    const root=document.documentElement; if(v.accent)root.style.setProperty('--rose',v.accent);if(v.background)root.style.setProperty('--paper',v.background);if(v.text)root.style.setProperty('--ink',v.text);
+    const root=document.documentElement; if(v.accent)root.style.setProperty('--rose',v.accent==='#778173'?'#2456d7':v.accent);if(v.background)root.style.setProperty('--paper',v.background==='#f4f1ea'?'#f4f7fb':v.background);if(v.text)root.style.setProperty('--ink',v.text==='#292a27'?'#111827':v.text);
     document.body.dataset.theme=v.theme||'editorial';document.body.dataset.layout=v.layout||'left';
     const title=document.querySelector('.hero h1');if(title&&v.title){title.textContent=v.title;title.setAttribute('lang',/[\u0590-\u05FF]/.test(v.title)?'he':'en');}
     const logo=document.querySelector('.logo [lang="he"]');if(logo&&v.title)logo.textContent=v.title;
@@ -141,8 +143,7 @@
   function ensureCollectionSections(){
     const moments=document.querySelector('#moments');
     if(moments&&!document.getElementById('songsSection')){const sec=document.createElement('section');sec.id='songsSection';sec.className='section archive-collection';sec.innerHTML='<div class="section-label"><span>03</span><span>AUDIO INDEX</span></div><div class="section-heading"><h2>Soundtrack.</h2><p>Tracks and listening notes from the archive.</p></div><div id="publicSongs" class="archive-song-grid"></div>';moments.after(sec);}
-    const notes=document.querySelector('#notes');
-    if(notes&&!document.getElementById('thoughtsSection')){const sec=document.createElement('section');sec.id='thoughtsSection';sec.className='section archive-collection';sec.innerHTML='<div class="section-label"><span>04</span><span>TEXT INDEX</span></div><div class="section-heading"><h2>Notes.</h2><p>Short observations, gathered along the way.</p></div><div id="publicThoughts" class="archive-thought-grid"></div>';notes.after(sec);}
+    if(!document.getElementById('publicThoughts')){const sec=document.createElement('section');sec.id='notes';sec.className='section archive-collection';sec.innerHTML='<div class="section-label"><span>04</span><span>TEXT INDEX</span></div><div class="section-heading"><h2>Notes.</h2><p>Short observations, gathered along the way.</p></div><div id="publicThoughts" class="archive-thought-grid"></div>';const songs=document.getElementById('songsSection');(songs||moments)?.after(sec);}
   }
   function safeEmbedUrl(value){try{const url=new URL(value);if(url.protocol==='https:'&&!url.username&&!url.password&&((url.hostname==='open.spotify.com'&&url.pathname.startsWith('/embed/'))||(url.hostname==='www.youtube-nocookie.com'&&url.pathname.startsWith('/embed/'))))return url.href;}catch(_){}return null;}
   function renderSongs(items){ensureCollectionSections();const root=$('publicSongs');if(!root)return;root.replaceChildren();(items||[]).forEach(song=>{const embed=safeEmbedUrl(song.embed);if(!embed)return;const card=document.createElement('article');card.className='archive-song';const label=document.createElement('h3');label.textContent=song.label||song.title||'A song for you';const frame=document.createElement('iframe');frame.src=embed;frame.title=label.textContent;frame.loading='lazy';frame.allow='autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';frame.referrerPolicy='strict-origin-when-cross-origin';frame.style.width='100%';frame.style.border='0';frame.style.borderRadius='12px';frame.style.minHeight=song.kind==='spotify'?'152px':'190px';card.append(label,frame);root.append(card);});if(!items?.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='The soundtrack is waiting for its first song.';root.append(p);}}
