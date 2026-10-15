@@ -382,3 +382,34 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex;flex-dir
 .load-more-wrap[hidden]{display:none}
 .load-more{font:500 12px var(--sans);letter-spacing:.12em;text-transform:uppercase;padding:14px 26px;color:var(--rose);background:var(--paper);border:1px solid var(--rose);border-radius:999px;cursor:pointer;transition:background .25s ease,color .25s ease}
 .load-more:hover,.load-more:focus-visible{background:var(--rose);color:#fff}
+
+/* daily kiss game */
+.kiss-card{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:clamp(24px,5vw,72px);align-items:center;margin-top:28px;padding:clamp(22px,4vw,48px);background:var(--paper);border:1px solid #e4e9f0;border-radius:26px;box-shadow:0 8px 30px #253b570a}
+.kiss-copy h2{margin:0;font:500 clamp(40px,7vw,92px)/1 var(--sans);letter-spacing:.01em;text-transform:uppercase;color:#2a3544}
+.kiss-copy h2 em{font-style:normal;color:var(--rose)}
+.kiss-lead{max-width:34ch;margin:18px 0 0;font:400 16px/1.7 var(--sans);color:#68758a}
+.kiss-play{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.kiss-stage{position:relative;display:grid;place-items:center}
+.kiss-burst{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none;z-index:2}
+.kiss-button{display:grid;place-items:center;align-content:center;gap:6px;width:clamp(150px,22vw,190px);aspect-ratio:1;padding:18px;color:#fff;background:var(--rose);border:0;border-radius:50%;font:600 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;box-shadow:0 16px 40px color-mix(in srgb,var(--rose) 38%,transparent);transition:transform .25s ease,box-shadow .25s ease,background .25s ease,color .25s ease}
+.kiss-button-mark{font:700 clamp(34px,5vw,46px)/1 var(--sans);letter-spacing:.02em;text-transform:none}
+.kiss-button:active:not(:disabled){transform:scale(.95)}
+.kiss-button:disabled{cursor:default;color:var(--rose);background:#e9eef6;box-shadow:none}
+@media(hover:hover){.kiss-button:hover:not(:disabled){transform:translateY(-3px) scale(1.03)}}
+.kiss-message{min-height:3.2em;max-width:30ch;margin:4px 0 0;font:500 clamp(18px,2.4vw,22px)/1.45 var(--sans);color:#2e3b4d}
+.kiss-stats{margin:0;font:500 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--rose)}
+.kiss-note{min-height:1.2em;margin:0;font:400 13px var(--sans);color:#7d8aa0}
+.kiss-float{position:absolute;left:0;top:0;font:700 var(--size,20px)/1 var(--sans);color:var(--rose);opacity:0;animation:kiss-rise 1.5s ease-out var(--delay,0s) forwards}
+@keyframes kiss-rise{0%{opacity:0;transform:translate(0,0) scale(.4)}15%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1) rotate(var(--rot,0deg))}}
+@media(max-width:850px){.kiss-card{grid-template-columns:minmax(0,1fr);text-align:center}.kiss-lead{margin-inline:auto}}
+@media(prefers-reduced-motion:reduce){.kiss-float{display:none}.kiss-button{transition:none}}
+
+/* notes: surprise me */
+.fun-row{display:flex;justify-content:flex-end;margin-top:18px}
+.fun-row[hidden]{display:none}
+.fun-button{font:500 12px var(--sans);letter-spacing:.12em;text-transform:uppercase;padding:12px 22px;color:var(--rose);background:var(--paper);border:1px solid var(--rose);border-radius:999px;cursor:pointer;transition:background .25s ease,color .25s ease}
+.fun-button:focus-visible{background:var(--rose);color:#fff}
+@media(hover:hover){.fun-button:hover{background:var(--rose);color:#fff}}
+.archive-thought{transition:transform .35s ease,border-color .3s ease,box-shadow .35s ease}
+.archive-thought.spotlight{border-color:var(--rose);box-shadow:0 0 0 3px color-mix(in srgb,var(--rose) 22%,transparent);transform:translateY(-3px)}
+@media(max-width:620px){.fun-row{justify-content:stretch}.fun-button{width:100%;min-height:46px}}
