@@ -422,3 +422,109 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex}
     line-height: 1.5;
   }
 }
+
+/* Mobile type and controls: clearer, bolder, and easier to tap. */
+@media (max-width: 620px) {
+  body {
+    font-family: var(--sans), system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .section {
+    padding-inline: 18px;
+  }
+
+  .nav a,
+  .header-link,
+  .hero-link,
+  .back-top {
+    font-family: var(--sans), system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 650;
+    letter-spacing: .01em;
+  }
+
+  .intro-title h2,
+  .section-heading h2,
+  .journal-heading h2,
+  .archive-collection .section-heading h2,
+  .notes h2,
+  .guestbook-heading h2,
+  .songs-heading h2,
+  .thoughts-layout h2 {
+    font-family: var(--sans), system-ui, sans-serif;
+    font-weight: 750;
+    line-height: 1.02;
+    letter-spacing: -.035em;
+  }
+
+  .section-label,
+  .journal-kicker {
+    font-family: var(--sans), system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+  }
+
+  .intro-copy p,
+  .intro-copy .lead,
+  .journal-heading > p,
+  .archive-collection .section-heading > p,
+  .notes-intro,
+  .guestbook-heading > p,
+  .songs-heading > p,
+  .thoughts-intro {
+    font-family: var(--sans), system-ui, sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.65;
+  }
+
+  .blog-post h3,
+  .archive-song h3,
+  .archive-thought p,
+  .note h3 {
+    font-family: var(--sans), system-ui, sans-serif;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .blog-post-copy,
+  .archive-song,
+  .archive-thought,
+  .guestbook-form {
+    min-width: 0;
+  }
+
+  .header a,
+  .hero-link,
+  .work-filters button,
+  .form-footer button,
+  .primary-button,
+  .back-top,
+  .footer a {
+    min-height: 44px;
+  }
+
+  .guestbook-form input,
+  .guestbook-form textarea,
+  .admin-form input,
+  .admin-form textarea,
+  .list-search,
+  .list-filter {
+    font-size: 16px;
+  }
+
+  .gallery-caption strong {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .footer-bottom {
+    font-size: 10px;
+  }
+}
+
