@@ -365,7 +365,7 @@
     songs:[],noises:[],thoughts:[],
     navAbout:'About', navMoments:'Journal', navNotes:'Notes', navGuestbook:'Contact',
     aboutHeading:'A record of ordinary days.', aboutLead:'Everyday life leaves its marks in unexpected places.',
-    blogPosts:[],journalOrder:'date',
+    blogPosts:[],journalOrder:'date',kissMessages:[],
     aboutBody:"This archive gathers photographs, music, and brief notes from shared places and familiar routines.\n\nSome days return as a particular light through a window; others arrive by way of a song heard again years later.\n\nA collection still in progress.",
     momentsHeading:'Photo journal.', momentsIntro:'Images, captions, and dates. One entry at a time.',
     footerText:'A personal archive of photographs, music, and notes.',
@@ -404,7 +404,7 @@
     const result={...cloud};
     document.querySelectorAll('[data-content]').forEach(el => {
       const k=el.dataset.content;
-      if(k==='qualities') result[k]=el.value.split('\n').map(x=>x.trim()).filter(Boolean);
+      if(k==='qualities'||k==='kissMessages') result[k]=el.value.split('\n').map(x=>x.trim()).filter(Boolean);
       else result[k]=el.value;
     });
     result.blogPosts=cloud.blogPosts||[];delete result.galleryImages;delete result.galleryCaptions;delete result.notes;
