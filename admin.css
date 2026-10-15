@@ -162,3 +162,25 @@ body[data-layout="split"] .hero h1{font-size:clamp(76px,10vw,130px)}
 .hero-image-preview:after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(115deg,#111b2b42 0%,#dce5ee22 47%,#dbe5f132 100%),linear-gradient(0deg,#151e2a38 0%,transparent 65%)}
 .hero-image-preview:after{background:linear-gradient(115deg,#111b2b24 0%,#dce5ee12 47%,#dbe5f11c 100%),linear-gradient(0deg,#151e2a24 0%,transparent 64%)}
 .hero-image-preview:before,.hero-image-preview:after{display:none!important;content:none!important}
+
+/* Keep Page notes beside Manage songs on desktop. */
+@media (min-width: 761px) {
+  .admin-grid #songManager {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .admin-grid #thoughtManager {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+
+/* Return to a simple vertical flow on tablet and mobile. */
+@media (max-width: 760px) {
+  .admin-grid #songManager,
+  .admin-grid #thoughtManager {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
