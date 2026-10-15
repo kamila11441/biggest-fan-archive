@@ -343,3 +343,88 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex}
 .hero .eyebrow,.hero h1,.hero-subtitle,.hero-description,.hero-link,.hero-index,.hero-side-note{color:#fff!important;font-weight:700!important;text-shadow:0 2px 12px #000b,0 1px 3px #000c}
 .hero .hero-link{background:transparent!important;border:1px solid #ffffffcc!important;backdrop-filter:none!important;box-shadow:none!important}
 .hero .hero-link span,.hero .eyebrow-dot{color:#fff!important;background:#fff!important}
+
+/* Keep song cards, Spotify embeds, and captions fitted to phone columns */
+.songs-section .archive-song {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.songs-section .archive-song iframe {
+  box-sizing: border-box;
+  min-width: 0 !important;
+}
+
+.songs-section .archive-song h3 {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+@media (max-width: 620px) {
+  .songs-section .archive-song-grid {
+    columns: 2;
+    column-gap: 10px;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .songs-section .archive-song {
+    width: 100%;
+    max-width: 100%;
+    padding: min(14px, var(--song-card-padding, 24px));
+    margin: 0 0 10px;
+    border-radius: 15px;
+  }
+
+  .songs-section .archive-song iframe {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 9px !important;
+  }
+
+  .songs-section .archive-song iframe[src*="open.spotify.com"] {
+    height: 152px !important;
+    min-height: 152px !important;
+  }
+
+  .songs-section .archive-song iframe[src*="youtube.com/embed"],
+  .songs-section .archive-song iframe[src*="youtube-nocookie.com/embed"] {
+    height: auto !important;
+    min-height: 0 !important;
+    aspect-ratio: 16 / 9;
+  }
+
+  .songs-section .archive-song h3 {
+    min-height: 56px;
+    margin-top: 9px;
+    padding: 10px 4px;
+    font-size: clamp(11px, 3.3vw, 14px);
+    line-height: 1.35;
+  }
+}
+
+@media (max-width: 380px) {
+  .songs-section .archive-song {
+    padding: min(10px, var(--song-card-padding, 24px));
+    border-radius: 12px;
+  }
+
+  .songs-section .archive-song-grid {
+    column-gap: 8px;
+  }
+
+  .songs-section .archive-song h3 {
+    min-height: 50px;
+    font-size: 11px;
+    padding: 8px 2px;
+  }
+
+  .songs-section .archive-song iframe[src*="open.spotify.com"] {
+    height: 152px !important;
+    min-height: 152px !important;
+  }
+}
