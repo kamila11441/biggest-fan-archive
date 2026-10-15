@@ -221,3 +221,18 @@ html{scroll-padding-top:88px}body{background:#f4f7fb;color:#111827;font-size:16p
 body{background:var(--paper);color:var(--ink)}
 .hero-image{background:radial-gradient(ellipse at 75% 42%,#b7c9e8 0,transparent 29%),linear-gradient(180deg,#a8bad3 0%,#dce5f1 40%,#c1d0e6 58%,#344766 59%,#101827 100%)}
 .hero-image:before{background:linear-gradient(170deg,transparent 0 25%,#8b9bb7 26% 34%,transparent 35%),linear-gradient(178deg,transparent 0 35%,#15233c 36% 100%)}
+
+/* Black and white foundation with an admin-controlled accent. */
+:root{--paper:#fff;--paper-2:#f2f2f3;--ink:#090a0c;--muted:#5e6066;--line:#dedfe2;--rose:#2456d7;--sage:var(--rose);--blue:var(--rose);--sans:"Inter Tight","DM Sans",Arial,sans-serif;--serif:var(--sans)}
+body{background:#fff;color:#090a0c;font-family:var(--sans)}
+.header{background:#fffffff2;border-color:#dedfe2}.nav a{color:#090a0c}.section-label{color:#55575d}
+.hero{background:#090a0c}.hero h1{font-weight:750;letter-spacing:-.095em}.hero-subtitle{font-weight:650}.hero-link{border-radius:14px}
+.intro-title h2,.section-heading h2,.notes h2,.guestbook-heading h2,.songs-heading h2,.thoughts-layout h2,.journal-heading h2{font-family:var(--sans);font-weight:750;letter-spacing:-.085em;color:#090a0c}
+.intro-title h2 em,.section-heading h2 em,.notes h2 em,.guestbook-heading h2 em,.songs-heading h2 em,.thoughts-layout h2 em,.journal-kicker,.blog-post-date,.archive-thought span,.quality>span,.note-symbol{color:var(--rose)}
+.photo-journal,.archive-collection{background:#fff;border:1px solid #e2e2e5;border-radius:26px}.blog-post,.archive-song,.archive-thought{background:#f5f5f6;border-color:#dedfe2;border-radius:18px;box-shadow:0 8px 25px #090a0c0a}
+.blog-post h3,.archive-song h3{font-family:var(--sans);font-weight:700;color:#090a0c}.blog-post:hover,.archive-song:hover,.archive-thought:hover{border-color:color-mix(in srgb,var(--rose) 45%,#dedfe2);box-shadow:0 16px 35px #090a0c12}
+.archive-collection .section-heading h2{font-size:clamp(78px,11vw,144px);font-weight:750;line-height:.82;letter-spacing:-.09em}.archive-collection .section-heading>p{color:#55575d}.archive-song-grid,.archive-thought-grid{gap:14px}.archive-song iframe{border-radius:14px!important}.collection-empty{background:#f5f5f6;border-color:#b8b9be;color:#54565b}
+.guestbook-section{background:#090a0c;color:#fff;border-radius:26px}.guestbook-section .section-label{color:#c6c6ca}.guestbook-heading h2{color:#fff}.guestbook-heading h2 em{color:var(--rose)}.guestbook-form,.guest-note{background:#151619;border-color:#34353a;border-radius:18px}.guestbook-form label{color:color-mix(in srgb,var(--rose) 60%,white)}.form-footer button,.song-input-row button,.thought-form-footer button,.primary-button{background:var(--rose);border-color:var(--rose);color:#fff;border-radius:12px}.note-avatar{background:var(--rose)}
+.footer{background:#090a0c;color:#fff}.footer p{color:#d2d2d5}.back-top,.header-link span,.logo-heart{color:var(--rose)}
+:focus-visible{outline:3px solid var(--rose);outline-offset:3px}
+@media(max-width:620px){.nav{background:#fff;border-color:#dedfe2}.archive-collection .section-heading h2{font-size:clamp(72px,19vw,102px)}}
