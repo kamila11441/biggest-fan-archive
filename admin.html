@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f1ea">
+  <title>Archive Admin — Biggest Fan Archive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Heebo:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="backend-config.js"></script>
+  <script defer src="admin-app.js"></script>
+</head>
+<body class="admin-body">
+  <a class="skip-link" href="#adminMain">Skip to admin content</a>
+  <header class="header admin-header">
+    <a class="logo" href="index.html"><span lang="he">רואי</span><span class="logo-heart" aria-hidden="true">/</span></a>
+    <div class="admin-header-title">CONTENT MANAGEMENT <span> / SECURE ADMIN</span></div>
+    <a class="header-link" href="index.html">VIEW WEBSITE <span>↗</span></a>
+  </header>
+  <main class="admin-main" id="adminMain" tabindex="-1">
+    <section id="authGate" class="admin-panel auth-gate" aria-labelledby="authTitle">
+      <p class="admin-eyebrow">PRIVATE AREA / AUTHENTICATION REQUIRED</p><h1 id="authTitle">Welcome <em>back.</em></h1>
+      <p class="panel-description">Sign in with the admin account you create in Supabase Authentication. No password is stored in this website.</p>
+      <form id="adminLoginForm" class="admin-form"><label for="adminEmail">ADMIN EMAIL</label><input id="adminEmail" type="email" autocomplete="username" required placeholder="you@example.com"><label for="adminPassword">PASSWORD</label><input id="adminPassword" type="password" autocomplete="current-password" required><button class="primary-button" type="submit">Sign in securely ↗</button><p id="authStatus" class="admin-message" role="status"></p></form>
+      <p class="panel-description" id="backendSetupHint">Backend configuration is required before sign-in.</p>
+    </section>
+    <div id="adminApp" hidden>
+    <section class="admin-welcome">
+      <div><p class="admin-eyebrow">BIGGEST FAN ARCHIVE / ADMIN</p><h1>Make it <em>personal.</em></h1><p class="admin-subtitle">A small control room for the things you want to keep close.</p></div>
+      <div class="admin-status"><span class="status-dot" aria-hidden="true"></span> SHARED CONTENT <small id="cloudStatus" role="status" aria-live="polite">Connecting to backend…</small><button type="button" class="text-button" id="adminSignOut">Sign out</button></div>
+    </section>
+
+    <section class="admin-stats" aria-label="Content overview">
+      <article><span class="stat-label">SAVED SONGS</span><strong id="songStat">0</strong><small>Spotify / YouTube</small></article>
+      <article><span class="stat-label">PUBLISHED REMINDERS</span><strong id="thoughtStat">0</strong><small>Visible to visitors</small></article>
+      <article><span class="stat-label">GUESTBOOK NOTES</span><strong id="guestStat">0</strong><small>Shared visitor notes</small></article>
+    </section>
+
+
+      <section class="admin-panel full-panel" id="visualManager" aria-labelledby="visualHeading">
+        <div class="panel-heading"><div><span class="panel-index">01 / ART DIRECTION</span><h2 id="visualHeading">Visual editor</h2></div><span class="panel-icon">✳</span></div>
+        <p class="panel-description">Switch the palette and layout, edit the hero copy, and preview changes in the page preview below. Changes stay in this browser until you publish.</p>
+        <div class="visual-editor-grid">
+          <div class="visual-field"><label for="themePreset">DESIGN TEMPLATE</label>
+            <select id="themePreset">
+              <option value="noir">01 — Noir / Monochrome</option><option value="editorial">02 — Warm editorial</option><option value="lavender">03 — Lavender</option><option value="ocean">04 — Blue / Slate</option><option value="rose">05 — Clay / Rose</option>
+            </select>
+          </div>
+          <div class="visual-field"><label for="layoutPreset">HERO LAYOUT</label>
+            <select id="layoutPreset"><option value="center">Centered statement</option><option value="left">Editorial left</option><option value="split">Split composition</option></select>
+          </div>
+          <div class="visual-field"><label for="accentColor">ACCENT COLOR</label><input id="accentColor" type="color" aria-describedby="contrastStatus" value="#778173"></div>
+          <div class="visual-field"><label for="backgroundColor">BACKGROUND COLOR</label><input id="backgroundColor" type="color" aria-describedby="contrastStatus" value="#f4f1ea"></div>
+          <div class="visual-field"><label for="textColor">TEXT COLOR</label><input id="textColor" type="color" aria-describedby="contrastStatus" value="#292a27"></div><div class="full-visual-field"><p class="contrast-check" id="contrastStatus" role="status" aria-live="polite"></p></div>
+          <div class="visual-field"><label for="heroTitle">MAIN TITLE</label><input id="heroTitle" maxlength="60" value="רואי"></div>
+          <div class="visual-field"><label for="heroSubtitle">SUBTITLE</label><input id="heroSubtitle" maxlength="120" value="A study of ordinary days."></div>
+          <div class="visual-field"><label for="heroDescription">INTRO TEXT</label><textarea id="heroDescription" rows="3" maxlength="240">Light shifts across familiar places. A song returns with the weather.</textarea></div>
+          <div class="visual-field full-visual-field"><label for="heroImageUrl">MAIN PICTURE — PUBLIC IMAGE URL</label><input id="heroImageUrl" type="url" inputmode="url" placeholder="https://…/your-photo.jpg"><small>Use a public HTTPS image URL so every visitor can load it. Local file uploads are not published.</small><div id="heroImagePreview" class="hero-image-preview">Illustrated sky background</div></div>
+        </div>
+        <div class="visual-actions"><button type="button" class="text-button" id="resetVisuals">Reset visuals</button><p id="visualStatus" class="admin-message" role="status" aria-live="polite"></p></div>
+      </section>
+
+    <section class="admin-panel full-panel" id="pageContentManager" aria-labelledby="contentHeading">
+      <div class="panel-heading"><div><span class="panel-index">02 / SITE CONTENT</span><h2 id="contentHeading">Edit the whole page</h2></div><span class="panel-icon">✎</span></div>
+      <p class="panel-description">Edit public copy, navigation, gallery captions, notes, qualities and footer from here. Changes publish to the shared database.</p>
+      <div class="visual-editor-grid" id="contentFields">
+        <div class="visual-field"><label for="editNavAbout">NAVIGATION — ABOUT</label><input id="editNavAbout" data-content="navAbout" value="About"></div>
+        <div class="visual-field"><label for="editNavMoments">NAVIGATION — MOMENTS</label><input id="editNavMoments" data-content="navMoments" value="Moments"></div>
+        <div class="visual-field"><label for="editNavNotes">NAVIGATION — NOTES</label><input id="editNavNotes" data-content="navNotes" value="Notes"></div>
+        <div class="visual-field"><label for="editNavGuestbook">NAVIGATION — GUESTBOOK</label><input id="editNavGuestbook" data-content="navGuestbook" value="Guestbook"></div>
+        <div class="visual-field"><label for="editAboutHeading">ABOUT HEADING</label><input id="editAboutHeading" data-content="aboutHeading" value="A record of ordinary days."></div>
+        <div class="visual-field"><label for="editAboutLead">ABOUT LEAD</label><input id="editAboutLead" data-content="aboutLead" value="Everyday life leaves its marks in unexpected places."></div>
+        <div class="visual-field full-visual-field"><label for="editAboutBody">ABOUT TEXT</label><textarea id="editAboutBody" data-content="aboutBody" rows="4"></textarea></div>
+        <div class="visual-field"><label for="editMomentsHeading">MOMENTS HEADING</label><input id="editMomentsHeading" data-content="momentsHeading" value="Selected frames."></div>
+        <div class="visual-field"><label for="editMomentsIntro">MOMENTS INTRO</label><input id="editMomentsIntro" data-content="momentsIntro" value="Photographs and fragments from the archive."></div>
+        <div class="visual-field full-visual-field"><label for="editGalleryCaptions">GALLERY CAPTIONS — ONE PER LINE (5)</label><textarea id="editGalleryCaptions" data-content="galleryCaptions" aria-describedby="galleryCaptionHelp" rows="5"></textarea><small id="galleryCaptionHelp">Keep one caption on each line to match the five gallery images.</small></div>
+        <div class="visual-field full-visual-field"><label for="editGalleryImages">GALLERY IMAGE URLS — ONE PER LINE (5)</label><textarea id="editGalleryImages" data-content="galleryImages" aria-describedby="galleryImageHelp" rows="5" placeholder="https://example.com/photo-1.jpg"></textarea><small id="galleryImageHelp">Use public HTTPS image URLs. Leave a line blank to keep that memory illustration.</small></div>
+        <fieldset class="note-editor full-visual-field"><legend>NOTE CARDS — FOUR CARDS</legend>
+          <div class="note-editor-grid">
+            <div class="visual-field"><label for="noteTitle1">CARD 1 TITLE</label><input id="noteTitle1" data-note-title="0" maxlength="70"><label for="noteText1">CARD 1 TEXT</label><textarea id="noteText1" data-note-text="0" rows="3" maxlength="300"></textarea></div>
+            <div class="visual-field"><label for="noteTitle2">CARD 2 TITLE</label><input id="noteTitle2" data-note-title="1" maxlength="70"><label for="noteText2">CARD 2 TEXT</label><textarea id="noteText2" data-note-text="1" rows="3" maxlength="300"></textarea></div>
+            <div class="visual-field"><label for="noteTitle3">CARD 3 TITLE</label><input id="noteTitle3" data-note-title="2" maxlength="70"><label for="noteText3">CARD 3 TEXT</label><textarea id="noteText3" data-note-text="2" rows="3" maxlength="300"></textarea></div>
+            <div class="visual-field"><label for="noteTitle4">CARD 4 TITLE</label><input id="noteTitle4" data-note-title="3" maxlength="70"><label for="noteText4">CARD 4 TEXT</label><textarea id="noteText4" data-note-text="3" rows="3" maxlength="300"></textarea></div>
+          </div>
+        </fieldset>
+        <div class="visual-field full-visual-field"><label for="editQualities">QUALITIES — ONE PER LINE</label><textarea id="editQualities" data-content="qualities" rows="3"></textarea></div>
+        <div class="visual-field full-visual-field"><label for="editFooter">FOOTER MESSAGE</label><input id="editFooter" data-content="footerText" value="A personal archive of photographs, music, and notes."></div>
+      </div>
+      <div class="visual-actions"><button type="button" class="primary-button" id="savePageContent">Publish changes ↗</button><button type="button" class="secondary-button" id="saveContentDraft">Save draft</button><button type="button" class="secondary-button" id="restoreContentDraft">Restore draft</button><p id="contentStatus" class="admin-message" role="status" aria-live="polite"></p></div>
+    </section>
+    <details class="admin-panel live-preview-panel" id="previewPanel"><summary>Live page preview <span>Updates as you edit · changes are not published until you publish</span></summary><iframe id="pagePreview" title="Preview of the public archive page" src="index.html?preview=1#home" loading="lazy"></iframe></details>
+    <div class="admin-grid">
+      <section class="admin-panel" id="songManager" aria-labelledby="songHeading">
+        <div class="panel-heading"><div><span class="panel-index">01 / SOUNDTRACK</span><h2 id="songHeading">Manage songs</h2></div><span class="panel-icon">♫</span></div>
+        <p class="panel-description">Add or remove tracks from the archive. Paste a full Spotify or YouTube link.</p>
+        <form id="adminSongForm" class="admin-form">
+          <label for="adminSongLink">SONG LINK</label><input id="adminSongLink" type="url" placeholder="https://open.spotify.com/track/…" required>
+          <label for="adminSongLabel">DISPLAY LABEL <span>(OPTIONAL)</span></label><input id="adminSongLabel" maxlength="90" placeholder="e.g. late summer">
+          <button type="submit" class="primary-button">Add to soundtrack <span>＋</span></button><p id="adminSongStatus" class="admin-message" role="status"></p>
+        </form>
+        <label class="sr-only" for="songSearch">Search soundtrack</label><input class="list-search" id="songSearch" type="search" placeholder="Search soundtrack…" autocomplete="off"><p class="list-count" id="songSearchCount" role="status" aria-live="polite"></p><div id="adminSongList" class="admin-item-list" aria-label="Soundtrack songs"></div>
+      </section>
+
+      <section class="admin-panel" id="thoughtManager" aria-labelledby="thoughtHeading">
+        <div class="panel-heading"><div><span class="panel-index">02 / TEXT INDEX</span><h2 id="thoughtHeading">Page notes</h2></div><span class="panel-icon">—</span></div>
+        <p class="panel-description">These short notes appear on the public page. Add an observation, edit it later, or remove it from the collection.</p>
+        <form id="adminThoughtForm" class="admin-form">
+          <label for="adminThoughtText">ARCHIVE NOTE</label><textarea id="adminThoughtText" maxlength="500" rows="3" placeholder="A short observation…" required></textarea>
+          <div class="form-bottom"><span id="editMode">NEW NOTE</span><button type="submit" class="primary-button" id="saveThoughtButton">Save note <span>↗</span></button></div>
+          <button type="button" id="cancelEdit" class="text-button" hidden>Cancel editing</button><p id="adminThoughtStatus" class="admin-message" role="status"></p>
+        </form>
+        <label class="sr-only" for="thoughtSearch">Search quick thoughts</label><input class="list-search" id="thoughtSearch" type="search" placeholder="Search thoughts…" autocomplete="off"><p class="list-count" id="thoughtSearchCount" role="status" aria-live="polite"></p><div id="adminThoughtList" class="admin-item-list" aria-label="Saved thoughts"></div>
+      </section>
+
+      <section class="admin-panel full-panel" id="guestbookManager" aria-labelledby="guestHeading">
+        <div class="panel-heading"><div><span class="panel-index">03 / VISITOR NOTES</span><h2 id="guestHeading">Guestbook moderation</h2></div><span class="panel-icon">/</span></div>
+        <p class="panel-description">Review visitor comments. Approve pending notes to publish them, or delete notes that should not appear.</p>
+        <label class="sr-only" for="guestSearch">Search guestbook notes</label><input class="list-search" id="guestSearch" type="search" placeholder="Search visitor notes…" autocomplete="off"><label class="sr-only" for="guestStatusFilter">Filter guestbook notes by status</label><select class="list-filter" id="guestStatusFilter"><option value="all">All notes</option><option value="pending">Pending approval</option><option value="published">Published</option></select><p class="list-count" id="guestSearchCount" role="status" aria-live="polite"></p><p id="guestbookModerationStatus" class="admin-message" role="status" aria-live="polite"></p><div id="adminGuestList" class="admin-item-list" aria-label="Visitor notes"></div>
+      </section>
+
+      <section class="admin-panel full-panel" id="backupManager" aria-labelledby="backupHeading">
+        <div class="panel-heading"><div><span class="panel-index">04 / PORTABILITY</span><h2 id="backupHeading">Backup &amp; restore</h2></div><span class="panel-icon">↗</span></div>
+        <p class="panel-description">Export published page content and collections to JSON. The export excludes visitor submissions; those stay in guestbook moderation. Restore replaces shared page content and collections, plus local fallback notes.</p>
+        <div class="backup-actions"><button type="button" class="primary-button" id="exportBackup">Export backup <span>↓</span></button><label class="upload-button">Import backup <span>↑</span><input type="file" id="importBackup" aria-label="Choose a JSON backup file to import" accept="application/json,.json"></label></div>
+        <p id="backupStatus" class="admin-message" role="status"></p>
+      </section>
+    </div>
+
+    <aside class="admin-notice"><span>!</span><div><strong>Secure hosting note</strong><p>Admin access and shared content are protected by Supabase Auth and Row Level Security. Never add a service-role key to this repository. Configure the public project URL and anon key in backend-config.js.</p></div></aside>
+    <footer class="admin-footer"><a href="index.html">← Back to the archive</a><span>ROEE / PERSONAL ARCHIVE</span></footer>
+    </div>
+  </main>
+</body>
+</html>

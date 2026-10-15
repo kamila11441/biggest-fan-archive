@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f1ea">
+  <meta name="description" content="A personal archive of photographs, songs, and notes for רואי.">
+  <title>רואי — Biggest Fan Archive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Heebo:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="backend-config.js"></script>
+  <script defer src="public-app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#home">Skip to main content</a>
+  <header class="header">
+    <a class="logo" href="#home"><span lang="he">רואי</span><span class="logo-heart" aria-hidden="true">/</span></a>
+    <button class="menu-toggle" aria-label="Open navigation" aria-expanded="false"><span></span><span></span></button>
+    <nav class="nav" aria-label="Main navigation">
+      <a href="#moments">Work</a><a href="#about">About</a><a href="#notes">Notes</a><a href="#guestbook">Contact</a>
+    </nav>
+    <a class="header-link" href="#guestbook">LEAVE A NOTE <span>↗</span></a>
+  </header>
+
+  <main id="home" tabindex="-1">
+    <section class="hero">
+      <div class="hero-image" role="img" aria-label="Quiet evening sky in muted rose and blue"></div>
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <p class="eyebrow"><span class="eyebrow-dot"></span> PERSONAL ARCHIVE · PHOTOGRAPHS, AUDIO, NOTES</p>
+        <h1 lang="he">רואי</h1>
+        <p class="hero-subtitle">A study of ordinary days.</p>
+        <p class="hero-description">Light shifts across familiar places.<br>A song returns with the weather.</p>
+        <a class="hero-link" href="#moments">VIEW THE COLLECTION <span>↓</span></a>
+      </div>
+      <div class="hero-index"><span>01 / SELECTED ENTRIES</span><span>PHOTOGRAPHY · SOUND · TEXT</span></div>
+      <div class="hero-side-note">the day leaves<br>its trace.</div>
+    </section>
+
+    <section class="featured-reel" aria-label="Featured frames">
+      <div class="reel-heading"><span>FEATURED FRAMES / 05 ENTRIES</span><div class="reel-controls"><button type="button" data-reel-move="-1" aria-label="Scroll featured frames left">←</button><button type="button" data-reel-move="1" aria-label="Scroll featured frames right">→</button></div></div>
+      <div class="feature-track" id="featureTrack">
+        <a class="feature-card" href="#frame-001"><span class="feature-art sunset-art"></span><small>FRAME 001 / PLACE</small></a>
+        <a class="feature-card" href="#frame-002"><span class="feature-art window-art"></span><small>FRAME 002 / INTERIOR</small></a>
+        <a class="feature-card" href="#frame-003"><span class="feature-art music-art"></span><small>ENTRY 003 / SOUND</small></a>
+        <a class="feature-card" href="#frame-004"><span class="feature-art leaves-art"></span><small>FRAME 004 / OUTDOORS</small></a>
+        <a class="feature-card" href="#frame-005"><span class="feature-art night-art"></span><small>FRAME 005 / EVENING</small></a>
+      </div>
+    </section>
+
+    <section class="intro section" id="about">
+        <div class="section-label"><span>01</span><span>ABOUT THE ARCHIVE</span></div>
+      <div class="intro-grid">
+        <div class="intro-title"><h2>A record of<br>ordinary <em>days.</em></h2><p class="hand-note">small details,<br>kept in passing.</p></div>
+        <div class="intro-copy"><p class="lead">Everyday life leaves its marks in unexpected places.</p><p>This archive gathers photographs, music, and brief notes from shared places and familiar routines.</p><p>Some days return as a particular light through a window; others arrive by way of a song heard again years later.</p><p class="signature">A collection still in progress.</p></div>
+      </div>
+      <div class="qualities">
+        <div class="quality"><span>01</span><p>PLACES</p></div><div class="quality"><span>02</span><p>PEOPLE</p></div><div class="quality"><span>03</span><p>SOUND</p></div><div class="quality"><span>04</span><p>OBSERVATIONS</p></div><div class="quality"><span>05</span><p>DETAILS</p></div>
+      </div>
+    </section>
+
+    <section class="moments section" id="moments">
+      <div class="section-label"><span>02</span><span>THE COLLECTION</span></div>
+      <div class="section-heading"><h2>Selected <em>frames.</em></h2><p>Photographs and fragments from the archive.</p></div>
+      <div class="work-filters" role="group" aria-label="Filter the collection"><button type="button" data-gallery-filter="all" aria-pressed="true">All</button><button type="button" data-gallery-filter="places" aria-pressed="false">Places</button><button type="button" data-gallery-filter="sound" aria-pressed="false">Sound</button><button type="button" data-gallery-filter="notes" aria-pressed="false">Notes</button></div>
+      <div class="gallery">
+        <button class="gallery-item gallery-large" id="frame-001" data-category="places" data-caption="Last light along the water." aria-label="View waterside photograph"><span class="gallery-art sunset-art"><i></i></span><span class="gallery-caption"><small>FRAME 001 / PLACE</small><strong>Last light along the water.</strong><b>↗</b></span></button>
+        <button class="gallery-item" id="frame-002" data-category="places" data-caption="Morning light, before the city stirred." aria-label="View interior photograph"><span class="gallery-art window-art"><i></i></span><span class="gallery-caption"><small>FRAME 002 / INTERIOR</small><strong>Before the city stirred.</strong><b>↗</b></span></button>
+        <button class="gallery-item" id="frame-003" data-category="sound" data-caption="A familiar song, heard anew." aria-label="View music entry"><span class="gallery-art music-art"><i>♫</i></span><span class="gallery-caption"><small>ENTRY 003 / SOUND</small><strong>A song heard anew.</strong><b>↗</b></span></button>
+        <button class="gallery-item" id="frame-004" data-category="notes" data-caption="Green after the rain." aria-label="View nature photograph"><span class="gallery-art leaves-art"><i></i></span><span class="gallery-caption"><small>FRAME 004 / OUTDOORS</small><strong>Green after the rain.</strong><b>↗</b></span></button>
+        <button class="gallery-item gallery-wide" id="frame-005" data-category="places" data-caption="The same sky, seen on another afternoon." aria-label="View evening sky photograph"><span class="gallery-art night-art"><i>✧　·　✦　·　✧</i></span><span class="gallery-caption"><small>FRAME 005 / EVENING</small><strong>Another afternoon under the same sky.</strong><b>↗</b></span></button>
+      </div>
+      <p class="gallery-note">An index of places, sounds, and passing details.</p>
+    </section>
+
+    <section class="notes-section section" id="notes">
+      <div class="section-label"><span>03</span><span>NOTES FROM THE MARGIN</span></div>
+      <div class="notes-layout"><div><h2>Field<br><em>notes.</em></h2><p class="notes-intro">Short observations, gathered along the way.</p></div>
+        <div class="note-list">
+          <article class="note"><span class="note-number">01</span><div><h3>Light changes the room.</h3><p>By late afternoon, even familiar walls hold a different story.</p></div><span class="note-symbol">↗</span></article>
+          <article class="note"><span class="note-number">02</span><div><h3>Places keep their weather.</h3><p>A street can bring back the temperature of a day, years later.</p></div><span class="note-symbol">↗</span></article>
+          <article class="note"><span class="note-number">03</span><div><h3>Some songs mark a season.</h3><p>One opening note, and the old light comes back.</p></div><span class="note-symbol">↗</span></article>
+          <article class="note"><span class="note-number">04</span><div><h3>The ordinary is never empty.</h3><p>Look closer: there is always something changing at the edges.</p></div><span class="note-symbol">↗</span></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="guestbook-section section" id="guestbook">
+      <div class="section-label"><span>04</span><span>GUESTBOOK / CONTRIBUTIONS</span></div>
+      <div class="guestbook-layout">
+        <div class="guestbook-heading"><h2>Leave a<br><em>line.</em></h2><p>A few words from visitors become part of the archive.</p><div class="guestbook-stamp">OPEN<br>CONTRIBUTIONS <span>↗</span></div></div>
+        <div class="guestbook-content">
+          <form id="guestbookForm" class="guestbook-form"><label for="guestName">YOUR NAME OR NICKNAME</label><input id="guestName" name="guestName" maxlength="32" placeholder="Name" required><label for="guestMessage">YOUR NOTE</label><textarea id="guestMessage" name="guestMessage" aria-describedby="charCount" maxlength="240" rows="3" placeholder="Add a note to the collection..." required></textarea><div class="form-footer"><span id="charCount" aria-live="off">0 / 240</span><button type="submit">Add a note <span>↗</span></button></div><p id="formStatus" role="status" class="form-status"></p></form>
+          <div class="guestbook-list" id="guestbookList" aria-live="polite"><article class="guest-note"><span class="note-avatar">A</span><div><div class="guest-meta"><strong>Archive visitor</strong><time>recently</time></div><p>By the time the light turns, the whole street has changed.</p></div></article><article class="guest-note"><span class="note-avatar avatar-sage">M</span><div><div class="guest-meta"><strong>Archive visitor</strong><time>recently</time></div><p>Some places stay with you long after you leave them.</p></div></article></div>
+          <p class="privacy-note">Comments are shared after approval. Please keep notes kind and respectful.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"><a href="#home" class="footer-logo" lang="he">רואי <span>/</span></a><p>A personal archive of photographs, music, and notes.</p><a href="admin.html" class="back-top">ADMIN ↗</a><a href="#home" class="back-top">BACK TO THE TOP ↑</a><div class="footer-bottom"><span>רואי / ARCHIVE</span><span>PHOTOGRAPHS · AUDIO · TEXT</span><span>© <span id="year"></span></span></div></footer>
+
+  <dialog class="lightbox" id="lightbox" aria-labelledby="lightboxCaption"><button class="lightbox-close" aria-label="Close preview">×</button><div class="lightbox-art" id="lightboxArt"></div><p id="lightboxCaption"></p></dialog>
+</body>
+</html>
