@@ -152,9 +152,10 @@
   });
 
   const VISUAL_KEY = 'biggestFanArchiveVisuals';
-  const visualDefaults = {theme:'editorial',layout:'left',accent:'#778173',background:'#f4f1ea',text:'#292a27',title:'רואי',subtitle:'A study of ordinary days.',description:'Light shifts across familiar places. A song returns with the weather.',image:''};
+  const visualDefaults = {theme:'editorial',layout:'left',accent:'#2456d7',background:'#f4f7fb',text:'#111827',title:'רואי',subtitle:'A study of ordinary days.',description:'Light shifts across familiar places. A song returns with the weather.',image:''};
   let visuals = {...visualDefaults};
   try { visuals = {...visualDefaults, ...JSON.parse(localStorage.getItem(VISUAL_KEY) || '{}')}; } catch (_) {}
+  if(visuals.accent==='#778173')visuals.accent='#2456d7';if(visuals.background==='#f4f1ea')visuals.background='#f4f7fb';if(visuals.text==='#292a27')visuals.text='#111827';
   const visualEls = {theme:'themePreset',layout:'layoutPreset',accent:'accentColor',background:'backgroundColor',text:'textColor',title:'heroTitle',subtitle:'heroSubtitle',description:'heroDescription',image:'heroImageUrl'};
   function applyVisuals(v) {
     const body=document.body;
@@ -249,47 +250,53 @@
   let db, cloud = {}, contentLoaded = false;
   const defaults = {
     songs:[],thoughts:[],
-    navAbout:'About', navMoments:'Work', navNotes:'Notes', navGuestbook:'Contact',
+    navAbout:'About', navMoments:'Journal', navNotes:'Notes', navGuestbook:'Contact',
     aboutHeading:'A record of ordinary days.', aboutLead:'Everyday life leaves its marks in unexpected places.',
-    galleryImages:['','','','',''],
+    blogPosts:[],
     aboutBody:"This archive gathers photographs, music, and brief notes from shared places and familiar routines.\n\nSome days return as a particular light through a window; others arrive by way of a song heard again years later.\n\nA collection still in progress.",
-    momentsHeading:'Selected frames.', momentsIntro:'Photographs and fragments from the archive.',
-    galleryCaptions:['Last light along the water.','Morning light, before the city stirred.','A familiar song, heard anew.','Green after the rain.','The same sky, seen on another afternoon.'],
-    notes:[{title:'Light changes the room.',text:'By late afternoon, even familiar walls hold a different story.'},{title:'Places keep their weather.',text:'A street can bring back the temperature of a day, years later.'},{title:'Some songs mark a season.',text:'One opening note, and the old light comes back.'},{title:'The ordinary is never empty.',text:'Look closer: there is always something changing at the edges.'}],
+    momentsHeading:'Photo journal.', momentsIntro:'Images, captions, and dates. One entry at a time.',
     qualities:['places','people','sound','observations','details'],
-    footerText:'A personal archive of photographs, music, and notes.'
+    footerText:'A personal archive of photographs, music, and notes.',
+    theme:'editorial',layout:'left',accent:'#2456d7',background:'#f4f7fb',text:'#111827'
   };
+  function validPostUrl(value){try{const u=new URL(value);return u.protocol==='https:'&&u.hostname&&!u.username&&!u.password?u.href:null;}catch(_){return null;}}
+  function normalizeContent(value={}){
+    const next={...defaults,...(value||{})};
+    if(!Array.isArray(value?.blogPosts))next.blogPosts=(value?.galleryImages||[]).map((image,index)=>({id:`legacy-${index}`,image,path:'',caption:value?.galleryCaptions?.[index]||'From the archive',date:''})).filter(post=>validPostUrl(post.image));
+    if(!value?.accent||value.accent==='#778173')next.accent='#2456d7';
+    if(!value?.background||value.background==='#f4f1ea')next.background='#f4f7fb';
+    if(!value?.text||value.text==='#292a27')next.text='#111827';
+    if(!value?.navMoments||['Work','Moments'].includes(value.navMoments))next.navMoments='Journal';
+    if(!value?.momentsHeading||value.momentsHeading==='Selected frames.')next.momentsHeading='Photo journal.';
+    if(!value?.momentsIntro||value.momentsIntro==='Photographs and fragments from the archive.')next.momentsIntro='Images, captions, and dates. One entry at a time.';
+    delete next.galleryImages;delete next.galleryCaptions;delete next.notes;
+    return next;
+  }
   function setVal(id, value) { const el=$(id); if (el && value !== undefined) el.value = value; }
   function fillFields(data) {
-    cloud = { ...defaults, ...(data || {}) };
+    cloud = normalizeContent(data || {});
     Object.keys(cloud).forEach(k => {
-      if (k === 'notes') {
-        const notes=Array.isArray(data?.notes)?data.notes:defaults.notes;
-        document.querySelectorAll('[data-note-title]').forEach(el=>{const note=notes[Number(el.dataset.noteTitle)]||{};el.value=note.title||'';});
-        document.querySelectorAll('[data-note-text]').forEach(el=>{const note=notes[Number(el.dataset.noteText)]||{};el.value=note.text||'';});
-        return;
-      }
       const el = document.querySelector(`[data-content="${k}"]`); if (!el) return;
       const v=cloud[k]; el.value = Array.isArray(v) ? (k==='notes' ? JSON.stringify(v,null,2) : v.join('\n')) : String(v ?? '');
     });
     if ($('themePreset')) setVal('themePreset', cloud.theme || 'editorial');
     if ($('layoutPreset')) setVal('layoutPreset', cloud.layout || 'center');
-    if ($('accentColor')) setVal('accentColor', cloud.accent || '#778173');
-    if ($('backgroundColor')) setVal('backgroundColor', cloud.background || '#f4f1ea');
-    if ($('textColor')) setVal('textColor', cloud.text || '#292a27');
+    if ($('accentColor')) setVal('accentColor', cloud.accent || '#2456d7');
+    if ($('backgroundColor')) setVal('backgroundColor', cloud.background || '#f4f7fb');
+    if ($('textColor')) setVal('textColor', cloud.text || '#111827');
     setVal('heroTitle', cloud.title || 'רואי'); setVal('heroSubtitle', cloud.subtitle || 'A study of ordinary days.'); setVal('heroDescription', cloud.description || 'Light shifts across familiar places. A song returns with the weather.'); setVal('heroImageUrl', cloud.image || '');
+    renderAdminPhotoPosts(cloud.blogPosts);
   }
   function readFields() {
     const result={...cloud};
     document.querySelectorAll('[data-content]').forEach(el => {
       const k=el.dataset.content;
-      if(k==='galleryCaptions'||k==='galleryImages') result[k]=Array.from({length:5},(_,index)=>el.value.split('\n')[index]?.trim()||'');
-      else if(k==='qualities') result[k]=el.value.split('\n').map(x=>x.trim()).filter(Boolean);
+      if(k==='qualities') result[k]=el.value.split('\n').map(x=>x.trim()).filter(Boolean);
       else result[k]=el.value;
     });
-    result.notes=[...document.querySelectorAll('[data-note-title]')].map((el,index)=>({title:el.value.trim(),text:document.querySelector(`[data-note-text="${index}"]`)?.value.trim()||''}));
+    result.blogPosts=cloud.blogPosts||[];delete result.galleryImages;delete result.galleryCaptions;delete result.notes;
     result.theme=$('themePreset')?.value || 'editorial'; result.layout=$('layoutPreset')?.value || 'left';
-    result.accent=$('accentColor')?.value || '#778173'; result.background=$('backgroundColor')?.value || '#f4f1ea'; result.text=$('textColor')?.value || '#292a27';
+    result.accent=$('accentColor')?.value || '#2456d7'; result.background=$('backgroundColor')?.value || '#f4f7fb'; result.text=$('textColor')?.value || '#111827';
     result.title=$('heroTitle')?.value || 'רואי'; result.subtitle=$('heroSubtitle')?.value || ''; result.description=$('heroDescription')?.value || ''; result.image=$('heroImageUrl')?.value || '';
     return result;
   }
@@ -307,6 +314,49 @@
   });
   previewFrame?.addEventListener('load',sendPreview);
 
+  function renderAdminPhotoPosts(posts=cloud.blogPosts||[]){
+    const root=$('adminPhotoPostList');if(!root)return;root.replaceChildren();const ordered=[...(posts||[])].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    $('photoPostCount').textContent=`${ordered.length} POST${ordered.length===1?'':'S'}`;
+    if(!ordered.length){const empty=document.createElement('div');empty.className='admin-empty';empty.textContent='No photo posts yet. Add the first one above.';root.append(empty);return;}
+    ordered.forEach(post=>{const row=document.createElement('article');row.className='admin-item photo-post-admin-item';const img=document.createElement('img');img.className='photo-post-thumb';img.src=validPostUrl(post.image)||'';img.alt='';img.loading='lazy';const main=document.createElement('div');main.className='admin-item-main';const title=document.createElement('div');title.className='admin-item-title';title.textContent=post.caption||'Untitled photo';const meta=document.createElement('div');meta.className='admin-item-meta';meta.textContent=post.date||'Undated archive';main.append(title,meta);const actions=document.createElement('div');actions.className='admin-item-actions';const remove=document.createElement('button');remove.type='button';remove.className='small-action danger';remove.textContent='Delete';remove.setAttribute('aria-label',`Delete photo post: ${post.caption||'Untitled photo'}`);remove.addEventListener('click',()=>deletePhotoPost(post));actions.append(remove);row.append(img,main,actions);root.append(row);});
+  }
+  async function readLatestContent(){const {data,error}=await db.from('archive_content').select('content').eq('id',true).single();if(error)throw error;return normalizeContent(data?.content||cloud);}
+  async function persistPhotoPost(post){
+    const status=$('photoPostStatus');if(!db||!contentLoaded)throw new Error('Sign in and wait for the shared archive to finish loading.');
+    const next=await readLatestContent();next.blogPosts=[...(next.blogPosts||[]),post].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    const {data:userData}=await db.auth.getUser();const {error}=await db.from('archive_content').update({content:next,updated_at:new Date().toISOString(),updated_by:userData.user?.id}).eq('id',true);if(error)throw error;
+    cloud=next;renderAdminPhotoPosts();sendPreview();return true;
+  }
+  $('photoPostForm')?.addEventListener('submit',async event=>{
+    event.preventDefault();const form=event.currentTarget,file=$('photoPostFile').files?.[0],caption=$('photoPostCaption').value.trim(),date=$('photoPostDate').value,status=$('photoPostStatus'),button=$('publishPhotoPost');
+    if(!file||!caption||!date)return;
+    const allowed=['image/jpeg','image/png','image/webp','image/gif','image/avif'];
+    if(!allowed.includes(file.type)){status.textContent='Choose a JPG, PNG, WebP, GIF, or AVIF image.';return;}
+    if(file.size>10*1024*1024){status.textContent='Images must be 10 MB or smaller.';return;}
+    button.disabled=true;status.textContent='Uploading image…';let objectPath='';
+    try{
+      const {data:userData}=await db.auth.getUser();if(!userData?.user)throw new Error('Sign in again to upload a photo.');
+      objectPath=`${userData.user.id}/${crypto.randomUUID()}.${file.type.split('/')[1].replace('jpeg','jpg')}`;
+      const {error:uploadError}=await db.storage.from('archive-photos').upload(objectPath,file,{cacheControl:'31536000',contentType:file.type,upsert:false});if(uploadError)throw uploadError;
+      const {data:publicData}=db.storage.from('archive-photos').getPublicUrl(objectPath);const image=validPostUrl(publicData?.publicUrl);if(!image)throw new Error('The uploaded photo did not return a valid public URL.');
+      const post={id:crypto.randomUUID(),image,path:objectPath,caption:caption.slice(0,220),date};
+      try{await persistPhotoPost(post);}catch(error){await db.storage.from('archive-photos').remove([objectPath]);throw error;}
+      form.reset();status.textContent='Photo post published to the journal.';
+    }catch(error){status.textContent=error.message||'Upload failed. Check the storage setup and try again.';}
+    finally{button.disabled=false;}
+  });
+  async function deletePhotoPost(post){
+    if(!confirm(`Delete “${post.caption||'this photo post'}” from the journal?`))return;
+    const status=$('photoPostStatus');status.textContent='Removing photo post…';
+    try{
+      const next=await readLatestContent();next.blogPosts=(next.blogPosts||[]).filter(item=>item.id!==post.id);
+      const {data:userData}=await db.auth.getUser();const {error}=await db.from('archive_content').update({content:next,updated_at:new Date().toISOString(),updated_by:userData.user?.id}).eq('id',true);if(error)throw error;
+      cloud=next;renderAdminPhotoPosts();sendPreview();
+      if(post.path){const {error:removeError}=await db.storage.from('archive-photos').remove([post.path]);if(removeError)throw new Error('The post was removed, but its stored image could not be deleted.');}
+      status.textContent='Photo post deleted.';
+    }catch(error){status.textContent=error.message||'Could not delete this photo post.';}
+  }
+
   async function load() {
     db=window.archiveSupabase; if(!db) return;
     const {data,error}=await db.from('archive_content').select('content').eq('id',true).single();
@@ -323,8 +373,8 @@
     try {
       if(!contentLoaded)throw new Error('Wait for shared content to finish loading before publishing.');
       const next=override||readFields();
-      const imageUrls=[next.image,...(next.galleryImages||[])].filter(Boolean);
-      if(imageUrls.some(value=>{try{const url=new URL(value);return url.protocol!=='https:'||!url.hostname||Boolean(url.username||url.password);}catch(_){return true;}}))throw new Error('Use public HTTPS image URLs. A local file preview cannot be published to visitors.');
+      const imageUrls=[next.image,...(next.blogPosts||[]).map(post=>post.image)].filter(Boolean);
+      if(imageUrls.some(value=>!validPostUrl(value)))throw new Error('Images must use public HTTPS URLs.');
       status.textContent='Publishing…';
       if(!db)throw new Error('Connect the shared backend before publishing.');
       const {data:userData}=await db.auth.getUser();
@@ -372,7 +422,7 @@
     } catch(error) { $('contentStatus').textContent='Could not read this draft. Save a new draft to replace it.'; }
   });
   $('resetVisuals')?.addEventListener('click',()=>{
-    const visualDefaults={theme:'editorial',layout:'left',accent:'#778173',background:'#f4f1ea',text:'#292a27',title:'רואי',subtitle:'A study of ordinary days.',description:'Light shifts across familiar places. A song returns with the weather.',image:''};
+    const visualDefaults={theme:'editorial',layout:'left',accent:'#2456d7',background:'#f4f7fb',text:'#111827',title:'רואי',subtitle:'A study of ordinary days.',description:'Light shifts across familiar places. A song returns with the weather.',image:''};
     cloud={...cloud,...visualDefaults};
     window.dispatchEvent(new CustomEvent('archive-visual-settings-changed',{detail:visualDefaults}));
     sendPreview();$('visualStatus').textContent='Visual defaults loaded. Publish changes to apply them.';
