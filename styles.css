@@ -376,3 +376,9 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex;flex-dir
   .blog-post,.archive-song,.archive-thought,.archive-noise,.guest-note,.hero-link,.blog-photo-button img{transition:none}
   .blog-post:hover,.archive-song:hover,.archive-thought:hover,.archive-noise:hover,.guest-note:hover,.hero-link:hover,.lightbox-close:hover{transform:none}
 }
+
+/* photo journal: load more */
+.load-more-wrap{display:flex;justify-content:center;margin-top:32px}
+.load-more-wrap[hidden]{display:none}
+.load-more{font:500 12px var(--sans);letter-spacing:.12em;text-transform:uppercase;padding:14px 26px;color:var(--rose);background:var(--paper);border:1px solid var(--rose);border-radius:999px;cursor:pointer;transition:background .25s ease,color .25s ease}
+.load-more:hover,.load-more:focus-visible{background:var(--rose);color:#fff}
