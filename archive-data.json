@@ -43,9 +43,19 @@
   ],
   "noises": [
     {
+      "id": "noise-1792098605009-a5u5e",
+      "title": "a truly motivational speech",
+      "caption": "no context needed, universally applicable!",
+      "date": "2026-09-27",
+      "url": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/noises/1792098602143-a-truly-motivational-speech.m4a",
+      "path": "assets/archive/noises/1792098602143-a-truly-motivational-speech.m4a",
+      "mime": "audio/x-m4a",
+      "addedAt": 1792098605009
+    },
+    {
       "id": "noise-1792096130148-oec2k",
       "title": "your majesty forgive my stupidity",
-      "caption": "",
+      "caption": "for I have sinned",
       "date": "2024-11-26",
       "url": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/noises/1792096127783-your-majesty-forgive-my-stupidity.mp3",
       "path": "assets/archive/noises/1792096127783-your-majesty-forgive-my-stupidity.mp3",
