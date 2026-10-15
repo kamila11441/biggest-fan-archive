@@ -14,7 +14,7 @@ A personal appreciation website for רואי, built with plain HTML/CSS/JavaScri
 
 ## One-time backend setup
 
-GitHub Pages cannot run a private server or protect an admin page on its own. This project uses Supabase Auth and Postgres. The HTML/JS files are public, but the database policies enforce which operations visitors and authenticated users can perform.
+GitHub Pages cannot run a private server or protect an admin page on its own. Supabase Auth protects admin sign-in and Supabase stores visitor comments. Once migrated, the public archive is served from `archive-data.json` and media files in the GitHub repository. Admin publishing uses a fine-grained GitHub token entered in the signed-in dashboard.
 
 1. Create a project at [Supabase](https://supabase.com/) and wait for its database to finish provisioning.
 2. In the Supabase dashboard, open **SQL Editor**, paste all of `supabase-schema.sql`, and run it. This creates the database policies and legacy media buckets. New archive media is stored in the GitHub repository after you connect GitHub in admin.
@@ -31,17 +31,17 @@ GitHub Pages cannot run a private server or protect an admin page on its own. Th
 5. In **Authentication → Providers**, enable Email/Password. In **Authentication → URL Configuration**, add your deployed GitHub Pages URL as a Site URL and redirect URL.
 6. In **Authentication → Users**, create the admin user yourself. Disable public sign-ups in Authentication settings; do not give visitors admin accounts. Use a unique, strong password and enable MFA in Supabase if available for your project.
 7. Upload all files to the root of your GitHub Pages repository. Keep `backend-config.js` in the root next to `index.html`.
-8. Open `/admin.html`, connect GitHub from the sign-in screen, and sign in using the admin user you created. Complete the one-time copy described below; until then, the page uses Supabase as its legacy content source.
+8. Open `/admin.html` and sign in using the admin user you created. After sign-in, connect GitHub in the **Publish to GitHub** panel. Complete the one-time copy described below; until then, the page uses Supabase as its legacy content source.
 
 ## Move archive content to GitHub
 
 The site can store page content in `archive-data.json` and uploaded media in `assets/archive/` in this repository. This stops the public page from reading songs, photos, page copy, and visual settings from Supabase on every visit. Supabase remains in use for admin sign-in and visitor guestbook submissions/moderation.
 
 1. Create a **fine-grained personal access token** for this repository only, with **Contents: Read and write** permission and an expiry date. Do not use a classic token or put a token in any website file.
-2. Open `admin.html`. On the sign-in screen, fill in the owner, repository, branch, and token, then click **Connect GitHub**. The token is held in memory for this browser session and is not stored in local storage or committed.
-3. Sign in to admin, then click **Copy existing archive to GitHub** once. It imports the current Supabase content to `archive-data.json` and attempts to copy existing photos/audio it can read into the repository. Links stay as links. Media sources that block browser downloads or exceed 25 MB remain linked to their current public URL.
+2. Sign in to `admin.html`. In the **Publish to GitHub** panel, enter the owner, repository, branch, and token, then click **Connect GitHub**. The token stays in page memory and is not stored in local storage or committed.
+3. If the archive is still in Supabase, click **Copy existing archive to GitHub** once. It imports content to `archive-data.json` and attempts to copy photos/audio it can access into the repository. Links stay as links. Media sources that block browser downloads or exceed 25 MB remain linked to their current public URL.
 4. After `archive-data.json` is published, the public page reads it from GitHub Pages. Future edits to songs, notes, photos, noises, and page settings write to GitHub. Removing a song or note removes its entry from the JSON; removing an uploaded photo/audio file also deletes that asset from the repository.
-5. Connect GitHub again after each admin page reload; the token is deliberately not remembered. The repo name and branch can be remembered safely.
+5. Reconnect GitHub after each admin page reload; the token is deliberately not remembered. The repo name and branch can be remembered safely. After the initial site files are deployed, routine content and media changes publish directly from admin without manually downloading and uploading them.
 
 GitHub Pages takes a short time to publish commits. After editing content, the admin preview updates immediately; visitors may need a brief moment before the committed JSON and media become available.
 
@@ -56,7 +56,7 @@ GitHub Pages takes a short time to publish commits. After editing content, the a
 
 ## What can be edited in admin
 
-The visual editor keeps the public page black and white while letting you change its shared accent, title, subtitle, intro text, and public hero image. Its preview updates as you edit. The page editor supports navigation labels, about copy, and footer text. Once GitHub is connected, photo journal and Noises uploads commit media and their captions/dates to the repository. Songs and page notes are shared in `archive-data.json`. Guestbook comments remain separate Supabase records; approving a comment makes it public. The backup contains shared page content and collections, and excludes visitor submissions.
+The visual editor keeps the public page black and white while letting you change its shared accent, title, subtitle, intro text, hero image, song layout, and song-card spacing. Its preview updates as you edit. The page editor supports navigation labels, about copy, and footer text. Once GitHub is connected, photo journal and Noises uploads commit media and their captions/dates to the repository. Songs and page notes are shared in `archive-data.json`. Guestbook comments remain separate Supabase records; approving a comment makes it public. The backup contains shared page content and collections, and excludes visitor submissions.
 
 For the hero image, upload a picture from Photos/Files in the admin or use a public HTTPS image URL. New hero images, journal photos, and Noises recordings are committed to `assets/archive/` in GitHub. Previously saved public URLs are copied into the repository when the browser can access them; otherwise their current URLs remain in use.
 
