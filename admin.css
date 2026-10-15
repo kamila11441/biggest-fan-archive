@@ -158,5 +158,7 @@ body[data-layout="split"] .hero h1{font-size:clamp(76px,10vw,130px)}
 
 /* Match the homepage's cloud and translucent photo treatment in the admin visual preview. */
 .hero-image-preview{position:relative;isolation:isolate;overflow:hidden;background-color:#8d9eae;border-radius:14px}
-.hero-image-preview:before{content:"";position:absolute;inset:-12%;z-index:1;pointer-events:none;opacity:.62;filter:blur(18px);background:radial-gradient(ellipse 34% 24% at 18% 28%,#ffffffdc 0%,#ffffff80 38%,transparent 77%),radial-gradient(ellipse 38% 24% at 48% 21%,#f7fbffdf 0%,#ffffff72 42%,transparent 78%),radial-gradient(ellipse 39% 25% at 78% 33%,#ffffffc9 0%,#f5f8ff68 40%,transparent 78%),radial-gradient(ellipse 45% 20% at 57% 56%,#dce7f1a8 0%,transparent 76%)}
+.hero-image-preview:before{content:"";position:absolute;inset:-12%;z-index:1;pointer-events:none;opacity:.30;filter:blur(18px);background:radial-gradient(ellipse 34% 24% at 18% 28%,#ffffffdc 0%,#ffffff80 38%,transparent 77%),radial-gradient(ellipse 38% 24% at 48% 21%,#f7fbffdf 0%,#ffffff72 42%,transparent 78%),radial-gradient(ellipse 39% 25% at 78% 33%,#ffffffc9 0%,#f5f8ff68 40%,transparent 78%),radial-gradient(ellipse 45% 20% at 57% 56%,#dce7f1a8 0%,transparent 76%)}
 .hero-image-preview:after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(115deg,#111b2b42 0%,#dce5ee22 47%,#dbe5f132 100%),linear-gradient(0deg,#151e2a38 0%,transparent 65%)}
+.hero-image-preview:after{background:linear-gradient(115deg,#111b2b24 0%,#dce5ee12 47%,#dbe5f11c 100%),linear-gradient(0deg,#151e2a24 0%,transparent 64%)}
+.hero-image-preview:before,.hero-image-preview:after{display:none!important;content:none!important}
