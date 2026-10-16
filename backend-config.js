@@ -1,4 +1,3 @@
-
 /* Public Supabase project settings only. NEVER put a service_role or secret key here. */
 window.ARCHIVE_BACKEND = {
   supabaseUrl: 'https://dnmudtsrnbwdhnncncfa.supabase.co',
