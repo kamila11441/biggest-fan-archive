@@ -25,6 +25,7 @@
 </head>
 <body>
   <a class="skip-link" href="#home">Skip to main content</a>
+  <button type="button" id="kamilaRunner" class="kamila-runner" aria-label="Catch Kamila" hidden>kamila<span aria-hidden="true">✦</span><span id="kamilaTapProgress" aria-hidden="true"></span></button><span id="kamilaCloseCall" class="kamila-close-call" aria-hidden="true" hidden>So close!</span><span id="kamilaRunnerStatus" class="sr-only" role="status" aria-live="polite"></span>
   <header class="header">
     <a class="logo" href="#home"><span lang="he">רואי</span><span class="logo-heart" aria-hidden="true">/</span></a>
     <div class="header-tools"><button class="notification-button" id="archiveNotificationsToggle" type="button" aria-label="Notifications" aria-controls="archiveNotificationsPanel" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-badge" id="archiveNotificationBadge" hidden></span></button><button class="menu-toggle" aria-label="Open navigation" aria-expanded="false"><span></span><span></span></button></div>
@@ -65,8 +66,8 @@
     <section class="section deal-section" id="deal" aria-labelledby="dealHeading">
       <div class="section-label"><span>02</span><span>A SMALL DRAW</span></div>
       <div class="section-heading"><h2 id="dealHeading">Deal a hand.</h2><p>One photo, one song, one note.</p></div>
-      <div class="deal-hand" id="dealHand" aria-live="polite"></div>
-      <button type="button" class="pill-button" id="dealAgain">Deal again ↻</button>
+      <button type="button" class="deal-stack" id="dealStack" aria-haspopup="dialog" aria-controls="dealDialog" aria-label="Open a hand with one photo, one song, and one note"><span class="deal-stack-art" aria-hidden="true"><i></i><i></i><i></i></span><span class="deal-stack-copy"><strong>Open the hand</strong><small>one photo · one song · one note</small></span><span class="deal-stack-arrow" aria-hidden="true">↗</span></button>
+      <dialog class="deal-dialog" id="dealDialog" aria-labelledby="dealDialogHeading"><div class="deal-dialog-heading"><div><p>THREE LITTLE THINGS</p><h2 id="dealDialogHeading">Your hand.</h2></div><button type="button" id="dealClose" aria-label="Close dealt hand">×</button></div><div class="deal-hand" id="dealHand" aria-live="polite"></div><button type="button" class="pill-button" id="dealAgain">Deal again ↻</button></dialog>
     </section>
     <div class="counter-strip" id="archiveCounters" aria-label="Archive totals" aria-live="polite"></div>
 
