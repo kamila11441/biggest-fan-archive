@@ -1,800 +1,584 @@
+/* Shared helpers */
+function setLines(el,str){el.replaceChildren();String(str).split('\n').forEach((line,i)=>{if(i)el.append(document.createElement('br'));el.append(document.createTextNode(line));});}
+function heroCssUrl(value){try{const u=new URL(value);return u.protocol==='https:'&&u.hostname&&!u.username&&!u.password?`url("${u.href.replace(/"/g,'%22')}")`:'none';}catch(_){return 'none';}}
+function retryMedia(el,max=6){const src=el.getAttribute('src');let n=0;if(!src)return;el.addEventListener('error',()=>{if(n>=max)return;n++;setTimeout(()=>{el.src=src+(src.includes('?')?'&':'?')+'r='+n;},15000);});}
+
 (() => {
-  const $ = id => document.getElementById(id);
-  const gate = $('authGate'), app = $('adminApp'), status = $('authStatus');
-  let supabase = null;
-  if (window.archiveBackendReady?.() && window.supabase?.createClient) {
-    const c = window.ARCHIVE_BACKEND;
-    supabase = window.archiveSupabase = window.supabase.createClient(c.supabaseUrl, c.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
-    $('backendSetupHint').textContent = 'Backend configured. Sign in using the admin user created in Supabase Authentication.';
-  } else {
-    $('backendSetupHint').textContent = 'Setup required: create a Supabase project, run supabase-schema.sql, then fill in backend-config.js with the project URL and anon key.';
-  }
-  function showApp(user) {
-    gate.hidden = true; app.hidden = false;
-    const email = document.getElementById('adminEmail');
-    if (email && user?.email) email.value = user.email;
-    const cloud = $('cloudStatus'); if (cloud) cloud.textContent = 'Authenticated · shared archive';
-    window.dispatchEvent(new CustomEvent('archive-auth-ready', { detail: { user, supabase } }));
-  }
-  $('adminLoginForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    if (!supabase) { status.textContent = 'Backend is not configured yet. Follow the setup steps in README.md.'; return; }
-    status.textContent = 'Signing in…';
-    const { data, error } = await supabase.auth.signInWithPassword({ email: $('adminEmail').value.trim(), password: $('adminPassword').value });
-    if (error) { status.textContent = 'Sign-in failed. Check the email/password and Supabase Auth settings.'; return; }
-    $('adminPassword').value = ''; showApp(data.user);
+
+  // Apply saved visual editor settings on the public page too.
+  try {
+    const v=JSON.parse(localStorage.getItem('biggestFanArchiveVisuals')||'null');
+    if(v){
+      document.body.dataset.theme=v.theme==='noir'?'noir':(v.theme||'noir');
+      document.body.dataset.layout=v.layout||'center';
+      document.body.dataset.songLayout=v.songLayout==='grid'?'grid':'masonry';
+      const root=document.documentElement;
+      if(v.accent)root.style.setProperty('--rose',['#778173','#2456d7','#315bff'].includes(v.accent.toLowerCase())?'#5f73a5':v.accent);
+      root.style.setProperty('--song-card-padding',`${Math.max(12,Math.min(32,Number(v.songCardPadding)||24))}px`);
+      const title=document.querySelector('.hero h1');
+      if(title){title.textContent=v.title||'רואי';title.setAttribute('lang',/[\u0590-\u05FF]/.test(v.title||'')?'he':'en');}
+      const subtitle=document.querySelector('.hero-subtitle');if(subtitle)subtitle.textContent=v.subtitle||'';
+      const description=document.querySelector('.hero-description');if(description)setLines(description,v.description||'');root.style.setProperty('--hero-mobile-image',heroCssUrl(v.mobileImage));
+      const image=document.querySelector('.hero-image');
+      if(image&&v.image){image.style.backgroundImage=`url("${String(v.image).replace(/"/g,'%22')}")`;image.style.backgroundSize='cover';image.style.backgroundPosition='center';image.setAttribute('aria-label','Main photograph from the personal archive');}
+      else if(image)image.setAttribute('aria-label','Abstract blue and white hero artwork');
+      const logo=document.querySelector('.logo [lang="he"]');if(logo)logo.textContent=v.title||'רואי';
+      document.title=(v.title||'רואי')+' — Biggest Fan Archive';
+    }
+  } catch (_) {}
+
+  const toggle = document.querySelector('.menu-toggle');
+  const nav = document.querySelector('.nav');
+  toggle.addEventListener('click', () => {
+    const open = nav.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
   });
-  $('adminSignOut')?.addEventListener('click', async () => { if (supabase) await supabase.auth.signOut(); window.archiveGitHub?.disconnect(); app.hidden = true; gate.hidden = false; status.textContent = 'Signed out.'; });
-  if (supabase) supabase.auth.getSession().then(({ data }) => { if (data.session) showApp(data.session.user); });
+  nav.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+    nav.classList.remove('open');
+    toggle.setAttribute('aria-expanded', 'false');
+  }));
+  document.getElementById('year').textContent = new Date().getFullYear();
+  const updatedDate=document.getElementById('archiveUpdatedDate');
+  if(updatedDate){const lastModified=new Date(document.lastModified);if(!Number.isNaN(lastModified.getTime())){updatedDate.dateTime=lastModified.toISOString().slice(0,10);updatedDate.textContent=new Intl.DateTimeFormat(undefined,{year:'numeric',month:'long',day:'numeric'}).format(lastModified);}else updatedDate.parentElement.hidden=true;}
+
+  let revealObserver=null;
+  if ('IntersectionObserver' in window) {
+    revealObserver = new IntersectionObserver(entries => entries.forEach(entry => {
+      if (entry.isIntersecting) { entry.target.classList.add('revealed'); revealObserver.unobserve(entry.target); }
+    }), { threshold: .12 });
+  }
+  window.archiveReveal=(root=document)=>{if(!revealObserver)return;root.querySelectorAll?.('.section-label, .section-heading, .intro-copy, .quality, .blog-post, .archive-song, .archive-noise, .archive-thought, .note, .guestbook-form, .guest-note').forEach(el=>{if(el.classList.contains('will-reveal'))return;el.classList.add('will-reveal');revealObserver.observe(el);});};
+  window.archiveReveal();
+
+  const pageSections=[...document.querySelectorAll('main section[id]')];
+  const sectionLinks=[...document.querySelectorAll('.nav a[href^="#"]')];
+  if('IntersectionObserver' in window&&pageSections.length){
+    const sectionObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{
+      if(!entry.isIntersecting)return;
+      sectionLinks.forEach(link=>{
+        const active=link.hash==='#'+entry.target.id;
+        if(active)link.setAttribute('aria-current','location');else link.removeAttribute('aria-current');
+      });
+    }),{rootMargin:'-24% 0px -62% 0px',threshold:0});
+    pageSections.forEach(section=>sectionObserver.observe(section));
+  }
+  let scrollFrame=0;
+  const updateScrollMotion=()=>{
+    if(scrollFrame)return;
+    scrollFrame=requestAnimationFrame(()=>{
+      const maxScroll=document.documentElement.scrollHeight-innerHeight;
+      document.documentElement.style.setProperty('--scroll-progress',maxScroll>0?String(scrollY/maxScroll):'0');
+      const hero=document.querySelector('.hero-content');
+      if(hero&&matchMedia('(prefers-reduced-motion: no-preference)').matches)hero.style.setProperty('--hero-shift',`${Math.min(scrollY*.08,28)}px`);
+      scrollFrame=0;
+    });
+  };
+  addEventListener('scroll',updateScrollMotion,{passive:true});
+  addEventListener('resize',updateScrollMotion,{passive:true});
+  updateScrollMotion();
+
+  const form = document.getElementById('guestbookForm');
+  const nameField = document.getElementById('guestName');
+  const messageField = document.getElementById('guestMessage');
+  const count = document.getElementById('charCount');
+  const status = document.getElementById('formStatus');
+  const list = document.getElementById('guestbookList');
+  messageField.addEventListener('input', () => count.textContent = `${messageField.value.length} / 240`);
+  const offerBalance=document.getElementById('offerKissBalance'),offerAmount=document.getElementById('kissOfferAmount');
+  const refreshOfferBalance=()=>{const balance=Number(window.archiveKissSnapshot?.kissesAvailable)||0;if(offerBalance)offerBalance.textContent=String(balance);if(offerAmount)offerAmount.max=String(Math.max(1,balance));};window.addEventListener('archive-kiss-updated',refreshOfferBalance);refreshOfferBalance();
+  window.addEventListener('archive-kiss-updated',refreshOfferBalance);refreshOfferBalance();
+
+  const dialog = document.getElementById('photoLightbox');
+  const lightboxImage = document.getElementById('photoLightboxImage');
+  const lightboxCaption = document.getElementById('photoLightboxCaption');
+  document.getElementById('blogPosts')?.addEventListener('click', event => {
+    const button = event.target.closest('.blog-photo-button');
+    if (!button || !dialog?.showModal) return;
+    lightboxImage.src = button.dataset.photo;
+    lightboxImage.alt = button.dataset.alt || button.dataset.caption || 'Photo journal image';
+    lightboxCaption.textContent = button.dataset.caption || '';
+    dialog.showModal();
+  });
+  document.querySelector('.lightbox-close')?.addEventListener('click', () => dialog.close());
+  dialog?.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
+
+
 })();
 
-/* Admin content editor and local collection tools. */
+/* Shared Supabase content and comment integration. */
 
 (() => {
-  const KEYS = { songs: 'biggestFanArchiveSongs', noises: 'biggestFanArchiveNoises', thoughts: 'biggestFanArchiveThoughts' };
-  const $ = id => document.getElementById(id);
-  const safeRead = key => { try { const v = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(v) ? v : []; } catch (_) { return []; } };
-  const validPostUrl = value => { try { const u = new URL(value); return u.protocol === 'https:' && u.hostname && !u.username && !u.password ? u.href : null; } catch (_) { return null; } };
-  const safeWrite = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch (_) { return false; } };
-  const githubConfigKey='biggestFanGitHubConfig',githubTokenKey='biggestFanGitHubTokenSession';let githubToken='';
-  try{githubToken=sessionStorage.getItem(githubTokenKey)||'';}catch(_){}
-  let githubConfig={owner:'kamila11441',repo:'biggest-fan-archive',branch:'main'};
-  try{githubConfig={...githubConfig,...JSON.parse(localStorage.getItem(githubConfigKey)||'{}')};}catch(_){}
-  const githubApiBase=()=>`https://api.github.com/repos/${encodeURIComponent(githubConfig.owner)}/${encodeURIComponent(githubConfig.repo)}`;
-  const githubPath=path=>path.split('/').map(encodeURIComponent).join('/');
-  async function githubRequest(path,method='GET',body){
-    if(!githubToken)throw new Error('Connect GitHub with your repository token first.');
-    const response=await fetch(`${githubApiBase()}${path}`,{method,headers:{'Accept':'application/vnd.github+json','Authorization':`Bearer ${githubToken}`,'X-GitHub-Api-Version':'2022-11-28',...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
-    const data=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(data.message||`GitHub request failed (${response.status}). Check the token and repository permissions.`);
-    return data;
+  const backendReady=Boolean(window.archiveBackendReady?.()&&window.supabase?.createClient);
+  const c=window.ARCHIVE_BACKEND, db=backendReady?window.supabase.createClient(c.supabaseUrl,c.supabaseAnonKey):null;
+  window.archivePublicDb=db;
+  const pendingKissOffersKey='archivePendingKissOffers';
+  function readPendingKissOffers(){try{const rows=JSON.parse(localStorage.getItem(pendingKissOffersKey)||'[]');return Array.isArray(rows)?rows:[];}catch(_){return[];}}
+  const $=id=>document.getElementById(id);
+  let adminPreviewActive=false;
+  const fallback={navAbout:'About',navMoments:'Journal',navNotes:'Notes',navGuestbook:'Contact',aboutHeading:'A record of ordinary days.',aboutLead:'Everyday life leaves its marks in unexpected places.',momentsHeading:'Photo journal.',momentsIntro:'Images, captions, and dates. One entry at a time.',blogPosts:[],kissMessages:[],kissMilestones:[{type:'streak',target:3,sticker:'🌱',title:'A little beginning'},{type:'streak',target:7,sticker:'🌷',title:'One lovely week'},{type:'streak',target:14,sticker:'💌',title:'Two weeks close'},{type:'streak',target:30,sticker:'💖',title:'A month of kisses'},{type:'total',target:10,sticker:'✨',title:'Ten kisses kept'},{type:'total',target:50,sticker:'🌟',title:'Fifty sweet days'},{type:'total',target:100,sticker:'💎',title:'One hundred kisses'}],footerText:'A personal archive of photographs, music, and notes.'};
+  function text(selector,value){const el=document.querySelector(selector);if(el&&typeof value==='string'&&value.trim())el.textContent=value;}
+  function validPhotoUrl(value){try{const url=new URL(value);return url.protocol==='https:'&&url.hostname&&!url.username&&!url.password?url.href:null;}catch(_){return null;}}
+  function legacyPosts(v){if(Array.isArray(v.blogPosts)&&v.blogPosts.length)return v.blogPosts;const images=v.galleryImages||[],captions=v.galleryCaptions||[];const migrated=images.map((image,i)=>({id:`legacy-${i}`,image,path:'',caption:captions[i]||'From the archive',date:''})).filter(post=>validPhotoUrl(post.image));return migrated.length?migrated:(Array.isArray(v.blogPosts)?v.blogPosts:[]);}
+  const BLOG_PAGE=9;
+  function renderBlogPosts(posts,order){
+    const root=$('blogPosts');if(!root)return;root.replaceChildren();
+    const more=$('blogMore'),moreBtn=$('blogMoreButton');if(more)more.hidden=true;
+    let ordered=(posts||[]).filter(post=>post&&validPhotoUrl(post.image));
+    if(order!=='manual')ordered=[...ordered].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    window.archivePosts=ordered;
+    if(!ordered.length){const empty=document.createElement('p');empty.className='collection-empty';empty.textContent='Photo posts will appear here.';root.append(empty);return;}
+    let shown=0;
+    const build=(post,index)=>{
+      const article=document.createElement('article');article.className=`blog-post${index===0?' blog-post-featured':''}`;article.dataset.postId=String(post.id||'');
+      if(post.id)article.id='post-'+String(post.id).replace(/[^\w-]/g,'');
+      const figure=document.createElement('figure');figure.className='blog-figure';
+      const alt=post.alt||post.caption||'Photo journal image';
+      const zoom=document.createElement('button');zoom.type='button';zoom.className='blog-photo-button';zoom.dataset.photo=validPhotoUrl(post.image);zoom.dataset.caption=post.caption||'';zoom.dataset.alt=post.alt||'';zoom.setAttribute('aria-label',`Open photo: ${post.caption||'Photo journal image'}`);
+      const image=document.createElement('img');image.src=validPhotoUrl(post.image);image.alt=alt;image.loading='lazy';image.decoding='async';retryMedia(image);zoom.append(image);figure.append(zoom);
+      const copy=document.createElement('div');copy.className='blog-post-copy';const date=document.createElement('time');date.className='blog-post-date';
+      if(/^\d{4}-\d{2}-\d{2}$/.test(post.date||'')){date.dateTime=post.date;date.textContent=new Intl.DateTimeFormat(undefined,{year:'numeric',month:'long',day:'numeric',timeZone:'UTC'}).format(new Date(`${post.date}T12:00:00Z`));}else date.textContent='FROM THE ARCHIVE';
+      const caption=document.createElement('h3');caption.textContent=post.caption||'Untitled photo';copy.append(date,caption);article.append(figure,copy);
+      return article;
+    };
+    const showMore=()=>{
+      const next=ordered.slice(shown,shown+BLOG_PAGE),firstNew=shown;
+      next.forEach((post,i)=>root.append(build(post,shown+i)));shown+=next.length;
+      window.archiveReveal(root);
+      if(more)more.hidden=shown>=ordered.length;
+      if(moreBtn)moreBtn.textContent=`Load more entries (${ordered.length-shown} left)`;
+      if(firstNew>0)root.children[firstNew]?.querySelector('.blog-photo-button')?.focus({preventScroll:true});
+    };
+    if(moreBtn)moreBtn.onclick=showMore;
+    showMore();window.dispatchEvent(new CustomEvent('archive-content-updated'));
   }
-  async function githubFile(path){try{return await githubRequest(`/contents/${githubPath(path)}?ref=${encodeURIComponent(githubConfig.branch)}`);}catch(error){if(/404|Not Found/i.test(error.message))return null;throw error;}}
-  function decodeGitHubText(base64){const bytes=Uint8Array.from(atob(base64.replace(/\s/g,'')),c=>c.charCodeAt(0));return new TextDecoder().decode(bytes);}
-  function bytesToBase64(bytes){let binary='';for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(binary);}
-  let ghQueue=Promise.resolve();
-  const ghEnqueue=fn=>{const run=ghQueue.then(fn);ghQueue=run.catch(()=>{});return run;};
-  function putGitHubBytes(path,bytes,message){return ghEnqueue(async()=>{for(let attempt=0;;attempt++){const previous=await githubFile(path);try{return await githubRequest(`/contents/${githubPath(path)}`,'PUT',{message,content:bytesToBase64(bytes),branch:githubConfig.branch,...(previous?.sha?{sha:previous.sha}:{})});}catch(error){if(attempt<2&&/409|does not match/i.test(error.message))continue;throw error;}}});}
-  window.archiveStaging=window.archiveStaging||{uploads:new Set(),deletes:new Set()};
-  async function compressImage(file,maxDim=2000,quality=.82){
-    const typeExt={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','image/avif':'avif'};
-    const original={blob:file,ext:typeExt[file.type]||'jpg',optimized:false};
-    if(file.type==='image/gif'||!window.createImageBitmap)return original;
-    try{
-      const bmp=await createImageBitmap(file);
-      const scale=Math.min(1,maxDim/Math.max(bmp.width,bmp.height));
-      const w=Math.round(bmp.width*scale),h=Math.round(bmp.height*scale);
-      const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
-      canvas.getContext('2d').drawImage(bmp,0,0,w,h);bmp.close?.();
-      const toBlob=(type)=>new Promise(res=>canvas.toBlob(res,type,quality));
-      let blob=await toBlob('image/webp'),ext='webp';
-      if((!blob||blob.type!=='image/webp')&&file.type!=='image/png'){blob=await toBlob('image/jpeg');ext='jpg';}
-      if(!blob||!['image/webp','image/jpeg'].includes(blob.type))return original;
-      if(scale===1&&blob.size>=file.size)return original;
-      return {blob,ext,optimized:true};
-    }catch(_){return original;}
+  function apply(data){if(!data)return;
+    const v={...fallback,...data};
+    const defaultKamilaTraits={Temperament:['curious little cloud','sunbeam chaser','quiet observer','mischief in velvet paws','gentle daydreamer','tiny brave heart','professional napper'],Specialty:['finding cozy corners','perfectly timed appearances','expert-level hiding','making ordinary days softer','collecting curious glances','vanishing mid-blink','excellent company'],Habitat:['the sunny windowsill','between songs','a soft blanket fort','the edge of the page','the quiet side of the room','a pocket-sized daydream','wherever you are']};
+    window.archiveKamilaTraitOptions=Object.fromEntries(Object.entries(defaultKamilaTraits).map(([category,base])=>{const options=Array.isArray(v.kamilaTraits?.[category])?v.kamilaTraits[category].map(item=>String(item).trim().slice(0,80)).filter(Boolean).slice(0,40):base;return[category,options.length?options:base];}));
+    window.archiveSetKamilaTraitOptions?.(window.archiveKamilaTraitOptions);
+    window.archiveKamilaPhotos=(Array.isArray(v.kamilaPhotos)?v.kamilaPhotos:[]).map((photo,index)=>typeof photo==='string'?{id:`kamila-${index}`,image:validPhotoUrl(photo),caption:''}:{...photo,image:validPhotoUrl(photo?.image),caption:typeof photo?.caption==='string'?photo.caption:''}).filter(photo=>photo.image);
+    if(['Work','Moments'].includes(v.navMoments))v.navMoments='Journal';
+    if(v.momentsHeading==='Selected frames.')v.momentsHeading='Photo journal.';
+    if(v.momentsIntro==='Photographs and fragments from the archive.')v.momentsIntro='Images, captions, and dates. One entry at a time.';
+    const navLabels={'#about':v.navAbout,'#moments':v.navMoments,'#notes':v.navNotes,'#guestbook':v.navGuestbook};document.querySelectorAll('.nav a').forEach(link=>{if(navLabels[link.hash])link.textContent=navLabels[link.hash];});
+    text('.intro-title h2',v.aboutHeading); text('.intro-copy .lead',v.aboutLead); if(v.momentsHeading&&v.momentsHeading!=='Photo journal.')text('#journalHeading',v.momentsHeading); text('.journal-heading>p',v.momentsIntro); text('.footer>p',v.footerText);renderBlogPosts(legacyPosts(v),v.journalOrder);
+    const body=document.querySelector('.intro-copy'); if(body&&Array.isArray(v.aboutBody)){body.replaceChildren(...v.aboutBody.map((p,i,all)=>{const el=document.createElement('p');el.textContent=p;if(i===all.length-1&&all.length>1)el.className='signature';return el;}));} else if(body&&typeof v.aboutBody==='string'&&v.aboutBody.trim()){const paras=v.aboutBody.split(/\n\s*\n/); const lead=body.querySelector('.lead'); body.replaceChildren(); if(lead)body.append(lead); paras.forEach((p,i)=>{if(i===0&&p===v.aboutLead)return;const el=document.createElement('p');el.textContent=p;if(i===paras.length-1&&paras.length>1)el.className='signature';body.append(el);});}
+    const root=document.documentElement; if(v.accent)root.style.setProperty('--rose',['#778173','#2456d7','#315bff'].includes(v.accent.toLowerCase())?'#5f73a5':v.accent);
+    document.body.dataset.theme=v.theme||'editorial';document.body.dataset.layout=v.layout||'left';document.body.dataset.songLayout=v.songLayout==='grid'?'grid':'masonry';
+    root.style.setProperty('--song-card-padding',`${Math.max(12,Math.min(32,Number(v.songCardPadding)||24))}px`);
+    const title=document.querySelector('.hero h1');if(title&&v.title){title.textContent=v.title;title.setAttribute('lang',/[\u0590-\u05FF]/.test(v.title)?'he':'en');}
+    const logo=document.querySelector('.logo [lang="he"]');if(logo&&v.title)logo.textContent=v.title;
+    {const s=document.querySelector('.hero-subtitle');if(s&&typeof v.subtitle==='string')s.textContent=v.subtitle;const d=document.querySelector('.hero-description');if(d&&typeof v.description==='string')setLines(d,v.description);}
+    const hero=document.querySelector('.hero-image');
+    if(hero){if(typeof v.image!=='string'||!v.image.trim()){hero.style.backgroundImage='';hero.style.backgroundSize='';hero.setAttribute('aria-label','Abstract blue and white hero artwork');}else try{const image=new URL(v.image);if(image.protocol!=='https:'||!image.hostname||image.username||image.password)throw new Error();hero.style.backgroundImage=`url("${image.href.replace(/"/g,'%22')}")`;hero.style.backgroundSize='cover';hero.style.backgroundPosition='center';hero.setAttribute('aria-label','Main photograph from the personal archive');}catch(_){hero.style.backgroundImage='';hero.style.backgroundSize='';hero.setAttribute('aria-label','Abstract blue and white hero artwork');}}
+    window.archiveSetKissMessages?.((Array.isArray(v.kissMessages)?v.kissMessages:[]).map(m=>String(m).trim()).filter(Boolean).slice(0,60));
+    window.archiveSetKissMilestones?.(Array.isArray(v.kissMilestones)?v.kissMilestones:[]);window.archiveSetMarketItems?.(Array.isArray(v.marketItems)?v.marketItems:[]);window.archiveSetCustomNotifications?.(Array.isArray(v.customNotifications)?v.customNotifications:[]);
+    document.documentElement.style.setProperty('--hero-mobile-image',heroCssUrl(v.mobileImage));
+    document.title=(v.title||'רואי')+' — Biggest Fan Archive';
   }
-  window.archiveCompressImage=compressImage;
-  function inlineEditForm(fields,onSave,onCancel){
-    const form=document.createElement('form');form.className='admin-form inline-edit';
-    fields.forEach(f=>{const id='ie-'+Math.random().toString(36).slice(2,9);const label=document.createElement('label');label.htmlFor=id;label.textContent=f.label;const el=document.createElement(f.rows?'textarea':'input');el.id=id;if(f.rows)el.rows=f.rows;else el.type=f.type||'text';if(f.max)el.maxLength=f.max;el.value=f.value||'';el.dataset.key=f.key;form.append(label,el);});
-    const actions=document.createElement('div');actions.className='inline-edit-actions';
-    const save=document.createElement('button');save.type='submit';save.className='primary-button';save.textContent='Save changes';
-    const cancel=document.createElement('button');cancel.type='button';cancel.className='text-button';cancel.textContent='Cancel';cancel.addEventListener('click',onCancel);
-    actions.append(save,cancel);form.append(actions);
-    form.addEventListener('submit',e=>{e.preventDefault();const out={};form.querySelectorAll('[data-key]').forEach(el=>{out[el.dataset.key]=el.value.trim();});onSave(out);});
-    return form;
+  function ensureCollectionSections(){
+    const moments=document.querySelector('#moments');
+    if(moments&&!document.getElementById('publicSongs')){const sec=document.createElement('section');sec.id='songsSection';sec.className='section archive-collection songs-section';sec.innerHTML='<div class="section-label"><span>04</span><span>AUDIO INDEX</span></div><div class="section-heading"><h2>Soundtrack.</h2><p>Tracks and listening notes from the archive.</p></div><div id="publicSongs" class="archive-song-grid" aria-live="polite"></div>';moments.after(sec);}
+    if(!document.getElementById('publicNoises')){const sec=document.createElement('section');sec.id='noises';sec.className='section archive-collection noises-section';sec.innerHTML='<div class="section-label"><span>05</span><span>FIELD RECORDINGS</span></div><div class="section-heading"><h2>Noises.</h2><p>Small sounds, saved as voice notes.</p></div><div id="publicNoises" class="archive-noise-list" aria-live="polite"></div>';const songs=document.getElementById('songsSection');(songs||moments)?.after(sec);}
+    if(!document.getElementById('publicThoughts')){const sec=document.createElement('section');sec.id='notes';sec.className='section archive-collection';sec.innerHTML='<div class="section-label"><span>06</span><span>TEXT INDEX</span></div><div class="section-heading"><h2>Notes.</h2><p>Short observations, gathered along the way.</p></div><div id="publicThoughts" class="archive-thought-grid"></div>';const noises=document.getElementById('noises');(noises||document.getElementById('songsSection')||moments)?.after(sec);}
   }
-  window.archiveInlineEdit=inlineEditForm;
-  const siteBase=()=>String(window.ARCHIVE_BACKEND?.siteBase||`https://${githubConfig.owner}.github.io/${githubConfig.repo}`).replace(/\/+$/,'');
-  window.archiveGitHub={
-    get connected(){return Boolean(githubToken)},get config(){return {...githubConfig}},
-    configure(owner,repo,branch,token){if(!/^[A-Za-z0-9-]+$/.test(owner)||!/^[A-Za-z0-9_.-]+$/.test(repo)||!/^[A-Za-z0-9._/-]+$/.test(branch))throw new Error('Enter a valid GitHub owner, repository, and branch.');githubConfig={owner,repo,branch};githubToken=token.trim();localStorage.setItem(githubConfigKey,JSON.stringify(githubConfig));try{if(githubToken)sessionStorage.setItem(githubTokenKey,githubToken);else sessionStorage.removeItem(githubTokenKey);}catch(_){}},
-    disconnect(){githubToken='';try{sessionStorage.removeItem(githubTokenKey);}catch(_){}},
-    async connect(){const repo=await githubRequest('');if(repo.permissions?.push===false)throw new Error('This token can read the repository but cannot write to it. Enable Contents read/write.');return repo;},
-    async getText(path){const f=await githubFile(path);return f?decodeGitHubText(f.content):null;},
-    putText(path,text,message='Update site file'){return putGitHubBytes(path,new TextEncoder().encode(text),message);},
-    async getJson(path){const file=await githubFile(path);if(!file)return null;return JSON.parse(decodeGitHubText(file.content));},
-    async putJson(path,value,message='Update archive content'){const text=JSON.stringify(value,null,2);return putGitHubBytes(path,new TextEncoder().encode(text),message);},
-    async upload(path,file,message='Add archive media'){return putGitHubBytes(path,new Uint8Array(await file.arrayBuffer()),message);},
-    async uploadBytes(path,bytes,message='Import archive media'){return putGitHubBytes(path,bytes,message);},
-    async delete(path,message='Remove archive media'){return ghEnqueue(async()=>{const previous=await githubFile(path);if(!previous)return false;await githubRequest(`/contents/${githubPath(path)}`,'DELETE',{message,sha:previous.sha,branch:githubConfig.branch});return true;});},
-    pagesUrl(path){return `${siteBase()}/${path.split('/').map(encodeURIComponent).join('/')}`;},
-    repoPathFromPagesUrl(url){try{const base=siteBase()+'/',u=new URL(url);if(!u.href.toLowerCase().startsWith(base.toLowerCase()))return null;return decodeURIComponent(u.href.slice(base.length).split(/[?#]/)[0]);}catch(_){return null;}}
+  function safeEmbedUrl(value){try{const url=new URL(value);if(url.protocol!=='https:'||url.username||url.password)return null;if(url.hostname==='open.spotify.com'&&url.pathname.startsWith('/embed/'))return url.href;if(url.hostname==='www.youtube-nocookie.com'&&url.pathname.startsWith('/embed/'))return url.href;if(['music.apple.com','embed.music.apple.com'].includes(url.hostname)&&/^\/[a-z]{2}\/(album|song|playlist)\/[^/]+/i.test(url.pathname)){url.hostname='embed.music.apple.com';return url.href;}}catch(_){}return null;}
+  window.archiveSafeEmbedUrl=safeEmbedUrl;
+  let songsShown=2,noisesExpanded=false;
+  function renderSongs(items){window.archiveSongs=(items||[]).filter(song=>safeEmbedUrl(song.embed));ensureCollectionSections();const root=$('publicSongs');if(!root)return;const list=window.archiveSongs;root.replaceChildren();if(!list.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='The soundtrack is waiting for its first song.';root.append(p);}list.slice(0,songsShown).forEach(song=>{const embed=safeEmbedUrl(song.embed);const card=document.createElement('article');card.className='archive-song';const label=document.createElement('h3');label.textContent=song.label||song.title||'A song for you';const frame=document.createElement('iframe');frame.src=embed;frame.title=label.textContent;frame.loading='lazy';frame.allow='autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';frame.referrerPolicy='strict-origin-when-cross-origin';frame.style.width='100%';frame.style.height=song.kind==='spotify'?'152px':embed.includes('embed.music.apple.com')?'175px':'190px';frame.style.border='0';frame.style.borderRadius='12px';frame.style.minHeight=song.kind==='spotify'?'152px':'190px';const panel=document.createElement('div');panel.className='song-preview-panel';panel.append(frame);card.append(panel,label);root.append(card);});let more=$('songsMore');if(!more){more=document.createElement('div');more.id='songsMore';more.className='load-more-wrap';const button=document.createElement('button');button.type='button';button.className='load-more';button.addEventListener('click',()=>{songsShown=Math.min(list.length,songsShown+4);renderSongs(window.archiveSongs);});more.append(button);root.after(more);}const moreButton=more.querySelector('button');more.hidden=songsShown>=list.length||list.length<=2;moreButton.textContent=`Load more songs (${Math.max(0,list.length-songsShown)} left)`;window.archiveReveal(root);window.dispatchEvent(new CustomEvent('archive-content-updated'));}
+  function safeAudioUrl(value){try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password?u.href:null;}catch(_){return null;}}
+  function renderNoises(items){window.archiveNoises=(items||[]).filter(noise=>safeAudioUrl(noise.url));ensureCollectionSections();const root=$('publicNoises');if(!root)return;root.replaceChildren();let shown=0;window.archiveNoises.forEach(noise=>{const url=safeAudioUrl(noise.url);if(!url)return;const row=document.createElement('article');row.className='archive-noise';if(!noisesExpanded&&shown>=1)row.hidden=true;const icon=document.createElement('span');icon.className='noise-mark';icon.setAttribute('aria-hidden','true');icon.textContent='▂▅▇▅▃';const body=document.createElement('div');body.className='noise-content';const title=document.createElement('h3');title.textContent=noise.title||'Untitled recording';const caption=document.createElement('p');caption.className='noise-caption';caption.textContent=noise.caption||'';const player=document.createElement('audio');player.controls=true;player.preload='none';player.src=url;retryMedia(player);player.setAttribute('aria-label','Play '+title.textContent);body.append(title);if(caption.textContent)body.append(caption);if(noise.date){const date=document.createElement('time');date.className='noise-date';date.dateTime=noise.date;date.textContent=noise.date;body.append(date);}body.append(player);row.append(icon,body);root.append(row);shown++;});if(!root.children.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='No sounds in the archive yet.';root.append(p);}const more=$('noisesMore');if(more){more.hidden=shown<=1;more.setAttribute('aria-expanded',String(noisesExpanded));more.textContent=noisesExpanded?'Show fewer noises':`See all noises (${shown-1} more)`;}window.archiveReveal(root);window.dispatchEvent(new CustomEvent('archive-content-updated'));}
+  $('noisesMore')?.addEventListener('click',()=>{noisesExpanded=!noisesExpanded;renderNoises(window.archiveNoises||[]);});
+  let lastSurprise=-1;
+  function setupSurprise(root,items){
+    let row=document.getElementById('surpriseRow');
+    if(!row){
+      row=document.createElement('div');row.id='surpriseRow';row.className='fun-row';
+      const button=document.createElement('button');button.type='button';button.id='surpriseNote';button.className='fun-button';button.textContent='Surprise me ✦';
+      row.append(button);root.before(row);
+      button.addEventListener('click',()=>{
+        const cards=[...root.querySelectorAll('.archive-thought')];if(!cards.length)return;
+        let i;do{i=Math.floor(Math.random()*cards.length);}while(cards.length>1&&i===lastSurprise);
+        lastSurprise=i;cards.forEach(c=>c.classList.remove('spotlight'));
+        const card=cards[i];card.classList.add('spotlight');
+        const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+        card.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'});
+        card.tabIndex=-1;card.focus({preventScroll:true});
+        clearTimeout(setupSurprise.timer);setupSurprise.timer=setTimeout(()=>card.classList.remove('spotlight'),6000);
+      });
+    }
+    row.hidden=true;
+  }
+  function renderThoughts(items){window.archiveThoughts=(items||[]).filter(t=>t&&typeof t.text==='string');ensureCollectionSections();const root=$('publicThoughts');if(!root)return;root.replaceChildren();(items||[]).forEach(t=>{const card=document.createElement('article');card.className='archive-thought';const mark=document.createElement('span');mark.className='archive-thought-index';mark.textContent='—';const p=document.createElement('p');p.textContent=t.text;card.append(mark,p);root.append(card);});if(!items?.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='A few observations are waiting to be added.';root.append(p);}setupSurprise(root,items);window.archiveReveal(root);window.dispatchEvent(new CustomEvent('archive-content-updated'));}
+  async function loadContent(){ensureCollectionSections();if(adminPreviewActive)return;try{const response=await fetch(new URL('archive-data.json',location.href),{cache:'no-store'});if(response.ok){const content=await response.json();if(content&&typeof content==='object'){apply(content);renderSongs(content.songs||[]);renderNoises(content.noises||[]);renderThoughts(content.thoughts||[]);return;}}}catch(error){console.warn('GitHub archive file is not available yet; using the initial Supabase copy.',error);}if(!db){renderSongs([]);renderNoises([]);renderThoughts([]);return;}try{const {data,error}=await db.from('archive_content').select('content').eq('id',true).maybeSingle();if(error)throw error;if(data?.content){apply(data.content);renderSongs(data.content.songs||[]);renderNoises(data.content.noises||[]);renderThoughts(data.content.thoughts||[]);}else{renderSongs([]);renderNoises([]);renderThoughts([]);}}catch(error){console.error('Could not load archive content:',error);renderSongs([]);renderNoises([]);renderThoughts([]);}}
+  window.addEventListener('message',event=>{
+    if(window.parent===window||event.source!==window.parent||event.origin!==location.origin||event.data?.type!=='biggest-fan-admin-preview')return;
+    const content=event.data.content;if(!content||typeof content!=='object')return;
+    adminPreviewActive=true;
+    apply(content);renderSongs(content.songs||[]);renderNoises(content.noises||[]);renderThoughts(content.thoughts||[]);
+  });
+  function makeComment(c){const article=document.createElement('article');article.className='guest-note';const avatar=document.createElement('span');avatar.className='note-avatar';avatar.textContent=(c.display_name?.[0]||'•').toUpperCase();const body=document.createElement('div'),meta=document.createElement('div');meta.className='guest-meta';const name=document.createElement('strong');name.textContent=c.display_name;const time=document.createElement('time');time.textContent=new Date(c.created_at).toLocaleDateString();const msg=document.createElement('p');msg.textContent=c.message;meta.append(name,time);body.append(meta,msg);article.append(avatar,body);return article;}
+  async function loadComments(){const list=$('guestbookList');if(!list||!db)return;const {data,error}=await db.from('archive_comments').select('id,display_name,message,created_at').eq('approved',true).order('created_at',{ascending:false}).limit(30);if(error)return;list.replaceChildren();(data||[]).filter(c=>!String(c.message||'').startsWith('[KISS OFFER · ')).forEach(c=>list.append(makeComment(c)));}
+  const init=()=>{
+    loadContent();loadComments();
+    const form=$('guestbookForm');
+    if(form)form.addEventListener('submit',async e=>{
+      e.preventDefault();
+      const status=$('formStatus'),button=form.querySelector('button[type="submit"]');
+      if($('guestWebsite')?.value){form.reset();status.textContent='Thank you — your offer was sent for review.';return;}
+      if(!db){status.textContent='Offers are temporarily unavailable. Please try again later.';return;}
+      let last=0;try{last=Number(localStorage.getItem('archiveLastNote')||0);}catch(_){}
+      if(Date.now()-last<60000){status.textContent='Please wait a minute before sending another offer.';return;}
+      const name=$('guestName').value.trim().replace(/\s+/g,' ').slice(0,32),request=$('guestMessage').value.trim().slice(0,240),amount=Math.floor(Number($('kissOfferAmount')?.value)||0),balance=Number(window.archiveKissSnapshot?.kissesAvailable)||0;
+      if(!name||!request)return;if(amount<1||amount>balance){status.textContent=`Choose an amount from 1 to ${balance} kisses.`;return;}const ref=globalThis.crypto?.randomUUID?.()||`offer-${Date.now()}-${Math.random().toString(36).slice(2,12)}`;const message=`[KISS OFFER · ${amount} KISSES] [OFFER REF: ${ref}] ${request}`;
+      if(button)button.disabled=true;status.textContent='Sending your offer for review…';
+      const {error}=await db.from('archive_comments').insert({display_name:name,message,approved:false});
+      if(button)button.disabled=false;
+      if(error){status.textContent='Could not send the offer. Please try again later.';return;}
+      try{const pending=readPendingKissOffers().filter(item=>item?.ref!==ref);pending.push({ref,submittedAt:Date.now()});localStorage.setItem(pendingKissOffersKey,JSON.stringify(pending.slice(-100)));}catch(_){}
+      try{localStorage.setItem('archiveLastNote',String(Date.now()));}catch(_){}
+      form.reset();$('charCount').textContent='0 / 240';if(offerAmount)offerAmount.value='1';status.textContent='Thank you — your offer was sent for review. Your kisses are still yours.';
+    });
+    if(window.parent!==window)window.parent.postMessage({type:'biggest-fan-preview-ready'},location.origin==='null'?'*':location.origin);
   };
-  ['githubOwner','githubRepo','githubBranch'].forEach((id,i)=>{const value=[githubConfig.owner,githubConfig.repo,githubConfig.branch][i];if($(id)&&value)$(id).value=value;});
-  let songs = safeRead(KEYS.songs).filter(x => x && typeof x.embed === 'string');
-  let thoughts = safeRead(KEYS.thoughts).filter(x => x && typeof x.text === 'string');
-  let noises = safeRead(KEYS.noises).filter(x => x && typeof x.url === 'string');
-  let editingThoughtId = null;
+  let checkingAcceptedOffers=false;
+  window.archiveCheckAcceptedKissOffers=async()=>{
+    if(!db||checkingAcceptedOffers)return;const refs=new Set(readPendingKissOffers().map(item=>String(item?.ref||'')).filter(Boolean));if(!refs.size)return;checkingAcceptedOffers=true;
+    try{const {data,error}=await db.from('archive_comments').select('message,created_at').eq('approved',true).order('created_at',{ascending:false}).limit(200);if(error)return;const byRef=new Map();(data||[]).forEach(row=>{const message=String(row.message||'');if(!message.startsWith('[KISS OFFER · '))return;const ref=message.match(/\[OFFER REF: ([^\]]+)\]/)?.[1];if(ref&&refs.has(ref))byRef.set(ref,{ref,createdAt:row.created_at,request:message.replace(/^\[KISS OFFER · \d+ KISSES\]\s*/,'').replace(/^\[OFFER REF: [^\]]+\]\s*/,'').trim()});});let liveItems=window.archiveMarketItems||[];if([...byRef.values()].some(offer=>!liveItems.some(item=>item.offerRef===offer.ref))){try{const response=await fetch(new URL('archive-data.json',location.href),{cache:'no-store'});if(response.ok){const content=await response.json();if(Array.isArray(content?.marketItems))window.archiveSetMarketItems?.(content.marketItems);liveItems=window.archiveMarketItems||liveItems;}}catch(_){}}window.archiveAcceptedKissOffers=[...byRef.values()].filter(offer=>liveItems.some(item=>item.offerRef===offer.ref));window.dispatchEvent(new CustomEvent('archive-accepted-offers-updated'));}catch(_){}finally{checkingAcceptedOffers=false;}
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
 
-  function parseLink(raw) {
-    let url; try { url = new URL(raw); } catch (_) { return null; }
-    const host = url.hostname.replace(/^www\./,'').replace(/^m\./,'');
-    if (host === 'open.spotify.com') {
-      const parts = url.pathname.split('/').filter(Boolean); if (parts[0] === 'embed') parts.shift();
-      const type = parts[0], id = parts[1];
-      if (!['track','album','playlist','artist','episode','show'].includes(type) || !id) return null;
-      return {kind:'spotify',embed:`https://open.spotify.com/embed/${type}/${encodeURIComponent(id)}`,title:`Spotify ${type}`,original:url.href};
+/* Archive additions: deal, journal tools, notes, counters, polaroids and pocket. */
+(() => {
+  const $=id=>document.getElementById(id), reduce=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const validPhoto=value=>{try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password?u.href:null;}catch(_){return null;}};
+  const photoDialog=$('photoLightbox'),lbImg=$('photoLightboxImage'),lbCaption=$('photoLightboxCaption');
+  const openPhoto=(url,caption,alt='')=>{if(!validPhoto(url)||!photoDialog?.showModal)return;lbImg.src=url;lbImg.alt=alt||caption||'Photo journal image';lbCaption.textContent=caption||'';photoDialog.showModal();};
+  let posts=[],songs=[],notes=[],noises=[],marketItems=[],pocket=[],activePocket='photos',yearFilter='',query='',noteShown=0,shuffleUsed=0,dealItems=[];
+  let migratedKamilaCards=false;try{pocket=JSON.parse(localStorage.getItem('archivePocket')||'[]');if(!Array.isArray(pocket))pocket=[];pocket=pocket.map(entry=>{if(entry?.type==='photos'&&entry.item?.collectible==='kamila'){migratedKamilaCards=true;return{...entry,type:'collectibles',item:{...entry.item,tier:entry.item.tier||'common'}};}return entry;});}catch(_){pocket=[];}
+  const writePocket=()=>{try{localStorage.setItem('archivePocket',JSON.stringify(pocket));return true;}catch(_){return false;}};
+  if(migratedKamilaCards)writePocket();
+  const keep=(type,item)=>{const toggle=$('pocketToggle');if(!reduce()){toggle.classList.remove('pocket-pop');requestAnimationFrame(()=>toggle.classList.add('pocket-pop'));setTimeout(()=>toggle.classList.remove('pocket-pop'),360);}if(pocket.length>=50){announcePocket('Your pocket is full (50 keeps). Remove something to make room.');return;}const key=JSON.stringify([type,item]);if(pocket.some(x=>JSON.stringify([x.type,x.item])===key)){announcePocket('Already tucked into your pocket.');return;}pocket.push({type,item});if(!writePocket()){pocket.pop();announcePocket('Pocket storage is unavailable in this browser.');return;}renderPocket();announcePocket('Saved to your pocket.');};
+  const announcePocket=message=>{const hint=$('pocketHint');if(hint)hint.textContent=message;};
+  function keepButton(type,item){const b=document.createElement('button');b.type='button';b.className='keep-button';b.textContent='+';b.setAttribute('aria-label','Add this '+(type==='photos'?'photo':type==='songs'?'song':'note')+' to your pocket');b.addEventListener('click',()=>keep(type,item));return b;}
+  function setupAboutPhotoFlash(){const button=$('aboutPhotoFlash'),peek=$('aboutPhotoPeek'),status=$('aboutPhotoFlashStatus');if(!button||button.dataset.ready)return;button.dataset.ready='true';let timer;button.addEventListener('click',()=>{const available=posts.filter(post=>validPhoto(post.image));if(!available.length){status.textContent='No journal photos are available yet.';return;}peek.replaceChildren();const chosen=[...available].sort(()=>Math.random()-.5).slice(0,Math.min(4,available.length));chosen.forEach((post,index)=>{const img=document.createElement('img');img.className=`about-photo-flash-tile tile-${index+1}`;img.src=validPhoto(post.image);img.alt='';img.loading='eager';peek.append(img);});button.classList.add('photo-flash-active');status.textContent=`A quick glimpse of ${chosen.length} photos from the journal.`;clearTimeout(timer);timer=setTimeout(()=>{button.classList.remove('photo-flash-active');peek.replaceChildren();},reduce()?260:850);});}
+  function renderMarket(items=marketItems){
+    const root=$('kissMarketItems');if(!root)return;root.replaceChildren();const active=items.filter(item=>item.active!==false);
+    if(!active.length){const empty=document.createElement('p');empty.className='collection-empty';empty.textContent='No items or services are listed yet. Check back soon.';root.append(empty);return;}
+    active.forEach(item=>{const card=document.createElement('article');card.className='kiss-market-card';card.dataset.marketId=item.id;const kind=document.createElement('span');kind.className='kiss-market-kind';kind.textContent=item.type==='service'?'SERVICE':'ITEM';const title=document.createElement('h3');title.textContent=item.title;const description=document.createElement('p');description.textContent=item.description||'Includes a collectible ticket with the rights listed by the archive.';const offer=document.createElement('div');offer.className='kiss-market-offer';const priceCopy=document.createElement('span');priceCopy.textContent='KISS PRICE';const price=document.createElement('strong');price.className='kiss-market-price';price.textContent=`${item.kissCost} kisses`;offer.append(priceCopy,price);const buy=document.createElement('button');buy.type='button';buy.className='pill-button kiss-market-buy';buy.textContent='Buy & claim ticket';buy.setAttribute('aria-label',`Buy ${item.title} and claim its ticket for ${item.kissCost} kisses`);const arrow=document.createElement('span');arrow.setAttribute('aria-hidden','true');arrow.textContent='↗';buy.append(arrow);buy.addEventListener('click',()=>buyMarketItem(item));card.append(kind,title,description,offer,buy);root.append(card);});
+  }
+  function buyMarketItem(item){
+    const cost=Math.floor(Number(item.kissCost)||0),balance=Number(window.archiveKissSnapshot?.kissesAvailable)||0;
+    const marketStatus=$('kissMarketStatus');if(cost<1)return;if(balance<cost){const message=`You need ${cost-balance} more kiss${cost-balance===1?'':'es'} for this ticket.`;if(marketStatus)marketStatus.textContent=message;announcePocket(message);return;}
+    if(pocket.length>=50){const message='Your pocket is full (50 keeps). Clear space before claiming a ticket.';if(marketStatus)marketStatus.textContent=message;announcePocket(message);return;}
+    const ticket={collectible:'market-ticket',ticketId:`ticket-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,marketId:item.id,title:item.title,description:item.description||'',kind:item.type==='service'?'service':'item',kissCost:cost,claimedAt:Date.now(),collectionRights:true};const entry={type:'collectibles',item:ticket};pocket.push(entry);
+    if(!writePocket()){pocket.pop();const message='Pocket storage is unavailable, so this ticket could not be claimed.';if(marketStatus)marketStatus.textContent=message;announcePocket(message);return;}
+    if(!window.archiveSpendKisses?.(cost)){pocket.pop();writePocket();const message='Your kiss balance changed. Please try again.';if(marketStatus)marketStatus.textContent=message;announcePocket(message);return;}
+    activePocket='collectibles';document.querySelectorAll('[data-pocket-tab]').forEach(tab=>tab.setAttribute('aria-selected',String(tab.dataset.pocketTab==='collectibles')));const pocketPanel=$('pocketPanel');if(pocketPanel){pocketPanel.hidden=false;if(matchMedia('(max-width: 620px)').matches){$('archivePetPanel')?.setAttribute('hidden','');$('archivePetToggle')?.setAttribute('aria-expanded','false');}}renderPocket();const successMessage=`${item.title} ticket claimed and added to your collection.`;if(marketStatus)marketStatus.textContent=successMessage;announcePocket(successMessage);renderMarket();
+  }
+  window.addEventListener('archive-kiss-updated',()=>renderMarket());
+  window.archiveSetMarketItems=items=>{marketItems=(Array.isArray(items)?items:[]).filter(item=>item&&item.active!==false&&String(item.id||'')&&String(item.title||'').trim()&&Number(item.kissCost)>0).map(item=>({id:String(item.id),title:String(item.title).slice(0,70),description:String(item.description||'').slice(0,240),type:item.type==='service'?'service':'item',kissCost:Math.floor(Number(item.kissCost)),active:item.active!==false,offerRef:String(item.offerRef||'')}));window.archiveMarketItems=marketItems;renderMarket();window.archiveCheckAcceptedKissOffers?.();};
+  function renderPocket(){
+    const root=$('pocketItems');if(!root)return;const awards=window.archiveKissSnapshot?.awards||[];const totalCount=pocket.length+awards.length;$('pocketCount').textContent=String(totalCount);$('pocketToggle').setAttribute('aria-label',totalCount?`Open pocket, ${totalCount} collectibles and saved items`:'Open pocket');root.replaceChildren();
+    const addRemove=(row,entry)=>{const remove=document.createElement('button');remove.type='button';remove.textContent='Remove';remove.addEventListener('click',()=>{const real=pocket.indexOf(entry);if(real>=0)pocket.splice(real,1);writePocket();renderPocket();});row.append(remove);};
+    if(activePocket==='collectibles'){
+      const walletCard=document.createElement('p');walletCard.className='pocket-kiss-balance';const walletValue=Number(window.archiveKissSnapshot?.kissesAvailable)||0;walletCard.textContent=`${walletValue} kiss${walletValue===1?'':'es'} available to offer`;root.append(walletCard);
+      const awardGroup=document.createElement('section');awardGroup.className='pocket-collection-group';const awardHeading=document.createElement('h3');awardHeading.textContent='Kiss awards';awardGroup.append(awardHeading);
+      if(!awards.length){const empty=document.createElement('p');empty.className='collection-empty';empty.textContent='Kiss milestone awards will collect here as you earn them.';awardGroup.append(empty);}else awards.forEach(award=>{const row=document.createElement('article');row.className='pocket-item pocket-award-card';const graphic=validPhoto(award.graphic);if(graphic){const img=document.createElement('img');img.className='pocket-award-art';img.src=graphic;img.alt='';row.append(img);}else{const sticker=document.createElement('span');sticker.className='pocket-award-art pocket-award-emoji';sticker.setAttribute('aria-hidden','true');sticker.textContent=award.sticker||'✦';row.append(sticker);}const copy=document.createElement('div');copy.className='pocket-award-copy';const title=document.createElement('strong');title.textContent=award.title;const detail=document.createElement('small');detail.textContent=award.type==='streak'?`${award.target}-day kiss streak`:`${award.target} kisses`;copy.append(title,detail);row.append(copy);awardGroup.append(row);});root.append(awardGroup);
+      const ticketGroup=document.createElement('section');ticketGroup.className='pocket-collection-group';const ticketHeading=document.createElement('h3');ticketHeading.textContent='Market tickets';ticketGroup.append(ticketHeading);const tickets=pocket.filter(entry=>entry.type==='collectibles'&&entry.item?.collectible==='market-ticket');if(!tickets.length){const empty=document.createElement('p');empty.className='collection-empty';empty.textContent='Tickets from the kiss market will be kept here.';ticketGroup.append(empty);}else tickets.slice().reverse().forEach(entry=>{const ticket=entry.item,row=document.createElement('article');row.className='pocket-item market-ticket-card';const ribbon=document.createElement('span');ribbon.className='market-ticket-ribbon';ribbon.textContent='COLLECTION RIGHT · TICKET';const title=document.createElement('strong');title.textContent=ticket.title;const description=document.createElement('p');description.textContent=ticket.description||'A collectible ticket from the kiss market.';const detail=document.createElement('small');detail.textContent=`${ticket.kind==='service'?'SERVICE':'ITEM'} · ${ticket.kissCost} KISSES · CLAIMED ${new Date(ticket.claimedAt).toLocaleDateString()}`;row.append(ribbon,title,description,detail);ticketGroup.append(row);});root.append(ticketGroup);
+      const cardGroup=document.createElement('section');cardGroup.className='pocket-collection-group';const cardHeading=document.createElement('h3');cardHeading.textContent='Kamila cards';cardGroup.append(cardHeading);const cards=pocket.filter(entry=>entry.type==='collectibles'&&entry.item?.collectible==='kamila');if(!cards.length){const empty=document.createElement('p');empty.className='collection-empty';empty.textContent='Catch Kamila to find a card for your collection.';cardGroup.append(empty);}else cards.forEach(entry=>{const row=document.createElement('article');const tier=String(entry.item.tier||'common').toLowerCase();row.className=`pocket-item kamila-pocket-card tier-${tier}`;const imageButton=document.createElement('button');imageButton.type='button';imageButton.className='pocket-photo';const img=document.createElement('img');img.src=entry.item.image;img.alt=entry.item.caption||'Kamila collectible card';imageButton.append(img);imageButton.setAttribute('aria-label',`Open Kamila collectible card: ${entry.item.caption||'A little Kamila collectible'}`);imageButton.addEventListener('click',()=>openKamilaCard(entry.item,`CARD ${String(cards.indexOf(entry)+1).padStart(3,'0')}`));row.append(imageButton);const tierBadge=document.createElement('span');tierBadge.className=`kamila-tier-badge ${tier}`;tierBadge.textContent=tier.toUpperCase();row.append(tierBadge);const tierValue=kamilaCardValues[tier]||1;const worth=document.createElement('small');worth.className='kamila-card-worth';worth.textContent=`Worth · ${tierValue} kiss${tierValue===1?'':'es'}`;row.append(worth);const caption=document.createElement('p');caption.textContent=entry.item.caption||'A little Kamila collectible';row.append(caption);const serial=document.createElement('small');serial.className='kamila-card-number';serial.textContent=`CARD ${String(cards.indexOf(entry)+1).padStart(3,'0')}`;row.append(serial);const exchange=document.createElement('button');exchange.type='button';exchange.className='kamila-card-exchange';exchange.textContent=`Exchange for ${Number(entry.item.kissValue)||tierValue} kisses`;exchange.addEventListener('click',()=>{const value=Number(entry.item.kissValue)||tierValue;const real=pocket.indexOf(entry);if(real<0)return;pocket.splice(real,1);if(!writePocket()){pocket.splice(real,0,entry);announcePocket('Pocket storage is unavailable, so this card was not exchanged.');return;}if(!window.archiveAddKisses?.(value)){pocket.splice(real,0,entry);writePocket();announcePocket('Your kiss balance could not be saved, so the card stayed in your pocket.');return;}renderPocket();announcePocket(`Card exchanged for ${value} kiss${value===1?'':'es'}.`);});row.append(exchange);addRemove(row,entry);cardGroup.append(row);});root.append(cardGroup);$('pocketEmpty').textContent='Clear Kamila cards';return;
     }
-    if (['youtube.com','music.youtube.com','m.youtube.com'].includes(host) || host === 'youtu.be') {
-      let id='', list=url.searchParams.get('list');
-      if(host==='youtu.be') id=url.pathname.split('/').filter(Boolean)[0]||'';
-      else if(url.pathname==='/watch') id=url.searchParams.get('v')||'';
-      else if(/^\/(shorts|embed|live)\//.test(url.pathname)) id=url.pathname.split('/')[2]||'';
-      if(id){const p=new URLSearchParams({rel:'0',playsinline:'1'});if(url.searchParams.get('t'))p.set('start',String(parseInt(url.searchParams.get('t'),10)||0));if(list)p.set('list',list);return {kind:'youtube',embed:`https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?${p}`,title:'YouTube video',original:url.href};}
-      if(url.pathname==='/playlist'&&list)return {kind:'youtube',embed:`https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(list)}`,title:'YouTube playlist',original:url.href};
-    }
-    return null;
+    $('pocketEmpty').textContent='Empty pocket';const items=pocket.filter(x=>x.type===activePocket);if(!items.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='Nothing tucked in here yet.';root.append(p);}items.forEach(entry=>{const row=document.createElement('article');row.className=`pocket-item${entry.type==='photos'?' pocket-photo-item':''}`;if(entry.type==='photos'){const b=document.createElement('button');b.className='pocket-photo';b.type='button';const img=document.createElement('img');img.src=entry.item.image;img.alt=entry.item.caption||'Saved photo';b.append(img);b.addEventListener('click',()=>openPhoto(entry.item.image,entry.item.caption));row.append(b);const cap=document.createElement('p');cap.textContent=entry.item.caption||'Photo';row.append(cap);}else if(entry.type==='songs'){const title=document.createElement('p');title.textContent=entry.item.label||'A song for you';row.append(title);const frame=document.createElement('iframe');frame.src=window.archiveSafeEmbedUrl(entry.item.embed)||'';frame.title=title.textContent;frame.loading='lazy';frame.allow='encrypted-media; fullscreen; picture-in-picture';frame.style.width='100%';frame.style.border='0';frame.style.minHeight=entry.item.kind==='spotify'?'152px':'190px';row.append(frame);}else{const p=document.createElement('p');p.textContent=entry.item.text;row.append(p);}addRemove(row,entry);root.append(row);});
   }
-  function makeButton(label, action, danger=false, accessibleLabel=label) {
-    const b=document.createElement('button');b.type='button';b.className='small-action'+(danger?' danger':'');b.textContent=label;b.setAttribute('aria-label',accessibleLabel);b.addEventListener('click',action);return b;
-  }
-  function renderSongs() {
-    const root=$('adminSongList');root.replaceChildren();
-    $('songStat').textContent=songs.length;
-    if(!songs.length){const e=document.createElement('div');e.className='admin-empty';e.textContent='No songs added yet. Start with the one that reminds you of him most.';root.append(e);return;}
-    songs.forEach((song,i)=>{const row=document.createElement('article');row.className='admin-item';const main=document.createElement('div');main.className='admin-item-main';const title=document.createElement('div');title.className='admin-item-title';title.textContent=song.label||song.title||'Untitled song';const meta=document.createElement('div');meta.className='admin-item-meta';meta.textContent=(song.kind||'link').toUpperCase()+' · EMBED READY';main.append(title,meta);const actions=document.createElement('div');actions.className='admin-item-actions';actions.append(makeButton('Edit',()=>editSong(i,row),false,'Edit '+(song.label||song.title||'song')),makeButton('↑',()=>moveSong(i,-1),false,'Move '+(song.label||song.title||'song')+' up'),makeButton('↓',()=>moveSong(i,1),false,'Move '+(song.label||song.title||'song')+' down'),makeButton('Remove',()=>{if(!window.archiveGitHub?.connected){$('adminSongStatus').textContent='Connect GitHub before editing songs.';return;}songs.splice(i,1);persistSongs();renderSongs();},true));row.append(main,actions);root.append(row);});
-  }
-  function renderNoises(){
-    const root=$('adminNoiseList');if(!root)return;root.replaceChildren();const count=$('noiseCount');if(count)count.textContent=`${noises.length} ITEM${noises.length===1?'':'S'}`;
-    if(!noises.length){const empty=document.createElement('div');empty.className='admin-empty';empty.textContent='No recordings yet. Add the first voice note.';root.append(empty);return;}
-    noises.forEach((noise,i)=>{const row=document.createElement('article');row.className='admin-item';const main=document.createElement('div');main.className='admin-item-main';const title=document.createElement('div');title.className='admin-item-title';title.textContent=noise.title||'Untitled recording';const meta=document.createElement('div');meta.className='admin-item-meta';meta.textContent=[noise.date||'Undated',noise.caption||'Audio recording'].join(' · ');const player=document.createElement('audio');player.controls=true;player.preload='none';player.src=validPostUrl(noise.url)||'';player.className='admin-noise-preview';main.append(title,meta,player);const actions=document.createElement('div');actions.className='admin-item-actions';actions.append(makeButton('Edit',()=>editNoise(i,row),false,'Edit '+title.textContent),makeButton('↑',()=>moveNoise(i,-1),false,'Move '+title.textContent+' up'),makeButton('↓',()=>moveNoise(i,1),false,'Move '+title.textContent+' down'),makeButton('Remove',()=>deleteNoise(noise),true));row.append(main,actions);root.append(row);});
-  }
-  function editSong(i,row){
-    if(row.querySelector('.inline-edit'))return;const song=songs[i];
-    const form=inlineEditForm([{key:'label',label:'DISPLAY LABEL',value:song.label||song.title||'',max:90}],values=>{songs[i].label=values.label||song.title||'Untitled song';persistSongs();renderSongs();},()=>form.remove());
-    row.append(form);form.querySelector('input').focus();
-  }
-  function editNoise(i,row){
-    if(row.querySelector('.inline-edit'))return;const n=noises[i];
-    const form=inlineEditForm([{key:'title',label:'TITLE',value:n.title||'',max:90},{key:'caption',label:'CAPTION',value:n.caption||'',rows:2,max:240},{key:'date',label:'DATE',value:n.date||'',type:'date'}],v=>{noises[i]={...n,title:v.title||n.title||'Untitled recording',caption:v.caption,date:v.date};persistSharedCollections().then(()=>{const s=$('adminNoiseStatus');if(s)s.textContent='Edit staged. Publish all changes to go live.';});renderNoises();},()=>form.remove());
-    row.append(form);form.querySelector('input').focus();
-  }
-  function moveNoise(i,dir){const j=i+dir;if(j<0||j>=noises.length)return;[noises[i],noises[j]]=[noises[j],noises[i]];persistSharedCollections().then(ok=>{const status=$('adminNoiseStatus');if(status)status.textContent=ok?'Order staged. Publish all changes to go live.':'Saved locally, but shared publishing failed.';});renderNoises();}
-  async function deleteNoise(noise){
-    if(!window.archiveGitHub?.connected){$('adminNoiseStatus').textContent='Connect GitHub before deleting recordings.';return;}
-    if(!confirm(`Remove “${noise.title||'this recording'}” from Noises?`))return;
-    noises=noises.filter(item=>item.id!==noise.id);
-    if(noise.path?.startsWith('assets/archive/'))window.archiveStaging.deletes.add(noise.path);
-    await persistSharedCollections();
-    $('adminNoiseStatus').textContent='Recording removed. Publish all changes to delete the file.';
-    renderNoises();
-  }
-  $('adminNoiseForm')?.addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget,file=$('adminNoiseFile').files?.[0],status=$('adminNoiseStatus'),button=form.querySelector('button[type=submit]');if(!file)return;if(!window.archiveGitHub?.connected){status.textContent='Connect GitHub before uploading a recording.';return;}if(!file.type.startsWith('audio/')&& !/\.(mp3|m4a|wav|ogg|aac|webm)$/i.test(file.name)){status.textContent='Choose a supported audio file.';return;}if(file.size>25*1024*1024){status.textContent='Audio files must be 25 MB or smaller.';return;}button.disabled=true;status.textContent='Uploading recording to GitHub…';let path='';try{const ext=(file.name.split('.').pop()||'audio').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8)||'audio',slug=($('adminNoiseTitle').value.trim()||file.name.replace(/\.[^.]+$/,'')).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'recording';path=`assets/archive/noises/${Date.now()}-${slug}.${ext}`;await window.archiveGitHub.upload(path,file,`Add recording: ${slug.slice(0,50)}`);window.archiveStaging.uploads.add(path);const url=window.archiveGitHub.pagesUrl(path);noises.unshift({id:`noise-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,title:$('adminNoiseTitle').value.trim()||file.name.replace(/\.[^.]+$/,''),caption:$('adminNoiseCaption').value.trim(),date:$('adminNoiseDate').value||new Date().toISOString().slice(0,10),url,path,mime:file.type||'',addedAt:Date.now()});noises=noises.slice(0,50);const ok=await persistSharedCollections();if(!ok)throw new Error('The file uploaded, but the archive JSON could not be published.');form.reset();status.textContent='Recording uploaded and staged. Publish all changes to go live.';renderNoises();}catch(error){if(path)try{await window.archiveGitHub.delete(path,'Remove unpublished audio upload');}catch(_){}status.textContent=error.message||'Could not upload recording. Check GitHub token and repository permissions.';}finally{button.disabled=false;}});
+  const kamilaCardValues={'common':1,'uncommon':3,'rare':5,'epic':10,'legendary':25,'extremely-rare':50,'priceless':100};
+  const kamilaTiers=[{name:'common',limit:.55},{name:'uncommon',limit:.80},{name:'rare',limit:.93},{name:'extremely-rare',limit:.99},{name:'epic',limit:.999},{name:'legendary',limit:.9995},{name:'priceless',limit:1}];
+  let kamilaTraitPools=window.archiveKamilaTraitOptions||{Temperament:['curious little cloud','sunbeam chaser','quiet observer','mischief in velvet paws','gentle daydreamer','tiny brave heart','professional napper'],Specialty:['finding cozy corners','perfectly timed appearances','expert-level hiding','making ordinary days softer','collecting curious glances','vanishing mid-blink','excellent company'],Habitat:['the sunny windowsill','between songs','a soft blanket fort','the edge of the page','the quiet side of the room','a pocket-sized daydream','wherever you are']};
+  window.archiveSetKamilaTraitOptions=options=>{if(options&&typeof options==='object')kamilaTraitPools={Temperament:Array.isArray(options.Temperament)&&options.Temperament.length?options.Temperament:kamilaTraitPools.Temperament,Specialty:Array.isArray(options.Specialty)&&options.Specialty.length?options.Specialty:kamilaTraitPools.Specialty,Habitat:Array.isArray(options.Habitat)&&options.Habitat.length?options.Habitat:kamilaTraitPools.Habitat};};
+  function randomKamilaTraits(){return Object.fromEntries(Object.entries(kamilaTraitPools).map(([name,values])=>[name,values[Math.floor(Math.random()*values.length)]]));}
+  function ensureKamilaTraits(item){if(!item.traits||typeof item.traits!=='object'){item.traits=randomKamilaTraits();writePocket();}return item.traits;}
+  const cardPreviewDialog=$('kamilaCardPreviewDialog'),cardFlipInner=$('kamilaPocketPreviewFlip'),cardFlipButton=$('kamilaCardFlipButton');
+  function setKamilaCardFace(back){if(!cardFlipInner)return;cardFlipInner.classList.toggle('is-flipped',back);cardFlipButton?.setAttribute('aria-pressed',String(back));if(cardFlipButton)cardFlipButton.textContent=back?'Turn card back':'Turn card over';const swipeHint=$('kamilaCardSwipeHint');if(swipeHint)swipeHint.textContent=back?'↔ Swipe the card to see the photo':'↔ Swipe the card to see the back';$('kamilaPocketPreviewBack')?.setAttribute('aria-hidden',String(!back));$('kamilaPocketPreviewArt')?.closest('.kamila-card-front')?.setAttribute('aria-hidden',String(back));}
+  let cardLaunchTimer;
+  function replayKamilaCardLaunch(){const scene=document.querySelector('.kamila-card-flip-scene');if(!scene||reduce())return;clearTimeout(cardLaunchTimer);scene.classList.remove('kamila-launching');requestAnimationFrame(()=>{void scene.offsetWidth;scene.classList.add('kamila-launching');cardLaunchTimer=setTimeout(()=>scene.classList.remove('kamila-launching'),1450);});}
+  function openKamilaCard(item,serial){const tier=String(item.tier||'common').toLowerCase();const safeTier=Object.hasOwn(kamilaCardValues,tier)?tier:'common';const caption=item.caption||'A little Kamila collectible';const art=$('kamilaPocketPreviewArt');art?.replaceChildren();if(art&&validPhoto(item.image)){const image=document.createElement('img');image.src=item.image;image.alt=caption;art.append(image);} $('kamilaPocketPreviewCaption').textContent=caption;$('kamilaPocketPreviewDescription').textContent=item.description||'A little moment, kept safe in the pocket collection.';$('kamilaPocketPreviewTier').textContent=safeTier.toUpperCase();$('kamilaPocketPreviewRarity').textContent=safeTier.replaceAll('-',' ').toUpperCase();const value=Number(item.kissValue)||kamilaCardValues[safeTier];$('kamilaPocketPreviewPrice').textContent=`${value} KISS${value===1?'':'ES'}`;$('kamilaPocketPreviewWorth').textContent=`${value} kiss${value===1?'':'es'}`;$('kamilaPocketPreviewTier').className=`kamila-tier-badge ${safeTier}`;$('kamilaPocketPreviewSerial').textContent=serial;$('kamilaPocketPreviewCard').className=`kamila-trading-card kamila-flippable-card tier-${safeTier}`;const traits=ensureKamilaTraits(item),traitList=$('kamilaPocketPreviewTraits');traitList.replaceChildren();Object.entries(kamilaTraitPools).forEach(([name,values])=>{const row=document.createElement('div'),term=document.createElement('dt'),description=document.createElement('dd');term.textContent=name;description.textContent=values.includes(traits[name])?traits[name]:values[Math.floor(Math.random()*values.length)];if(!values.includes(traits[name])){traits[name]=description.textContent;writePocket();}row.append(term,description);traitList.append(row);});setKamilaCardFace(false);cardPreviewDialog?.showModal();replayKamilaCardLaunch();}
+  cardFlipButton?.addEventListener('click',()=>setKamilaCardFace(!cardFlipInner?.classList.contains('is-flipped')));
+  $('kamilaCardPreviewClose')?.addEventListener('click',()=>cardPreviewDialog?.close());
+  const cardFlipScene=document.querySelector('.kamila-card-flip-scene');let cardSwipeStart=null;cardFlipScene?.addEventListener('pointerdown',event=>{if(event.target.closest('button'))return;cardSwipeStart={x:event.clientX,y:event.clientY};try{cardFlipScene.setPointerCapture(event.pointerId);}catch(_){}});cardFlipScene?.addEventListener('pointerup',event=>{if(!cardSwipeStart)return;const dx=event.clientX-cardSwipeStart.x,dy=event.clientY-cardSwipeStart.y;cardSwipeStart=null;if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy))setKamilaCardFace(dx<0);});cardFlipScene?.addEventListener('pointercancel',()=>{cardSwipeStart=null;});
+  window.archiveCollectKamila=photo=>{if(!photo?.image||!validPhoto(photo.image))return null;const roll=Math.random(),tier=kamilaTiers.find(item=>roll<item.limit)?.name||'common',item={image:photo.image,caption:photo.caption||'A little Kamila collectible',description:photo.description||'',traits:randomKamilaTraits(),collectible:'kamila',cardId:`kamila-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,collectedAt:Date.now(),tier,kissValue:kamilaCardValues[tier]||1};keep('collectibles',item);return pocket.find(entry=>entry.type==='collectibles'&&entry.item.cardId===item.cardId)?.item||null;};
 
-  function moveSong(i,dir){if(!window.archiveGitHub?.connected){$('adminSongStatus').textContent='Connect GitHub before editing songs.';return;}const j=i+dir;if(j<0||j>=songs.length)return;[songs[i],songs[j]]=[songs[j],songs[i]];persistSongs();renderSongs();}
-  async function persistSharedCollections(){
-    safeWrite(KEYS.songs,songs); safeWrite(KEYS.noises,noises); safeWrite(KEYS.thoughts,thoughts);
-    window.archiveMarkDirty?.();
-    window.dispatchEvent(new CustomEvent('archive-collections-saved',{detail:{songs,noises,thoughts}}));
+
+  $('pocketToggle').addEventListener('click',()=>{const panel=$('pocketPanel');panel.hidden=!panel.hidden;if(!panel.hidden){if(matchMedia('(max-width: 620px)').matches){$('archivePetPanel')?.setAttribute('hidden','');$('archivePetToggle')?.setAttribute('aria-expanded','false');}renderPocket();$('pocketClose').focus();}});$('pocketClose').addEventListener('click',()=>$('pocketPanel').hidden=true);$('pocketEmpty').addEventListener('click',()=>{pocket=activePocket==='collectibles'?pocket.filter(x=>!(x.type==='collectibles'&&x.item?.collectible==='kamila')):pocket.filter(x=>x.type!==activePocket);writePocket();renderPocket();});document.querySelectorAll('[data-pocket-tab]').forEach(b=>b.addEventListener('click',()=>{activePocket=b.dataset.pocketTab;document.querySelectorAll('[data-pocket-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));renderPocket();}));
+  try{if(!localStorage.getItem('archivePocketHintSeen')){announcePocket('Keep a photo, song or note here to find it again.');localStorage.setItem('archivePocketHintSeen','1');}}catch(_){announcePocket('Keep a photo, song or note here to find it again.');}
+  function addKeepControls(){document.querySelectorAll('.blog-post').forEach(card=>{if(card.querySelector('.keep-button'))return;const p=posts.find(x=>String(x.id||'')===card.dataset.postId)||posts[0];if(p)card.append(keepButton('photos',{image:validPhoto(p.image),caption:p.caption||'',date:p.date||''}));});document.querySelectorAll('.archive-song').forEach((card,i)=>{if(!card.querySelector('.keep-button')&&songs[i])card.append(keepButton('songs',{embed:window.archiveSafeEmbedUrl(songs[i].embed),label:songs[i].label||songs[i].title||'A song for you',kind:songs[i].kind||''}));});}
+  function renderDeal(preserve=false){const section=$('deal'),root=$('dealHand');if(!section||!root)return;const pool=posts.length+songs.length+notes.length;if(!pool){section.hidden=true;return;}section.hidden=false;root.replaceChildren();const pick=(a,previous)=>{if(!a.length)return null;const choices=a.length>1?a.filter(item=>item!==previous):a;return choices[Math.floor(Math.random()*choices.length)];};if(!preserve)dealItems=[pick(posts),pick(songs),pick(notes)];const types=['photos','songs','notes'];dealItems.forEach((item,i)=>{const card=document.createElement('article');card.className='deal-card';card.style.setProperty('--tilt',`${Math.random()*8-4}deg`);if(!item){const p=document.createElement('p');p.textContent=['No photos just yet.','No songs just yet.','No notes just yet.'][i];card.append(p);}else if(i===0){const b=document.createElement('button');b.type='button';b.className='blog-photo-button';b.dataset.photo=validPhoto(item.image);b.dataset.caption=item.caption||'';const img=document.createElement('img');img.src=validPhoto(item.image);img.alt=item.alt||item.caption||'Photo journal image';b.append(img);b.addEventListener('click',()=>openPhoto(item.image,item.caption,item.alt));const p=document.createElement('p');p.textContent=item.caption||'From the archive';card.append(b,p);if(item.date){const t=document.createElement('time');t.textContent=item.date;card.append(t);}}else if(i===1){const h=document.createElement('h3');h.textContent=item.label||item.title||'A song for you';card.append(h);const frame=document.createElement('iframe');frame.src=window.archiveSafeEmbedUrl(item.embed)||'';frame.title=h.textContent;frame.loading='lazy';frame.allow='encrypted-media; fullscreen; picture-in-picture';frame.referrerPolicy='strict-origin-when-cross-origin';frame.style.width='100%';frame.style.border='0';frame.style.borderRadius='12px';frame.style.minHeight=item.kind==='spotify'?'152px':'190px';card.append(frame);}else{const p=document.createElement('p');p.textContent=item.text;card.append(p);}if(item)card.append(keepButton(types[i],i===0?{image:item.image,caption:item.caption||'',date:item.date||''}:i===1?{embed:window.archiveSafeEmbedUrl(item.embed),label:item.label||item.title||'A song for you',kind:item.kind||''}:{text:item.text}));const again=document.createElement('button');again.type='button';again.className='reroll-button';again.textContent='↻';again.setAttribute('aria-label','Redraw this card');again.addEventListener('click',()=>{const poolFor=[posts,songs,notes][i];dealItems[i]=pick(poolFor,dealItems[i]);renderDeal(true);});card.append(again);root.append(card);});}
+  const dealDialog=$('dealDialog');$('dealStack').addEventListener('click',()=>{if(!dealDialog.open)dealDialog.showModal();});$('dealClose').addEventListener('click',()=>dealDialog.close());dealDialog.addEventListener('click',event=>{if(event.target===dealDialog)dealDialog.close();});
+  $('dealAgain').addEventListener('click',()=>{const pick=(pool,previous)=>{if(!pool.length)return null;const choices=pool.length>1?pool.filter(item=>item!==previous):pool;return choices[Math.floor(Math.random()*choices.length)];};dealItems=[pick(posts,dealItems[0]),pick(songs,dealItems[1]),pick(notes,dealItems[2])];renderDeal(true);});
+  function dateLabel(date){if(!/^\d{4}-\d{2}-\d{2}$/.test(date||''))return '';return new Intl.DateTimeFormat(undefined,{year:'numeric',month:'long',day:'numeric',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));}
+  function matches(post){const d=post.date||'',cap=(post.caption||'').toLocaleLowerCase(),q=query.trim().toLocaleLowerCase();let ok=!yearFilter||d.startsWith(yearFilter);if(q){const parts=q.split(/\s+/);ok=ok&&parts.every(part=>cap.includes(part)||d.toLocaleLowerCase().includes(part)||(()=>{if(!d)return false;const dt=new Date(d+'T12:00:00Z');return dt.toLocaleString(undefined,{month:'long',year:'numeric'}).toLocaleLowerCase().includes(part);})());}return ok;}
+  function captionNodes(el,text,needle){const lower=text.toLocaleLowerCase(),q=needle.trim().toLocaleLowerCase();if(!q){el.textContent=text||'Untitled photo';return;}let cursor=0;while(cursor<text.length){let found=-1,term='';for(const part of q.split(/\s+/)){const i=lower.indexOf(part,cursor);if(i>=0&&(found<0||i<found)){found=i;term=part;}}if(found<0){el.append(document.createTextNode(text.slice(cursor)));break;}el.append(document.createTextNode(text.slice(cursor,found)));const m=document.createElement('mark');m.textContent=text.slice(found,found+term.length);el.append(m);cursor=found+term.length;}}
+  let previewIds=new Set();
+  function renderJournal(){const root=$('blogPosts'),more=$('blogMore'),all=[...posts],filtered=all.filter(matches),searching=Boolean(query.trim()||yearFilter);root.replaceChildren();$('journalResultCount').textContent=searching?`${filtered.length} entr${filtered.length===1?'y':'ies'} found`:'';if(searching){root.classList.remove('journal-mosaic');if(more)more.hidden=true;if(!filtered.length){const p=document.createElement('p');p.className='collection-empty';p.textContent='No entries match this search.';root.append(p);}filtered.forEach((p,i)=>root.append(photoCard(p,i,true)));return;}
+    if(!previewIds.size)previewIds=new Set([...all].sort(()=>Math.random()-.5).slice(0,Math.min(6,all.length)).map((p,i)=>String(p.id||`${p.image}-${i}`)));
+    const preview=all.filter((p,i)=>previewIds.has(String(p.id||`${p.image}-${i}`)));const grid=all.length>6?preview:all.slice(0,6);grid.forEach((p,i)=>root.append(photoCard(p,i,false)));root.classList.toggle('journal-mosaic',grid.length>1);if(more)more.hidden=all.length<=6;const btn=$('blogMoreButton');if(btn){btn.textContent='Load more entries';btn.onclick=()=>{root.classList.remove('journal-mosaic');root.replaceChildren();all.slice(0,9).forEach((p,i)=>root.append(photoCard(p,i,false)));let shown=Math.min(9,all.length);more.hidden=shown>=all.length;btn.textContent=`Load more entries (${all.length-shown} left)`;btn.onclick=()=>{const next=all.slice(shown,shown+9);next.forEach((p,i)=>root.append(photoCard(p,shown+i,false)));shown+=next.length;more.hidden=shown>=all.length;btn.textContent=`Load more entries (${all.length-shown} left)`;};};}}
+  function photoCard(p,i,highlight){const article=document.createElement('article');article.className='blog-post'+(i===0?' blog-post-featured':'');article.dataset.postId=String(p.id||'');const figure=document.createElement('figure');figure.className='blog-figure';const button=document.createElement('button');button.type='button';button.className='blog-photo-button';button.dataset.photo=validPhoto(p.image);button.dataset.caption=p.caption||'';button.dataset.alt=p.alt||'';button.setAttribute('aria-label','Open photo: '+(p.caption||'Photo journal image'));const img=document.createElement('img');img.src=validPhoto(p.image);img.alt=p.alt||p.caption||'Photo journal image';img.loading='lazy';img.decoding='async';retryMedia(img);button.append(img);figure.append(button);const copy=document.createElement('div');copy.className='blog-post-copy';const time=document.createElement('time');time.className='blog-post-date';time.textContent=dateLabel(p.date)||'FROM THE ARCHIVE';const cap=document.createElement('h3');captionNodes(cap,p.caption||'Untitled photo',highlight?query:'');copy.append(time,cap);copy.append(keepButton('photos',{image:validPhoto(p.image),caption:p.caption||'',date:p.date||''}));article.append(figure,copy);return article;}
+  function updateHash(){const hash=`#moments${query.trim()?`?q=${encodeURIComponent(query.trim())}`:''}`;history.replaceState(null,'',location.pathname+location.search+hash);}
+  function setupJournal(){const input=$('journalSearch'),years=$('journalYears');let timer;input.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(()=>{query=input.value;updateHash();renderJournal();},140);});if(location.hash.startsWith('#moments?')){const params=new URLSearchParams(location.hash.split('?')[1]||'');query=params.get('q')||'';input.value=query;}const setYear=y=>{yearFilter=y;years.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.year===y)));renderJournal();};function yearsRender(){years.replaceChildren();const ys=[...new Set(posts.map(p=>(p.date||'').slice(0,4)).filter(y=>/^\d{4}$/.test(y)))].sort().reverse();ys.forEach(y=>{const b=document.createElement('button');b.type='button';b.className='year-chip';b.dataset.year=y;b.textContent=y;b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>setYear(yearFilter===y?'':y));years.append(b);});}yearsRender();}
+  function renderCounters(){const root=$('archiveCounters');if(!root)return;root.replaceChildren();const counts=[['photos',posts.length],['songs',songs.length],['noises',noises.length],['notes',notes.length]].filter(x=>x[1]>0);if(!counts.length){root.hidden=true;return;}root.hidden=false;counts.forEach(([name,value])=>{const span=document.createElement('span');span.className='counter-item';span.textContent=`${name} `;const strong=document.createElement('strong');strong.textContent=String(value);span.append(strong);root.append(span);});if(reduce())return;if('IntersectionObserver'in window){const io=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){const el=e.target.querySelector('strong'),end=Number(el.textContent);let start=0;const t0=performance.now();const tick=now=>{const n=Math.min(1,(now-t0)/650);el.textContent=String(Math.round(start+(end-start)*n));if(n<1)requestAnimationFrame(tick);};requestAnimationFrame(tick);io.disconnect();}}));io.observe(root);}}
+  function renderNotes(){const root=$('publicThoughts');root.replaceChildren();notes.slice(0,noteShown).forEach((n,i)=>{const card=document.createElement('article');card.className='archive-thought';const idx=document.createElement('span');idx.className='archive-thought-index';idx.textContent='—';const p=document.createElement('p');p.textContent=n.text;card.append(idx,p,keepButton('notes',{text:n.text}));root.append(card);});const more=$('notesMore');more.hidden=!notes.length;more.setAttribute('aria-expanded',String(noteShown>0));more.textContent=noteShown>=notes.length&&noteShown>0?'Show less':noteShown===0?'Read latest note':`See more notes (${notes.length-noteShown} left)`;if(!notes.length){const e=document.createElement('p');e.className='collection-empty';e.textContent='A few observations are waiting to be added.';root.append(e);}}
+  function swapNote(){const box=$('noteSwap');box.replaceChildren();if(!notes.length)return;let i;do{i=Math.floor(Math.random()*notes.length);}while(notes.length>1&&i===shuffleUsed);shuffleUsed=i;const p=notes[i],text=document.createElement('p');text.className='note-swap-text';text.textContent=p.text;box.append(text,keepButton('notes',{text:p.text}));}
+  $('notesMore').addEventListener('click',()=>{noteShown=noteShown>=notes.length&&noteShown>0?0:Math.min(notes.length,noteShown+(noteShown===0?1:6));renderNotes();});$('noteAnother').addEventListener('click',swapNote);
+  const pd=$('polaroidDialog'),stage=$('polaroidStage');let polaroidCount=12,zTop=1,drag=null;
+  function renderPolaroids(reset=false){stage.replaceChildren();const list=posts.filter(matches).slice(0,polaroidCount);list.forEach((p,i)=>{const card=document.createElement('article');card.className='polaroid';card.tabIndex=0;card.style.left=`${5+Math.random()*65}%`;card.style.top=`${6+Math.random()*65}%`;card.style.setProperty('--tilt',`${Math.random()*20-10}deg`);card.style.zIndex=String(++zTop);const img=document.createElement('img');img.src=validPhoto(p.image);img.alt=p.alt||p.caption||'Photo journal image';const cap=document.createElement('p');cap.textContent=p.caption||'From the archive';const date=document.createElement('time');date.textContent=dateLabel(p.date);card.append(img,cap,date,keepButton('photos',{image:validPhoto(p.image),caption:p.caption||'',date:p.date||''}));card.addEventListener('pointerdown',e=>{if(e.target.closest('button.keep-button'))return;drag={el:card,x:e.clientX,y:e.clientY,left:card.offsetLeft,top:card.offsetTop,moved:false};card.setPointerCapture(e.pointerId);card.style.zIndex=String(++zTop);});card.addEventListener('pointermove',e=>{if(!drag||drag.el!==card)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)drag.moved=true;card.style.left=`${Math.max(0,Math.min(stage.clientWidth-card.offsetWidth,drag.left+dx))}px`;card.style.top=`${Math.max(0,Math.min(stage.clientHeight-card.offsetHeight,drag.top+dy))}px`;});card.addEventListener('pointerup',()=>{if(drag?.el===card){if(!drag.moved)openPhoto(p.image,p.caption,p.alt);drag=null;}});card.addEventListener('keydown',e=>{const step=e.shiftKey?24:8;const map={ArrowLeft:[-step,0],ArrowRight:[step,0],ArrowUp:[0,-step],ArrowDown:[0,step]};if(map[e.key]){e.preventDefault();card.style.left=`${Math.max(0,card.offsetLeft+map[e.key][0])}px`;card.style.top=`${Math.max(0,card.offsetTop+map[e.key][1])}px`;}});stage.append(card);});}
+  $('polaroidOpen').addEventListener('click',()=>{polaroidCount=12;renderPolaroids(true);pd.showModal();});$('polaroidClose').addEventListener('click',()=>pd.close());$('polaroidShuffle').addEventListener('click',()=>renderPolaroids(true));$('polaroidTidy').addEventListener('click',()=>{[...stage.children].forEach((c,i)=>{c.style.left=`${8+(i%4)*22}%`;c.style.top=`${8+Math.floor(i/4)*28}%`;c.style.setProperty('--tilt','0deg');});});$('polaroidMore').addEventListener('click',()=>{polaroidCount+=12;renderPolaroids();});
+  function update(){posts=window.archivePosts||[];songs=window.archiveSongs||[];notes=window.archiveThoughts||[];noises=window.archiveNoises||[];if(!window._archiveEnhancementsStarted){window._archiveEnhancementsStarted=true;setupJournal();setupAboutPhotoFlash();}renderJournal();renderDeal();renderCounters();renderNotes();swapNote();addKeepControls();renderPocket();}
+  window.addEventListener('archive-content-updated',update);window.addEventListener('archive-kiss-updated',renderPocket);if(window.archivePosts||window.archiveSongs)update();
+})();
+
+/* Daily kiss: one claim per day per browser, with a streak. */
+(() => {
+  const $ = id => document.getElementById(id);
+  const button = $('kissButton');
+  if (!button) return;
+  const label = $('kissButtonLabel'), message = $('kissMessage'), stats = $('kissStats'), note = $('kissNote'), burst = $('kissBurst'), awardsRoot=$('kissAwards');
+  const defaults = [
+    'A kiss for the quiet part of your day.',
+    'Delivered with the light through the window.',
+    'One kiss, no questions asked.',
+    'Saved up since yesterday, all for you.',
+    'For every ordinary day that turned out better with you in it.',
+    'A small kiss for a big week.',
+    'Sent ahead of the weather. Dress warm.',
+    'Handle with care. Best claimed with a smile.',
+    'Because today deserved a good start.',
+    'A kiss, a song, and a slow afternoon.',
+    'Proof that small things count.',
+    'Claimed, kept, and remembered.'
+  ];
+  let messages = defaults;
+  const defaultMilestones=[{type:'streak',target:3,sticker:'🌱',title:'A little beginning'},{type:'streak',target:7,sticker:'🌷',title:'One lovely week'},{type:'streak',target:14,sticker:'💌',title:'Two weeks close'},{type:'streak',target:30,sticker:'💖',title:'A month of kisses'},{type:'total',target:10,sticker:'✨',title:'Ten kisses kept'},{type:'total',target:50,sticker:'🌟',title:'Fifty sweet days'},{type:'total',target:100,sticker:'💎',title:'One hundred kisses'}];
+  let milestones=defaultMilestones;
+  const KEY = 'archiveKissGame';
+  const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const dayNumber = (d = new Date()) => Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+  const yesterdayKey = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dayKey(d); };
+  const safeStickerGraphic=value=>{try{const url=new URL(value);return url.protocol==='https:'&&url.hostname&&!url.username&&!url.password?url.href:'';}catch(_){return '';}};
+  const read = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || '{}'); return { last: typeof v.last === 'string' ? v.last : '', streak: Number(v.streak) || 0, total: Number(v.total) || 0, wallet:Number.isFinite(Number(v.wallet))?Math.max(0,Math.floor(Number(v.wallet))):(Number(v.total)||0), awards:Array.isArray(v.awards)?v.awards.filter(a=>a&&['streak','total'].includes(a.type)&&Number(a.target)>0&&(a.sticker||safeStickerGraphic(a.graphic))&&a.title).map(a=>({...a,graphic:safeStickerGraphic(a.graphic),earnedAt:Number(a.earnedAt)||0})).slice(0,100):[], unseen:Array.isArray(v.unseen)?v.unseen.filter(x=>typeof x==='string').slice(0,100):[] }; } catch (_) { return { last: '', streak: 0, total: 0, awards:[], unseen:[] }; } };
+  const write = value => { try { localStorage.setItem(KEY, JSON.stringify(value)); return true; } catch (_) { return false; } };
+  let state = read();
+  function awardReachedTotalMilestones(){
+    const unlocked=milestones.filter(item=>item.type==='total'&&state.total>=item.target&&!state.awards.some(award=>award.type==='total'&&Number(award.target)===item.target));
+    if(!unlocked.length)return false;
+    unlocked.forEach(item=>{const award={type:'total',target:item.target,sticker:item.sticker,title:item.title,graphic:item.graphic||'',earnedAt:Date.now()};state.awards.push(award);state.unseen.push(`total-${award.target}`);});
+    write(state);
     return true;
   }
-  function persistSongs(){
-    safeWrite(KEYS.songs,songs);
-    persistSharedCollections().then(ok=>{const status=$('adminSongStatus');if(status)status.textContent=ok?'Staged. Publish all changes to go live.':'GitHub publish failed. Connect GitHub and confirm Contents read/write access.';});
+  const todaysMessage = () => messages[dayNumber() % messages.length];
+  function untilMidnight() {
+    const now = new Date(), next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const mins = Math.max(1, Math.ceil((next - now) / 60000)), hours = Math.floor(mins / 60);
+    return hours ? `${hours}h ${mins % 60}m` : `${mins}m`;
   }
-  async function loadSharedCollections(){
-    const db=window.archiveSupabase;if(!db)return;
-    try {
-      const githubContent=window.archiveGitHub?.connected?await window.archiveGitHub.getJson('archive-data.json'):null;
-      const {data,error}=githubContent?{data:{content:githubContent},error:null}:await db.from('archive_content').select('content').eq('id',true).single();
-      if(error)throw error;
-      const content=data?.content||{};
-      if(Array.isArray(content.songs)) songs=content.songs.filter(x=>x&&typeof x.embed==='string').slice(0,15);
-      else if(songs.length){ await persistSharedCollections(); }
-      if(Array.isArray(content.noises)) noises=content.noises.filter(x=>x&&typeof x.url==='string').slice(0,50);
-      else if(noises.length){ await persistSharedCollections(); }
-      if(Array.isArray(content.thoughts)) thoughts=content.thoughts.filter(x=>x&&typeof x.text==='string').slice(0,50);
-      else if(thoughts.length){ await persistSharedCollections(); }
-      safeWrite(KEYS.songs,songs);safeWrite(KEYS.noises,noises);safeWrite(KEYS.thoughts,thoughts);refreshAll();
-      const ss=$('adminSongStatus');if(ss)ss.textContent=githubContent?'Loaded from GitHub.':'Loaded from the initial Supabase archive. Copy it to GitHub to stop using the database for page content.';
-    } catch(err){console.error(err);const ss=$('adminSongStatus');if(ss)ss.textContent='Could not load the archive. Check GitHub access or Supabase setup.';}
+  function render() {
+    const claimed = state.last === dayKey();
+    const streak = claimed || state.last === yesterdayKey() ? state.streak : 0;
+    button.disabled = claimed;
+    button.setAttribute('aria-pressed', String(claimed));
+    label.textContent = claimed ? 'Claimed today' : 'Claim today’s kiss';
+    message.textContent = claimed ? todaysMessage() : 'Today’s note is waiting for you.';
+    note.textContent = claimed ? `Next kiss in ${untilMidnight()}` : '';
+    stats.hidden = state.total === 0;
+    stats.textContent = `${streak} day${streak === 1 ? '' : 's'} in a row · ${state.total} kiss${state.total === 1 ? '' : 'es'} claimed · ${state.wallet} available`;
+    renderAwards();window.archiveKissSnapshot={available:!claimed,total:state.total,streak,kissesAvailable:state.wallet,awards:state.awards,unseen:state.unseen};window.dispatchEvent(new CustomEvent('archive-kiss-updated'));
   }
-  window.addEventListener('archive-content-loaded',event=>{const content=event.detail?.content;if(event.detail?.githubSource&&content){songs=Array.isArray(content.songs)?content.songs.filter(x=>x&&typeof x.embed==='string'):[];noises=Array.isArray(content.noises)?content.noises.filter(x=>x&&typeof x.url==='string'):[];thoughts=Array.isArray(content.thoughts)?content.thoughts.filter(x=>x&&typeof x.text==='string'):[];refreshAll();return;}loadSharedCollections();},{once:true});
-  window.addEventListener('archive-github-content-loaded',event=>{const content=event.detail?.content||{};songs=Array.isArray(content.songs)?content.songs.filter(x=>x&&typeof x.embed==='string'):[];noises=Array.isArray(content.noises)?content.noises.filter(x=>x&&typeof x.url==='string'):[];thoughts=Array.isArray(content.thoughts)?content.thoughts.filter(x=>x&&typeof x.text==='string'):[];safeWrite(KEYS.songs,songs);safeWrite(KEYS.noises,noises);safeWrite(KEYS.thoughts,thoughts);refreshAll();});
-  $('adminSongForm').addEventListener('submit',e=>{e.preventDefault();const status=$('adminSongStatus');if(!window.archiveGitHub?.connected){status.textContent='Connect GitHub before adding songs.';return;}const parsed=parseLink($('adminSongLink').value.trim());if(!parsed){status.textContent='Use a full Spotify URL or a YouTube video/playlist URL.';return;}if(songs.some(s=>s.embed===parsed.embed)){status.textContent='That song is already in the soundtrack.';return;}parsed.label=$('adminSongLabel').value.trim()||parsed.title;parsed.addedAt=Date.now();songs.unshift(parsed);songs=songs.slice(0,15);persistSongs();renderSongs();e.target.reset();status.textContent='Staging…';});
-
-  function renderThoughts(){
-    const root=$('adminThoughtList');root.replaceChildren();$('thoughtStat').textContent=thoughts.length;
-    if(!thoughts.length){const e=document.createElement('div');e.className='admin-empty';e.textContent='No notes yet. Add an observation to the collection.';root.append(e);return;}
-    thoughts.forEach(t=>{const row=document.createElement('article');row.className='admin-item';const main=document.createElement('div');main.className='admin-item-main';const meta=document.createElement('div');meta.className='admin-item-meta';meta.textContent=new Date(t.at||Date.now()).toLocaleDateString();const body=document.createElement('div');body.className='admin-item-text';body.textContent=t.text;main.append(meta,body);const actions=document.createElement('div');actions.className='admin-item-actions';actions.append(makeButton('Edit',()=>startEdit(t)),makeButton('Delete',()=>{if(!window.archiveGitHub?.connected){$('adminThoughtStatus').textContent='Connect GitHub before editing notes.';return;}thoughts=thoughts.filter(x=>x.id!==t.id);safeWrite(KEYS.thoughts,thoughts);persistSharedCollections().then(ok=>{const s=$('adminThoughtStatus');if(s)s.textContent=ok?'Staged. Publish all changes to go live. ':'Saved locally, but shared publishing failed. Check Supabase permissions.';});renderThoughts();},true));row.append(main,actions);root.append(row);});
+  function renderAwards(){if(!awardsRoot)return;awardsRoot.replaceChildren();awardsRoot.hidden=!state.total&&!state.awards.length;if(awardsRoot.hidden)return;const heading=document.createElement('p');heading.className='kiss-awards-heading';heading.textContent=`Sticker collection · ${state.awards.length} earned`;awardsRoot.append(heading);if(!state.awards.length){const empty=document.createElement('p');empty.className='kiss-awards-empty';empty.textContent='Your first sticker is waiting at a kiss milestone.';awardsRoot.append(empty);return;}state.awards.forEach(award=>{const item=document.createElement('div');item.className='kiss-award';item.setAttribute('aria-label',`${award.title}, ${award.type==='streak'?'streak':'total'} of ${award.target}`);const graphicBox=document.createElement('div');graphicBox.className='kiss-award-graphic';const graphic=safeStickerGraphic(award.graphic);if(graphic){const sticker=document.createElement('img');sticker.className='kiss-award-sticker kiss-award-image';sticker.src=graphic;sticker.alt='';sticker.addEventListener('error',()=>{const fallback=document.createElement('span');fallback.className='kiss-award-sticker';fallback.setAttribute('aria-hidden','true');fallback.textContent=award.sticker||'✦';sticker.replaceWith(fallback);},{once:true});graphicBox.append(sticker);}else{const sticker=document.createElement('span');sticker.className='kiss-award-sticker';sticker.setAttribute('aria-hidden','true');sticker.textContent=award.sticker||'✦';graphicBox.append(sticker);}const copy=document.createElement('div');copy.className='kiss-award-copy';const title=document.createElement('span');title.className='kiss-award-title';title.textContent=award.title;const detail=document.createElement('small');detail.textContent=award.type==='streak'?`${award.target}-day streak`:`${award.target} kisses`;copy.append(title,detail);item.append(graphicBox,copy);awardsRoot.append(item);});}
+  function floatHearts() {
+    if (!burst || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const glyphs = ['♥', '♡', '✦', 'x'];
+    for (let i = 0; i < 16; i++) {
+      const el = document.createElement('span');
+      el.className = 'kiss-float';
+      el.textContent = glyphs[i % glyphs.length];
+      const angle = (Math.PI * 2 * i) / 16 + Math.random() * 0.4;
+      const dist = 70 + Math.random() * 70;
+      el.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+      el.style.setProperty('--dy', `${Math.sin(angle) * dist - 50}px`);
+      el.style.setProperty('--rot', `${Math.round(Math.random() * 60 - 30)}deg`);
+      el.style.setProperty('--size', `${14 + Math.round(Math.random() * 14)}px`);
+      el.style.setProperty('--delay', `${(Math.random() * 0.15).toFixed(2)}s`);
+      burst.append(el);
+      setTimeout(() => el.remove(), 1900);
+    }
   }
-  function startEdit(t){editingThoughtId=t.id;$('adminThoughtText').value=t.text;$('editMode').textContent='EDITING NOTE';$('saveThoughtButton').innerHTML='Update thought <span>↗</span>';$('cancelEdit').hidden=false;$('adminThoughtText').focus();}
-  function resetEdit() {editingThoughtId=null;$('adminThoughtForm').reset();$('editMode').textContent='NEW NOTE';$('saveThoughtButton').innerHTML='Save thought <span>↗</span>';$('cancelEdit').hidden=true;}
-  $('cancelEdit').addEventListener('click',resetEdit);
-  $('adminThoughtForm').addEventListener('submit',e=>{e.preventDefault();if(!window.archiveGitHub?.connected){$('adminThoughtStatus').textContent='Connect GitHub before editing notes.';return;}const text=$('adminThoughtText').value.trim();const status=$('adminThoughtStatus');if(!text){status.textContent='Write something before saving.';return;}if(editingThoughtId){const t=thoughts.find(x=>x.id===editingThoughtId);if(t)t.text=text;}else{thoughts.unshift({id:`${Date.now()}-${Math.random().toString(36).slice(2,8)}`,text,at:Date.now()});}thoughts=thoughts.slice(0,50);safeWrite(KEYS.thoughts,thoughts);persistSharedCollections().then(ok=>{const s=$('adminThoughtStatus');if(s)s.textContent=ok?'Staged. Publish all changes to go live. ':'Saved locally, but shared publishing failed. Check Supabase permissions.';});renderThoughts();resetEdit();status.textContent='Staging note…';});
-
-  function refreshAll(){renderSongs();renderNoises();renderThoughts();}
-  refreshAll();
-
-  function attachListFilter(inputId, listId, countId, statusId) {
-    const input=$(inputId), root=$(listId), count=$(countId), statusFilter=statusId?$(statusId):null;
-    if(!input||!root||!count)return;
-    const apply=()=>{
-      const query=input.value.trim().toLocaleLowerCase();
-      const status=statusFilter?.value||'all';
-      const rows=[...root.querySelectorAll('.admin-item')];let visible=0;
-      rows.forEach(row=>{
-        const text=row.textContent.toLocaleLowerCase();
-        const matchesText=!query||text.includes(query);
-        const matchesStatus=status==='all'||row.dataset.status===status;
-        row.hidden=!(matchesText&&matchesStatus);if(!row.hidden)visible++;
-      });
-      const empty=root.querySelector('.admin-empty');if(empty)empty.hidden=Boolean(query||status!=='all');
-      count.textContent=(query||status!=='all')?`${visible} of ${rows.length} ${rows.length===1?'item':'items'} shown`:`${rows.length} ${rows.length===1?'item':'items'}`;
-    };
-    input.addEventListener('input',apply);statusFilter?.addEventListener('change',apply);
-    new MutationObserver(apply).observe(root,{childList:true,subtree:true});apply();
-  }
-  attachListFilter('songSearch','adminSongList','songSearchCount');
-  attachListFilter('thoughtSearch','adminThoughtList','thoughtSearchCount');
-
-  ['heroTitle','heroSubtitle','heroDescription','adminThoughtText'].forEach(id=>{
-    const field=$(id);if(!field)return;
-    const counter=document.createElement('span');counter.className='character-count';counter.id=id+'Count';counter.setAttribute('aria-live','off');
-    field.setAttribute('aria-describedby',counter.id);field.insertAdjacentElement('afterend',counter);
-    const update=()=>{counter.textContent=`${field.value.length} / ${field.maxLength} characters`;};
-    field.addEventListener('input',update);update();
+  button.addEventListener('click', () => {
+    const today = dayKey();
+    if (state.last === today) return;
+    const streak = state.last === yesterdayKey() ? state.streak + 1 : 1;
+    state = {...state,last:today,streak,total:state.total+1,wallet:(state.wallet||0)+1,awards:state.awards||[],unseen:state.unseen||[]};
+    const unlocked=milestones.filter(item=>item.type==='streak'&&streak>=item.target&&!state.awards.some(award=>award.type===item.type&&Number(award.target)===item.target));
+    unlocked.forEach(item=>{const award={type:item.type,target:item.target,sticker:item.sticker,title:item.title,graphic:item.graphic||'',earnedAt:Date.now()};state.awards.push(award);state.unseen.push(`${award.type}-${award.target}`);});
+    awardReachedTotalMilestones();
+    write(state);
+    render();
+    floatHearts();
+    navigator.vibrate?.(25);
   });
-
-  const VISUAL_KEY = 'biggestFanArchiveVisuals';
-  const visualDefaults = {theme:'noir',layout:'left',accent:'#5f73a5',background:'#ffffff',text:'#090a0c',title:'רואי',subtitle:'A study of ordinary days.',description:'Light shifts across familiar places. A song returns with the weather.',image:'',mobileImage:'',songLayout:'masonry',songCardPadding:24};
-  let visuals = {...visualDefaults};
-  try { visuals = {...visualDefaults, ...JSON.parse(localStorage.getItem(VISUAL_KEY) || '{}')}; } catch (_) {}
-  if(['#778173','#2456d7','#315bff'].includes((visuals.accent||'').toLowerCase()))visuals.accent='#5f73a5';
-  const visualEls = {accent:'accentColor',title:'heroTitle',subtitle:'heroSubtitle',description:'heroDescription',image:'heroImageUrl',mobileImage:'heroMobileImageUrl',songLayout:'songLayout',songCardPadding:'songCardPadding'};
-  function applyVisuals(v) {
-    const body=document.body;
-    body.dataset.theme=v.theme==='noir'?'noir':v.theme;
-    body.dataset.layout=v.layout||'center';body.dataset.songLayout=v.songLayout==='grid'?'grid':'masonry';
-    const root=document.documentElement;
-    root.style.setProperty('--rose',v.accent||visualDefaults.accent);
-    root.style.setProperty('--song-card-padding',`${Math.max(12,Math.min(32,Number(v.songCardPadding)||24))}px`);
-    const title=document.querySelector('.hero h1');
-    if(title){title.textContent=v.title||'רואי';title.setAttribute('lang',/[\u0590-\u05FF]/.test(v.title||'')?'he':'en');}
-    const subtitle=document.querySelector('.hero-subtitle');
-    if(subtitle)subtitle.textContent=v.subtitle||'';
-    const description=document.querySelector('.hero-description');
-    if(description)description.textContent=v.description||'';
-    const image=document.querySelector('.hero-image');
-    if(image){image.style.backgroundImage=v.image?`url("${v.image.replace(/"/g,'%22')}")`:'';image.style.backgroundSize=v.image?'cover':'';image.style.backgroundPosition='center';image.setAttribute('aria-label',v.image?'Main photograph from the personal archive':'Abstract blue and white hero artwork');}
-    root.style.setProperty('--hero-mobile-image',v.mobileImage?`url("${v.mobileImage.replace(/"/g,'%22')}")`:'none');
-    const logo=document.querySelector('.logo [lang="he"]'); if(logo)logo.textContent=v.title||'רואי';
-    const titleTag=document.querySelector('title');if(titleTag)titleTag.textContent=(v.title||'רואי')+' — Biggest Fan Archive';
-  }
-  function readVisualInputs(){
-    return {theme:'noir',layout:'left',accent:$('accentColor').value,background:'#ffffff',text:'#090a0c',title:$('heroTitle').value.trim()||'רואי',subtitle:$('heroSubtitle').value.trim(),description:$('heroDescription').value.trim(),image:$('heroImageUrl').value.trim(),mobileImage:$('heroMobileImageUrl')?.value.trim()||'',songLayout:$('songLayout')?.value||'masonry',songCardPadding:Number($('songCardPadding')?.value||24)};
-  }
-  function fillVisualInputs(){
-    Object.entries(visualEls).forEach(([key,id])=>{if($(id))$(id).value=visuals[key]||visualDefaults[key]||'';});
-    updateImagePreview();
-  }
-  function updateImagePreview(){
-    [['heroImagePreview','image','Illustrated sky background'],['heroMobileImagePreview','mobileImage','No mobile picture set']].forEach(([id,key,empty])=>{
-      const preview=$(id);if(!preview)return;
-      if(visuals[key]){preview.style.backgroundImage=`url("${visuals[key].replace(/"/g,'%22')}")`;preview.textContent='';}
-      else{preview.style.backgroundImage='';preview.textContent=empty;}
-    });
-  }
-  function bindHeroUpload(fileId,urlId,folder,label){
-    $(fileId)?.addEventListener('change',async event=>{
-      const input=event.currentTarget,file=input.files?.[0],status=$('visualStatus');if(!file)return;
-      const allowed=['image/jpeg','image/png','image/webp','image/gif','image/avif'];
-      if(!allowed.includes(file.type)){status.textContent='Choose a JPG, PNG, WebP, GIF, or AVIF image.';input.value='';return;}
-      if(file.size>10*1024*1024){status.textContent=`The ${label} must be 10 MB or smaller.`;input.value='';return;}
-      if(!window.archiveGitHub?.connected){status.textContent=`Connect GitHub before uploading the ${label}.`;input.value='';return;}
-      input.disabled=true;status.textContent=`Uploading ${label} to GitHub…`;let objectPath='';
-      try{
-        status.textContent=`Optimizing ${label}…`;
-        const opt=await compressImage(file,2400);
-        objectPath=`assets/archive/${folder}/${Date.now()}.${opt.ext}`;
-        await window.archiveGitHub.upload(objectPath,opt.blob,`Update archive ${folder} image`);
-        window.archiveStaging.uploads.add(objectPath);
-        const url=window.archiveGitHub.pagesUrl(objectPath);
-        $(urlId).value=url;$(urlId).dispatchEvent(new Event('input',{bubbles:true}));
-        status.textContent=`${label[0].toUpperCase()+label.slice(1)} uploaded. It can take 1–2 minutes to appear while GitHub Pages rebuilds. Save visual changes to publish.`;
-      }catch(error){if(objectPath)try{await window.archiveGitHub.delete(objectPath,'Remove unpublished hero image');}catch(_){}status.textContent=error.message||`Could not upload the ${label}.`;}
-      finally{input.disabled=false;input.value='';}
-    });
-  }
-  bindHeroUpload('heroImageFile','heroImageUrl','hero','main picture');
-  bindHeroUpload('heroMobileImageFile','heroMobileImageUrl','hero-mobile','mobile picture');
-  Object.values(visualEls).forEach(id=>{const el=$(id);if(el){el.addEventListener('input',()=>{visuals=readVisualInputs();applyVisuals(visuals);if(id==='heroImageUrl'||id==='heroMobileImageUrl')updateImagePreview();});el.addEventListener('change',()=>{visuals=readVisualInputs();applyVisuals(visuals);});}});
-  $('songCardPadding')?.addEventListener('input',event=>{const label=$('songCardPaddingValue');if(label)label.value=`${event.currentTarget.value} px`;});
-
-  function colorLuminance(hex){
-    const parts=(hex.match(/[0-9a-f]{2}/ig)||[]).map(v=>parseInt(v,16)/255);
-    if(parts.length!==3)return 0;
-    const linear=parts.map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
-    return .2126*linear[0]+.7152*linear[1]+.0722*linear[2];
-  }
-  function updateContrastStatus(){
-    const output=$('contrastStatus');if(!output)return;
-    const white=1,black=0,accent=colorLuminance($('accentColor').value);
-    const ratio=(a,b)=>{const hi=Math.max(a,b),lo=Math.min(a,b);return (hi+.05)/(lo+.05);};
-    const lightRatio=ratio(white,accent),darkRatio=ratio(black,accent);
-    output.textContent=`Accent contrast: ${lightRatio.toFixed(1)}:1 on white and ${darkRatio.toFixed(1)}:1 on black. Choose a deeper or lighter accent if text needs stronger contrast.`;
-    output.classList.remove('contrast-warning');
-  }
-  fillVisualInputs();applyVisuals(visuals);updateContrastStatus();
-  function syncVisualEditor(content){
-    visuals={...visualDefaults,...(content||{})};
-    fillVisualInputs();applyVisuals(visuals);updateContrastStatus();updateImagePreview();
-  }
-  window.addEventListener('archive-content-loaded',event=>syncVisualEditor(event.detail?.content));
-  window.addEventListener('archive-visual-settings-changed',event=>syncVisualEditor(event.detail));
-  ['accentColor'].forEach(id=>$(id)?.addEventListener('input',updateContrastStatus));
-
-
-  $('exportBackup').addEventListener('click',()=>{
-    const sharedContent=window.archiveGetPublishedContent?.();
-    if(!sharedContent){$('backupStatus').textContent='Wait for shared content to load before exporting a complete backup.';return;}
-    const backup={app:'biggest-fan-archive',formatVersion:2,exportedAt:new Date().toISOString(),content:sharedContent};
-    const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='biggest-fan-archive-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('backupStatus').textContent='Published content and collections exported. Visitor submissions are excluded.';
-  });
-  $('importBackup').addEventListener('change',async e=>{
-    const file=e.target.files&&e.target.files[0];if(!file)return;
-    try{
-      const data=JSON.parse(await file.text());
-      if(!data||data.app!=='biggest-fan-archive')throw new Error('This is not a Biggest Fan Archive backup.');
-      const content=data.content&&typeof data.content==='object'?data.content:{songs:data.songs,thoughts:data.thoughts};
-      if(!Array.isArray(content.songs)||!Array.isArray(content.thoughts))throw new Error('The backup is missing its songs or reminders.');
-      const importedSongs=content.songs.filter(x=>x&&typeof x.embed==='string').slice(0,15);
-      const importedThoughts=content.thoughts.filter(x=>x&&typeof x.text==='string').slice(0,50);
-      const importedNoises=Array.isArray(content.noises)?content.noises.filter(x=>x&&typeof x.url==='string').slice(0,50):[];
-      if(!confirm('Restore this backup? Published page content, songs, noises, and reminders will be replaced in the shared archive. Visitor submissions remain in guestbook moderation.'))return;
-      const current=window.archiveGetPublishedContent?.();
-      if(!current)throw new Error('Wait for shared content to load before importing a backup.');
-      await window.archiveRestorePublishedContent({...current,...(data.content||{}),songs:importedSongs,noises:importedNoises,thoughts:importedThoughts});
-      songs=importedSongs;noises=importedNoises;thoughts=importedThoughts;
-      safeWrite(KEYS.songs,songs);safeWrite(KEYS.noises,noises);safeWrite(KEYS.thoughts,thoughts);refreshAll();
-      $('backupStatus').textContent='Shared page content and collections restored. Visitor submissions are unchanged.';
-    }catch(err){$('backupStatus').textContent=err.message||'Could not read that backup.';}
-    finally{e.target.value='';}
-  });
+  window.archiveAddKisses = amount => {const value=Math.max(0,Math.floor(Number(amount)||0));if(!value)return false;const previous=state;state={...state,total:(state.total||0)+value,wallet:(state.wallet||0)+value,awards:state.awards||[],unseen:state.unseen||[]};awardReachedTotalMilestones();if(!write(state)){state=previous;return false;}render();return true;};
+  window.archiveSpendKisses = amount => {const value=Math.max(0,Math.floor(Number(amount)||0));if(!value||(state.wallet||0)<value)return false;const previous=state;state={...state,wallet:state.wallet-value};if(!write(state)){state=previous;return false;}render();return true;};
+  window.archiveSetKissMessages = list => { messages = Array.isArray(list) && list.length ? list : defaults; render(); };
+  window.archiveSetKissMilestones = list => {milestones=(Array.isArray(list)?list:defaultMilestones).map(item=>({type:item?.type==='total'?'total':'streak',target:Math.floor(Number(item?.target)),sticker:String(item?.sticker||'').trim().slice(0,12),title:String(item?.title||'').trim().slice(0,70),graphic:safeStickerGraphic(item?.graphic)})).filter(item=>item.target>0&&item.target<=10000&&(item.sticker||item.graphic)&&item.title);if(awardReachedTotalMilestones())render();};
+  window.archiveClaimKissAward = key => {state.unseen=state.unseen.filter(item=>item!==key);write(state);render();};
+  setInterval(render, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+  render();
 })();
 
-/* Shared Supabase content and moderation integration. */
-
+/* Local archive companion: care state stays in this browser. */
 (() => {
-  const $ = id => document.getElementById(id);
-  let db, cloud = {}, contentLoaded = false, archiveFromGitHub = false;
-  const defaults = {
-    songs:[],noises:[],thoughts:[],
-    navAbout:'About', navMoments:'Journal', navNotes:'Notes', navGuestbook:'Contact',
-    aboutHeading:'A record of ordinary days.', aboutLead:'Everyday life leaves its marks in unexpected places.',
-    blogPosts:[],kamilaPhotos:[],marketItems:[],customNotifications:[],journalOrder:'date',kissMessages:[],kissMilestones:[
-      {type:'streak',target:3,sticker:'🌱',title:'A little beginning'},
-      {type:'streak',target:7,sticker:'🌷',title:'One lovely week'},
-      {type:'streak',target:14,sticker:'💌',title:'Two weeks close'},
-      {type:'streak',target:30,sticker:'💖',title:'A month of kisses'},
-      {type:'total',target:10,sticker:'✨',title:'Ten kisses kept'},
-      {type:'total',target:50,sticker:'🌟',title:'Fifty sweet days'},
-      {type:'total',target:100,sticker:'💎',title:'One hundred kisses'}
-    ],
-    aboutBody:"This archive gathers photographs, music, and brief notes from shared places and familiar routines.\n\nSome days return as a particular light through a window; others arrive by way of a song heard again years later.\n\nA collection still in progress.",
-    momentsHeading:'Photo journal.', momentsIntro:'Images, captions, and dates. One entry at a time.',
-    footerText:'A personal archive of photographs, music, and notes.',
-    theme:'editorial',layout:'left',accent:'#5f73a5',background:'#f4f7fb',text:'#111827',songLayout:'masonry',songCardPadding:24
-  };
-  function validPostUrl(value){try{const u=new URL(value);return u.protocol==='https:'&&u.hostname&&!u.username&&!u.password?u.href:null;}catch(_){return null;}}
-  function normalizeContent(value={}){
-    const next={...defaults,...(value||{})};
-    next.kamilaPhotos=(Array.isArray(value?.kamilaPhotos)?value.kamilaPhotos:[]).map((photo,index)=>typeof photo==='string'?{id:`kamila-${index}`,image:validPostUrl(photo),path:'',caption:''}:{id:String(photo?.id||`kamila-${index}`),image:validPostUrl(photo?.image),path:typeof photo?.path==='string'?photo.path:'',caption:typeof photo?.caption==='string'?photo.caption.trim().slice(0,100):''}).filter(photo=>photo.image).slice(0,100);
-    next.marketItems=(Array.isArray(value?.marketItems)?value.marketItems:[]).map((item,index)=>({id:String(item?.id||`market-${index}`),title:String(item?.title||'').trim().slice(0,70),description:String(item?.description||'').trim().slice(0,240),type:item?.type==='service'?'service':'item',kissCost:Math.floor(Number(item?.kissCost)),active:item?.active!==false,offerRef:String(item?.offerRef||'')})).filter(item=>item.title&&item.kissCost>0&&item.kissCost<=100000).slice(0,100);
-    next.customNotifications=(Array.isArray(value?.customNotifications)?value.customNotifications:[]).map((item,index)=>({id:String(item?.id||`notification-${index}`),title:String(item?.title||'').trim().slice(0,60),message:String(item?.message||'').trim().slice(0,240),createdAt:Number(item?.createdAt)||0})).filter(item=>item.title&&item.message).slice(0,30);
-    if(!Array.isArray(value?.blogPosts))next.blogPosts=(value?.galleryImages||[]).map((image,index)=>({id:`legacy-${index}`,image,path:'',caption:value?.galleryCaptions?.[index]||'From the archive',date:''})).filter(post=>validPostUrl(post.image));
-    if(!value?.accent||['#778173','#2456d7','#315bff'].includes(String(value.accent).toLowerCase()))next.accent='#5f73a5';
-    if(!value?.background||value.background==='#f4f1ea')next.background='#f4f7fb';
-    if(!value?.text||value.text==='#292a27')next.text='#111827';
-    next.songLayout=value?.songLayout==='grid'?'grid':'masonry';next.songCardPadding=Math.max(12,Math.min(32,Number(value?.songCardPadding)||24));
-    const milestoneSource=Array.isArray(value?.kissMilestones)?value.kissMilestones:defaults.kissMilestones;const seenMilestones=new Set();next.kissMilestones=milestoneSource.map(item=>({type:item?.type==='total'?'total':'streak',target:Math.floor(Number(item?.target)),sticker:String(item?.sticker||'').trim().slice(0,12),title:String(item?.title||'').trim().slice(0,70),graphic:validPostUrl(item?.graphic)||''})).filter(item=>item.target>0&&item.target<=10000&&(item.sticker||item.graphic)&&item.title).filter(item=>{const id=`${item.type}-${item.target}`;if(seenMilestones.has(id))return false;seenMilestones.add(id);return true;}).sort((a,b)=>a.type.localeCompare(b.type)||a.target-b.target).slice(0,40);
-    if(!value?.navMoments||['Work','Moments'].includes(value.navMoments))next.navMoments='Journal';
-    if(!value?.momentsHeading||value.momentsHeading==='Selected frames.')next.momentsHeading='Photo journal.';
-    if(!value?.momentsIntro||value.momentsIntro==='Photographs and fragments from the archive.')next.momentsIntro='Images, captions, and dates. One entry at a time.';
-    delete next.galleryImages;delete next.galleryCaptions;delete next.notes;
-    return next;
+  const $=id=>document.getElementById(id),toggle=$('archivePetToggle'),panel=$('archivePetPanel');
+  if(!toggle||!panel)return;
+  const KEY='archiveCompanionV1';
+  const clamp=value=>Math.max(0,Math.min(100,Math.round(Number(value)||0)));
+  const defaults={name:'Peanut',type:'cat',fullness:78,happiness:82,energy:72,lastAt:Date.now(),petKisses:0,petKissAt:{}};
+  const pets={cat:['🐈','😿','😸'],dog:['🐕','🐶','🐕‍🦺'],bunny:['🐇','🐰','🐰'],fox:['🦊','🦊','🦊'],hamster:['🐹','🐹','🐹'],mouse:['🐭','🐭','🐭'],rabbit:['🐰','🐰','🐰'],'guinea-pig':['🐹','🐹','🐹'],bird:['🐦','🐦','🐦'],parrot:['🦜','🦜','🦜'],fish:['🐠','🐠','🐠'],turtle:['🐢','🐢','🐢'],frog:['🐸','🐸','🐸'],hedgehog:['🦔','🦔','🦔'],pig:['🐷','🐷','🐷'],duck:['🦆','🦆','🦆'],penguin:['🐧','🐧','🐧'],bear:['🐻','🐻','🐻'],unicorn:['🦄','🦄','🦄'],dragon:['🐉','🐉','🐉'],horse:['🐴','🐴','🐴'],cow:['🐮','🐮','🐮'],sheep:['🐑','🐑','🐑'],deer:['🦌','🦌','🦌'],koala:['🐨','🐨','🐨'],sloth:['🦥','🦥','🦥'],seal:['🦭','🦭','🦭'],whale:['🐳','🐳','🐳'],octopus:['🐙','🐙','🐙']};
+  const petNames={cat:'Cat',dog:'Dog',bunny:'Bunny',fox:'Fox',hamster:'Hamster',mouse:'Mouse',rabbit:'Rabbit','guinea-pig':'Guinea pig',bird:'Bird',parrot:'Parrot',fish:'Fish',turtle:'Turtle',frog:'Frog',hedgehog:'Hedgehog',pig:'Pig',duck:'Duck',penguin:'Penguin',bear:'Bear',unicorn:'Unicorn',dragon:'Dragon',horse:'Horse',cow:'Cow',sheep:'Sheep',deer:'Deer',koala:'Koala',sloth:'Sloth',seal:'Seal',whale:'Whale',octopus:'Octopus'};
+  function read(){try{const value=JSON.parse(localStorage.getItem(KEY)||'null');if(!value||typeof value!=='object')return {...defaults};const hours=Math.min(72,Math.max(0,(Date.now()-(Number(value.lastAt)||Date.now()))/3600000)),petKissAt={};['fullness','happiness','energy'].forEach(key=>{petKissAt[key]=Math.max(0,Number(value.petKissAt?.[key])||0);});return{name:typeof value.name==='string'&&value.name.trim()&&value.name!=='Mochi'?value.name.trim().slice(0,20):defaults.name,type:pets[value.type]?value.type:defaults.type,fullness:clamp(value.fullness-hours*1.5),happiness:clamp(value.happiness-hours),energy:clamp(value.energy-hours*.8),lastAt:Date.now(),petKisses:Math.max(0,Math.floor(Number(value.petKisses)||0)),petKissAt};}catch(_){return {...defaults};}}
+  let state=read();
+  const write=()=>{state.lastAt=Date.now();try{localStorage.setItem(KEY,JSON.stringify(state));return true;}catch(_){return false;}};
+  function renderPetKissReward(){const name=$('petRewardName'),count=$('petKissCount'),balance=$('petKissBalance'),cooldown=$('petKissCooldown');if(name)name.textContent=state.name;if(count)count.textContent=String(state.petKisses||0);if(balance){const kisses=Number(window.archiveKissSnapshot?.kissesAvailable)||0;balance.textContent=`${kisses} kiss${kisses===1?'':'es'} available`;}if(cooldown){const now=Date.now(),times=['fullness','happiness','energy'].map(key=>Number(state.petKissAt?.[key])||0),ready=times.filter(time=>now-time>=7200000).length,next=Math.min(...times.map(time=>Math.max(0,7200000-(now-time))));if(ready)cooldown.textContent=`${ready} of 3 needs are ready to earn a kiss. A need must be below 70%.`;else{const mins=Math.max(1,Math.ceil(next/60000));cooldown.textContent=`Next care kiss in ${Math.floor(mins/60)?`${Math.floor(mins/60)}h ${mins%60}m`:`${mins}m`}. Each need can reward once every 2 hours.`;}}}
+  function render(){ $('archivePetName').textContent=state.name;$('archivePetNameInput').value=state.name;$('petGamePetName').textContent=state.name;$('petToys').setAttribute('aria-label',`Choose a toy for ${state.name}`);[['fullness','petFullness'],['happiness','petHappiness'],['energy','petEnergy']].forEach(([key,id])=>{$(id).value=state[key];$(id+'Value').textContent=state[key]+'%';});const lowest=Math.min(state.fullness,state.happiness,state.energy),faces=pets[state.type];$('archivePetFace').textContent=lowest<20?faces[1]:state.happiness>88?faces[2]:faces[0];$('archivePetFace').setAttribute('aria-label',lowest<20?`${state.name} needs some care`:`${state.name}, your ${petNames[state.type].toLowerCase()}`);$('archivePetChoice').textContent=`${faces[0]} ${petNames[state.type]}`;document.querySelectorAll('[data-pet-type]').forEach(option=>option.setAttribute('aria-selected',String(option.dataset.petType===state.type)));renderPetKissReward();window.archivePetSnapshot={name:state.name,fullness:state.fullness,happiness:state.happiness,energy:state.energy};window.dispatchEvent(new CustomEvent('archive-pet-updated'));}
+  window.addEventListener('archive-kiss-updated',renderPetKissReward);
+  const rewardNeedKisses=(before,keys)=>{const now=Date.now(),previousAt={...state.petKissAt},previousCount=state.petKisses||0,eligible=[...new Set(keys)].filter(key=>before[key]<70&&state[key]>before[key]);let earned=0,waiting=Infinity;eligible.forEach(key=>{const remaining=7200000-(now-(Number(state.petKissAt[key])||0));if(remaining<=0){state.petKissAt[key]=now;earned++;}else waiting=Math.min(waiting,remaining);});if(!earned)return{earned:0,message:eligible.length?` ${state.name} is saving the next care kiss for ${Math.max(1,Math.ceil(waiting/60000))} more minutes.`:''};state.petKisses=previousCount+earned;if(!write()){state.petKissAt=previousAt;state.petKisses=previousCount;return{earned:0,message:' The care kiss could not be saved in this browser.'};}if(!window.archiveAddKisses?.(earned)){state.petKissAt=previousAt;state.petKisses=previousCount;write();return{earned:0,message:' The kiss balance could not be saved in this browser.'};}return{earned,message:` ${state.name} gives you ${earned===1?'a kiss':`${earned} kisses`}! +${earned} kiss${earned===1?'':'es'}.`};};
+  function announce(message){$('archivePetGreeting').textContent=message;}
+  function show(){panel.hidden=false;toggle.setAttribute('aria-expanded','true');$('archivePetClose').focus();}
+  function hide(){panel.hidden=true;toggle.setAttribute('aria-expanded','false');toggle.focus();}
+  toggle.addEventListener('click',()=>{if(panel.hidden&&matchMedia('(max-width: 620px)').matches){$('pocketPanel')?.setAttribute('hidden','');}panel.hidden?show():hide();});$('archivePetClose').addEventListener('click',hide);
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!panel.hidden)hide();});
+  document.addEventListener('pointerdown',event=>{if(!panel.hidden&&!panel.contains(event.target)&&!toggle.contains(event.target)){panel.hidden=true;toggle.setAttribute('aria-expanded','false');}});
+  document.querySelectorAll('[data-pet-action]').forEach(button=>button.addEventListener('click',()=>{const action=button.dataset.petAction,before={...state};let message='',needs=[];if(action==='feed'){state.fullness=clamp(state.fullness+30);state.happiness=clamp(state.happiness+5);needs=['fullness','happiness'];message=`${state.name} enjoyed a little snack.`;}if(action==='cuddle'){state.happiness=clamp(state.happiness+10);needs=['happiness'];message=`${state.name} leans into your cuddle.`;}if(action==='play'){if(state.energy<10){message=`${state.name} is sleepy. A nap would feel nice.`;}else{state.happiness=clamp(state.happiness+18);state.energy=clamp(state.energy-14);state.fullness=clamp(state.fullness-7);needs=['happiness'];message=`${state.name} had fun playing with you.`;}}if(action==='rest'){state.energy=clamp(state.energy+28);needs=['energy'];message=`${state.name} is tucked in for a little nap.`;}const reward=rewardNeedKisses(before,needs),saved=write();render();announce(message+reward.message+(saved?'':' Care progress could not be saved in this browser.'));}));
+  $('archivePetNameSave').addEventListener('click',()=>{const value=$('archivePetNameInput').value.trim().replace(/\s+/g,' ').slice(0,20);if(!value){announce('Choose a name first.');return;}state.name=value;const saved=write();render();announce(`${state.name} says hello.`+(saved?'':' Care progress could not be saved in this browser.'));});
+  const picker=$('archivePetPicker'),pickerToggle=$('archivePetPickerToggle');
+  pickerToggle.addEventListener('click',()=>{const opening=picker.hidden;picker.hidden=!opening;pickerToggle.setAttribute('aria-expanded',String(opening));if(opening)picker.querySelector('[aria-selected="true"]')?.focus();});
+  picker.addEventListener('click',event=>{const option=event.target.closest('[data-pet-type]');if(!option)return;state.type=pets[option.dataset.petType]?option.dataset.petType:'cat';write();render();picker.hidden=true;pickerToggle.setAttribute('aria-expanded','false');pickerToggle.focus();announce(`${state.name} is now your ${petNames[state.type].toLowerCase()}.`);});
+  picker.addEventListener('keydown',event=>{const options=[...picker.querySelectorAll('[data-pet-type]')],index=options.indexOf(document.activeElement);let next=index;if(event.key==='ArrowDown')next=(index+1)%options.length;else if(event.key==='ArrowUp')next=(index-1+options.length)%options.length;else if(event.key==='Home')next=0;else if(event.key==='End')next=options.length-1;else if(event.key==='Escape'){picker.hidden=true;pickerToggle.setAttribute('aria-expanded','false');pickerToggle.focus();return;}else return;event.preventDefault();options[next].focus();});
+  /* Daily hidden snack: it moves to a different archive section each day. */
+  const localDay=()=>{const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;};
+  const dailyKey=(kind)=>`archivePet${kind}Day`,today=localDay();
+  const wasDone=(kind)=>{try{return localStorage.getItem(dailyKey(kind))===today;}catch(_){return false;}};
+  const markDone=(kind)=>{try{localStorage.setItem(dailyKey(kind),today);}catch(_){/* Keep the reward for this visit if storage is unavailable. */}};
+  let snackClaimed=wasDone('Snack'),gamePlayed=wasDone('Game');
+  const sections=[...document.querySelectorAll('main section[id]')].filter(section=>section.id!=='kiss');
+  if(sections.length){let section=null;try{const savedSpot=JSON.parse(localStorage.getItem('archivePetSnackSpot')||'null');if(savedSpot?.day===today)section=sections.find(item=>item.id===savedSpot.sectionId)||null;}catch(_){}if(!section){section=sections[Math.floor(Math.random()*sections.length)];try{localStorage.setItem('archivePetSnackSpot',JSON.stringify({day:today,sectionId:section.id}));}catch(_){}}const snack=document.createElement('div');snack.className='pet-hidden-snack';const snackButton=document.createElement('button');snackButton.type='button';snackButton.className='pet-snack-button';snackButton.textContent=snackClaimed?'🍓 Today’s treat found':'🍓 A tiny treat';snackButton.setAttribute('aria-label',snackClaimed?'Today’s hidden treat has been found':'Find and give Peanut today’s hidden treat');snackButton.disabled=snackClaimed;const snackStatus=document.createElement('span');snackStatus.className='pet-snack-status';snackStatus.setAttribute('role','status');snackStatus.setAttribute('aria-live','polite');snack.append(snackButton,snackStatus);const heading=section.querySelector('.section-heading');if(heading)heading.after(snack);else section.append(snack);snackButton.addEventListener('click',()=>{if(snackClaimed)return;snackClaimed=true;const before={...state};state.fullness=clamp(state.fullness+18);state.happiness=clamp(state.happiness+4);const reward=rewardNeedKisses(before,['fullness','happiness']),bonusAwarded=window.archiveAddKisses?.(1)===true;if(bonusAwarded){state.petKisses=(state.petKisses||0)+1;write();}const saved=write();markDone('Snack');render();snackButton.disabled=true;snackButton.textContent='🍓 Today’s treat found';snackButton.setAttribute('aria-label',`You found a treat for ${state.name}`);snackStatus.textContent=`A little snack for ${state.name}!${bonusAwarded?` ${state.name} gives you one extra kiss for finding today’s treat (+1).`:' The treat kiss could not be saved in this browser.'}${reward.message}${saved?'':' Care progress could not be saved here.'}`;snack.classList.add('pet-snack-found');});}
+  /* Three unique toys are shuffled and saved per local calendar day. */
+  const toyPool=[
+    {id:'ball',emoji:'⚽',label:'Ball',reaction:'bats the ball around with great determination'},
+    {id:'yarn',emoji:'🧶',label:'Yarn',reaction:'discovers that yarn is full of surprises'},
+    {id:'feather',emoji:'🪶',label:'Feather',reaction:'gives the feather a very serious little pounce'},
+    {id:'mouse',emoji:'🐭',label:'Toy mouse',reaction:'chases the toy mouse across the room'},
+    {id:'fish',emoji:'🐟',label:'Fish',reaction:'gives the little fish toy a triumphant toss'},
+    {id:'bell',emoji:'🔔',label:'Bell',reaction:'pats the bell and listens to its tiny song'},
+    {id:'tunnel',emoji:'🌀',label:'Tunnel',reaction:'dashes through the tunnel and peeks out proudly'},
+    {id:'ribbon',emoji:'🎀',label:'Ribbon',reaction:'pounces on the ribbon with perfect timing'},
+    {id:'plush',emoji:'🧸',label:'Plush friend',reaction:'cuddles the plush friend after a playful wrestle'},
+    {id:'bubbles',emoji:'🫧',label:'Bubbles',reaction:'tries to catch every floating bubble'},
+    {id:'leaf',emoji:'🍃',label:'Leaf',reaction:'chases the leaf as it skitters along'},
+    {id:'box',emoji:'📦',label:'Little box',reaction:'investigates the little box from every angle'}
+  ];
+  const dailyToysKey='archivePetToyChoices',gameMessage=$('petGameMessage'),toyRoot=$('petToys');
+  function getDailyToys(){
+    try{const saved=JSON.parse(localStorage.getItem(dailyToysKey)||'null');if(saved?.day===today&&Array.isArray(saved.ids)){const chosen=saved.ids.map(id=>toyPool.find(toy=>toy.id===id)).filter(Boolean);if(chosen.length===3)return chosen;}}catch(_){}
+    const shuffled=[...toyPool];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}const chosen=shuffled.slice(0,3);
+    try{localStorage.setItem(dailyToysKey,JSON.stringify({day:today,ids:chosen.map(toy=>toy.id)}));}catch(_){}
+    return chosen;
   }
-  function setVal(id, value) { const el=$(id); if (el && value !== undefined) el.value = value; }
-  let appendKissMilestoneRow=()=>{};
-  function renderKissMilestoneRows(items){
-    const root=$('kissMilestoneRows');if(!root)return;root.replaceChildren();
-    const makeField=(label,control)=>{const wrap=document.createElement('label');wrap.className='kiss-milestone-field';wrap.append(document.createTextNode(label),control);return wrap;};
-    const addRow=(item={type:'streak',target:3,sticker:'✨',title:'',graphic:''})=>{
-      const row=document.createElement('article');row.className='kiss-milestone-row';
-      const type=document.createElement('select');type.setAttribute('aria-label','Milestone type');[['streak','Consecutive-day streak'],['total','Total kisses']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;type.append(o);});type.value=item.type;
-      const target=document.createElement('input');target.type='number';target.min='1';target.max='10000';target.step='1';target.value=String(item.target);target.setAttribute('aria-label','Milestone number');
-      const title=document.createElement('input');title.type='text';title.maxLength=70;title.value=item.title||'';title.placeholder='Award title';title.setAttribute('aria-label','Award title');
-      const sticker=document.createElement('input');sticker.type='text';sticker.maxLength=12;sticker.value=item.sticker||'';sticker.placeholder='✨';sticker.setAttribute('aria-label','Fallback emoji');
-      const graphic=document.createElement('input');graphic.type='url';graphic.value=item.graphic||'';graphic.placeholder='https://… image URL';graphic.setAttribute('aria-label','Sticker image URL');
-      const preview=document.createElement('img');preview.className='kiss-milestone-preview';preview.alt='Sticker preview';preview.hidden=!item.graphic;preview.src=item.graphic||'';
-      graphic.addEventListener('input',()=>{const safe=validPostUrl(graphic.value.trim());preview.hidden=!safe;preview.src=safe||'';});
-      const file=document.createElement('input');file.type='file';file.accept='image/png,image/jpeg,image/webp,image/gif,image/avif';file.className='kiss-milestone-file';file.setAttribute('aria-label','Upload sticker graphic');
-      file.addEventListener('change',async()=>{const chosen=file.files?.[0],status=$('kissMilestoneStatus');if(!chosen)return;if(!/^image\/(png|jpeg|webp|gif|avif)$/.test(chosen.type)||chosen.size>10*1024*1024){if(status)status.textContent='Choose a PNG, JPEG, WebP, GIF, or AVIF image under 10 MB.';file.value='';return;}if(!window.archiveGitHub?.connected){if(status)status.textContent='Connect GitHub before uploading a sticker graphic.';file.value='';return;}const ext=chosen.type.split('/')[1].replace('jpeg','jpg');const path=`assets/archive/stickers/${Date.now()}-${Math.random().toString(36).slice(2,7)}.${ext}`;const uploadButton=row.querySelector('.kiss-milestone-upload');uploadButton.disabled=true;if(status)status.textContent='Uploading sticker graphic…';try{await window.archiveGitHub.upload(path,chosen,'Add kiss milestone sticker');window.archiveStaging.uploads.add(path);graphic.value=window.archiveGitHub.pagesUrl(path);graphic.dispatchEvent(new Event('input',{bubbles:true}));graphic.dispatchEvent(new Event('change',{bubbles:true}));if(status)status.textContent='Sticker graphic uploaded. Publish changes to make it live.';}catch(error){if(status)status.textContent=error.message||'Could not upload sticker graphic.';}finally{uploadButton.disabled=false;file.value='';}});
-      const upload=document.createElement('button');upload.type='button';upload.className='secondary-button kiss-milestone-upload';upload.textContent='Upload image';upload.addEventListener('click',()=>file.click());
-      const remove=document.createElement('button');remove.type='button';remove.className='text-button kiss-milestone-remove';remove.textContent='Remove milestone';remove.addEventListener('click',()=>{row.remove();window.archiveMarkDirty();schedulePreview();});
-      row.append(makeField('MILESTONE',type),makeField('NUMBER',target),makeField('TITLE',title),makeField('FALLBACK EMOJI',sticker),makeField('GRAPHIC URL',graphic),preview,file,upload,remove);root.append(row);
-    };
-    appendKissMilestoneRow=addRow;
-    (items||[]).forEach(addRow);
-  }
-  $('addKissMilestone')?.addEventListener('click',()=>{appendKissMilestoneRow({type:'streak',target:3,sticker:'✨',title:'',graphic:''});window.archiveMarkDirty();schedulePreview();});
-  function fillFields(data) {
-    cloud = normalizeContent(data || {});
-    Object.keys(cloud).forEach(k => {
-      const el = document.querySelector(`[data-content="${k}"]`); if (!el) return;
-      const v=cloud[k]; if(k==='kissMilestones')return;el.value = Array.isArray(v) ? (k==='notes' ? JSON.stringify(v,null,2) : v.join('\n')) : String(v ?? '');
-    });
-    if ($('accentColor')) setVal('accentColor', cloud.accent || '#5f73a5');
-    if ($('backgroundColor')) setVal('backgroundColor', cloud.background || '#f4f7fb');
-    if ($('textColor')) setVal('textColor', cloud.text || '#111827');
-    setVal('heroTitle', cloud.title || 'רואי'); setVal('heroSubtitle', cloud.subtitle || 'A study of ordinary days.'); setVal('heroDescription', cloud.description || 'Light shifts across familiar places. A song returns with the weather.'); setVal('heroImageUrl', cloud.image || '');setVal('heroMobileImageUrl', cloud.mobileImage || '');
-    setVal('songLayout',cloud.songLayout==='grid'?'grid':'masonry');setVal('songCardPadding',Math.max(12,Math.min(32,Number(cloud.songCardPadding)||24)));
-    const spacing=$('songCardPaddingValue');if(spacing)spacing.value=`${$('songCardPadding').value} px`;
-    renderAdminPhotoPosts(cloud.blogPosts);
-    renderAdminKamilaPhotos(cloud.kamilaPhotos);
-    renderKissMilestoneRows(cloud.kissMilestones);renderAdminMarketItems(cloud.marketItems);
-    renderAdminCustomNotifications(cloud.customNotifications);
-  }
-  function readFields() {
-    const result={...cloud};
-    document.querySelectorAll('[data-content]').forEach(el => {
-      const k=el.dataset.content;
-      if(k==='qualities'||k==='kissMessages') result[k]=el.value.split('\n').map(x=>x.trim()).filter(Boolean);
-      else result[k]=el.value;
-    });
-    result.blogPosts=cloud.blogPosts||[];result.kamilaPhotos=cloud.kamilaPhotos||[];result.marketItems=cloud.marketItems||[];result.customNotifications=cloud.customNotifications||[];delete result.galleryImages;delete result.galleryCaptions;delete result.notes;
-    result.kissMilestones=[...document.querySelectorAll('.kiss-milestone-row')].map(row=>({type:row.querySelector('select')?.value==='total'?'total':'streak',target:Math.floor(Number(row.querySelector('input[type="number"]')?.value)),title:row.querySelector('input[aria-label="Award title"]')?.value.trim().slice(0,70)||'',sticker:row.querySelector('input[aria-label="Fallback emoji"]')?.value.trim().slice(0,12)||'',graphic:validPostUrl(row.querySelector('input[type="url"]')?.value.trim())||''})).filter(item=>item.target>0&&item.target<=10000&&item.title&&(item.sticker||item.graphic)).filter((item,index,array)=>array.findIndex(other=>other.type===item.type&&other.target===item.target)===index).slice(0,40);
-    result.theme='noir'; result.layout='left';
-    result.accent=$('accentColor')?.value || '#5f73a5'; result.background='#ffffff'; result.text='#090a0c';
-    result.title=$('heroTitle')?.value || 'רואי'; result.subtitle=$('heroSubtitle')?.value || ''; result.description=$('heroDescription')?.value || ''; result.image=$('heroImageUrl')?.value || '';result.mobileImage=$('heroMobileImageUrl')?.value || '';
-    result.songLayout=$('songLayout')?.value==='grid'?'grid':'masonry';result.songCardPadding=Math.max(12,Math.min(32,Number($('songCardPadding')?.value)||24));
-    return result;
-  }
-  let dirty=false;
-  const updateBar=()=>{const bar=$('publishBar');if(bar)bar.hidden=!dirty;};
-  window.archiveMarkDirty=()=>{dirty=true;updateBar();};
-  ['contentFields','visualManager','kissMilestoneFields'].forEach(id=>$(id)?.addEventListener('input',()=>window.archiveMarkDirty()));
-  ['contentFields','visualManager','kissMilestoneFields'].forEach(id=>$(id)?.addEventListener('change',()=>window.archiveMarkDirty()));
-  window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
-  const previewFrame=$('pagePreview');
-  function sendPreview(){
-    if(!previewFrame?.contentWindow)return;
-    try{previewFrame.contentWindow.postMessage({type:'biggest-fan-admin-preview',content:readFields()},location.origin);}
-    catch(error){$('visualStatus').textContent=error.message||'Preview could not update.';}
-  }
-  function schedulePreview(){clearTimeout(schedulePreview.timer);schedulePreview.timer=setTimeout(sendPreview,120);}
-  ['contentFields','visualManager','kissMilestoneFields'].forEach(id=>$(id)?.addEventListener('input',schedulePreview));
-  ['contentFields','visualManager','kissMilestoneFields'].forEach(id=>$(id)?.addEventListener('change',schedulePreview));
-  window.addEventListener('message',event=>{
-    if(event.origin===location.origin&&event.source===previewFrame?.contentWindow&&event.data?.type==='biggest-fan-preview-ready')sendPreview();
-  });
-  previewFrame?.addEventListener('load',sendPreview);
-
-  function journalMode(){return $('editJournalOrder')?.value||cloud.journalOrder||'date';}
-  function orderedPhotoPosts(posts){const list=[...(posts||[])];return journalMode()==='manual'?list:list.sort((a,b)=>(b.date||'').localeCompare(a.date||''));}
-  function stagePhotoPosts(list,message){cloud={...cloud,blogPosts:list};window.archiveMarkDirty();renderAdminPhotoPosts();sendPreview();if(message)$('photoPostStatus').textContent=message;}
-  const mkButton=(label,fn,danger,aria)=>{const b=document.createElement('button');b.type='button';b.className='small-action'+(danger?' danger':'');b.textContent=label;b.setAttribute('aria-label',aria||label);b.addEventListener('click',fn);return b;};
-  function renderAdminPhotoPosts(posts=cloud.blogPosts||[]){
-    const root=$('adminPhotoPostList');if(!root)return;root.replaceChildren();
-    const ordered=orderedPhotoPosts(posts),manual=journalMode()==='manual';
-    $('photoPostCount').textContent=`${ordered.length} POST${ordered.length===1?'':'S'}`;
-    if(!ordered.length){const empty=document.createElement('div');empty.className='admin-empty';empty.textContent='No photo posts yet. Add the first one above.';root.append(empty);return;}
-    ordered.forEach(post=>{
-      const row=document.createElement('article');row.className='admin-item photo-post-admin-item';
-      const img=document.createElement('img');img.className='photo-post-thumb';img.src=validPostUrl(post.image)||'';img.alt='';img.loading='lazy';
-      const main=document.createElement('div');main.className='admin-item-main';
-      const title=document.createElement('div');title.className='admin-item-title';title.textContent=post.caption||'Untitled photo';
-      const meta=document.createElement('div');meta.className='admin-item-meta';meta.textContent=[post.date||'Undated archive',post.alt?'ALT TEXT SET':'NO ALT TEXT (USES CAPTION)'].join(' · ');
-      main.append(title,meta);
-      const actions=document.createElement('div');actions.className='admin-item-actions';
-      const label=post.caption||'photo';
-      actions.append(mkButton('Edit',()=>editPhotoPost(post,row),false,`Edit photo post: ${label}`));
-      if(manual)actions.append(mkButton('↑',()=>movePhotoPost(post.id,-1),false,`Move ${label} up`),mkButton('↓',()=>movePhotoPost(post.id,1),false,`Move ${label} down`));
-      actions.append(mkButton('Delete',()=>deletePhotoPost(post),true,`Delete photo post: ${label}`));
-      row.append(img,main,actions);root.append(row);
-    });
-  }
-  function stageKamilaPhotos(photos,message){cloud={...cloud,kamilaPhotos:photos.slice(0,100)};window.archiveMarkDirty();renderAdminKamilaPhotos();sendPreview();if(message)$('kamilaPhotoStatus').textContent=message;}
-  function renderAdminKamilaPhotos(photos=cloud.kamilaPhotos||[]){
-    const root=$('adminKamilaPhotoList');if(!root)return;root.replaceChildren();const items=photos.slice(0,100);$('kamilaPhotoCount').textContent=`${items.length} CARD${items.length===1?'':'S'}`;
-    if(!items.length){const empty=document.createElement('div');empty.className='admin-empty';empty.textContent='No Kamila card photos yet. Upload a few to start the collection.';root.append(empty);return;}
-    items.forEach(photo=>{const row=document.createElement('article');row.className='admin-item kamila-photo-admin-item';const img=document.createElement('img');img.className='photo-post-thumb';img.src=photo.image;img.alt='';img.loading='lazy';const main=document.createElement('div');main.className='admin-item-main';const label=document.createElement('label');label.className='kamila-photo-caption-label';label.textContent='CARD CAPTION';const caption=document.createElement('input');caption.type='text';caption.maxLength=100;caption.value=photo.caption||'';caption.placeholder='A little moment with Kamila';caption.setAttribute('aria-label','Kamila card caption');caption.addEventListener('input',()=>{cloud.kamilaPhotos=(cloud.kamilaPhotos||[]).map(item=>item.id===photo.id?{...item,caption:caption.value.slice(0,100)}:item);window.archiveMarkDirty();schedulePreview();});main.append(label,caption);const remove=mkButton('Remove',()=>{if(photo.path?.startsWith('assets/archive/'))window.archiveStaging.deletes.add(photo.path);stageKamilaPhotos((cloud.kamilaPhotos||[]).filter(item=>item.id!==photo.id),'Photo removed from the card folder. Publish all changes to update the live collection.');},true,`Remove Kamila card photo${photo.caption?': '+photo.caption:''}`);row.append(img,main,remove);root.append(row);});
-  }
-  $('kamilaPhotoFiles')?.addEventListener('change',async event=>{const files=[...(event.currentTarget.files||[])],status=$('kamilaPhotoStatus');if(!files.length)return;if(!window.archiveGitHub?.connected||!contentLoaded){status.textContent='Connect GitHub and load the archive before adding card photos.';event.currentTarget.value='';return;}const chosen=files.slice(0,Math.max(0,100-(cloud.kamilaPhotos||[]).length));if(!chosen.length){status.textContent='The card folder holds up to 100 photos.';event.currentTarget.value='';return;}const allowed=['image/jpeg','image/png','image/webp','image/gif','image/avif'],added=[];event.currentTarget.disabled=true;try{for(let i=0;i<chosen.length;i++){const file=chosen[i];if(!allowed.includes(file.type)||file.size>25*1024*1024)throw new Error('Use JPG, PNG, WebP, GIF or AVIF images under 25 MB each.');status.textContent=`Preparing card photo ${i+1} of ${chosen.length}…`;const opt=await window.archiveCompressImage(file,1800);const ext=opt.ext||'jpg',path=`assets/archive/kamila-cards/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;await window.archiveGitHub.upload(path,opt.blob,`Add Kamila collectible photo`);window.archiveStaging.uploads.add(path);added.push({id:crypto.randomUUID(),image:window.archiveGitHub.pagesUrl(path),path,caption:file.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ').slice(0,100)});}stageKamilaPhotos([...(cloud.kamilaPhotos||[]),...added],'Card photos uploaded and staged. Publish all changes to make them available.');}catch(error){status.textContent=error.message||'Could not upload the card photos. Check GitHub access.';}finally{event.currentTarget.disabled=false;event.currentTarget.value='';}});
-  function stageMarketItems(items,message){cloud={...cloud,marketItems:items.slice(0,100)};window.archiveMarkDirty();renderAdminMarketItems();sendPreview();if(message)$('kissMarketAdminStatus').textContent=message;}
-  function stageCustomNotifications(items,message){cloud={...cloud,customNotifications:items.slice(0,30)};window.archiveMarkDirty();renderAdminCustomNotifications();sendPreview();if(message)$('customNotificationStatus').textContent=message;}
-  function renderAdminCustomNotifications(items=cloud.customNotifications||[]){
-    const root=$('adminCustomNotificationList');if(!root)return;root.replaceChildren();const list=items.slice(0,30),count=$('customNotificationCount');if(count)count.textContent=`${list.length} UPDATE${list.length===1?'':'S'}`;
-    if(!list.length){const empty=document.createElement('div');empty.className='admin-empty';empty.textContent='No custom notifications yet.';root.append(empty);return;}
-    list.slice().reverse().forEach(item=>{const row=document.createElement('article');row.className='admin-item custom-notification-admin-item';const body=document.createElement('div');body.className='admin-item-copy';const title=document.createElement('strong');title.className='admin-item-title';title.textContent=item.title;const message=document.createElement('p');message.className='admin-item-text';message.textContent=item.message;const date=document.createElement('small');date.className='admin-item-meta';date.textContent=item.createdAt?new Date(item.createdAt).toLocaleString():'Not published yet';body.append(title,message,date);row.append(body);const remove=mkButton('Remove',()=>stageCustomNotifications((cloud.customNotifications||[]).filter(value=>value.id!==item.id),'Notification removed. Publish all changes to remove it for visitors.'),true,`Remove notification: ${item.title}`);row.append(remove);root.append(row);});
-  }
-  $('customNotificationForm')?.addEventListener('submit',event=>{event.preventDefault();const title=$('customNotificationTitle').value.trim(),message=$('customNotificationMessage').value.trim(),status=$('customNotificationStatus');if(!title||!message)return;if((cloud.customNotifications||[]).length>=30){status.textContent='The page can have up to 30 custom notifications. Remove one first.';return;}const notification={id:`notice-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,title,message,createdAt:Date.now()};stageCustomNotifications([...(cloud.customNotifications||[]),notification],'Notification added. Publish all changes to send it to visitors.');event.currentTarget.reset();});
-  function renderAdminMarketItems(items=cloud.marketItems||[]){
-    const root=$('adminKissMarketList');if(!root)return;root.replaceChildren();const list=items.slice(0,100);const count=$('kissMarketCount');if(count)count.textContent=`${list.length} LISTING${list.length===1?'':'S'}`;const stat=$('marketStat');if(stat)stat.textContent=String(list.filter(item=>item.active!==false).length);
-    if(!list.length){const empty=document.createElement('div');empty.className='admin-empty';empty.textContent='No market listings yet. Add an item or service above.';root.append(empty);return;}
-    const update=(id,key,value)=>{cloud={...cloud,marketItems:(cloud.marketItems||[]).map(item=>item.id===id?{...item,[key]:value}:item)};window.archiveMarkDirty();schedulePreview();};
-    list.forEach(item=>{const row=document.createElement('article');row.className='admin-item market-admin-item';const fields=document.createElement('div');fields.className='market-admin-fields';
-      const titleLabel=document.createElement('label');titleLabel.textContent='LISTING TITLE';const title=document.createElement('input');title.type='text';title.maxLength=70;title.value=item.title;title.setAttribute('aria-label','Market listing title');title.addEventListener('input',()=>update(item.id,'title',title.value.slice(0,70).trimStart()));titleLabel.append(title);
-      const typeLabel=document.createElement('label');typeLabel.textContent='TYPE';const type=document.createElement('select');[['item','Item'],['service','Service']].forEach(([value,label])=>{const option=document.createElement('option');option.value=value;option.textContent=label;type.append(option);});type.value=item.type;type.setAttribute('aria-label','Market listing type');type.addEventListener('change',()=>update(item.id,'type',type.value));typeLabel.append(type);
-      const costLabel=document.createElement('label');costLabel.textContent='KISS PRICE';const cost=document.createElement('input');cost.type='number';cost.min='1';cost.max='100000';cost.step='1';cost.value=String(item.kissCost);cost.setAttribute('aria-label','Kiss price');cost.addEventListener('change',()=>update(item.id,'kissCost',Math.max(1,Math.min(100000,Math.floor(Number(cost.value)||1)))));costLabel.append(cost);
-      const descriptionLabel=document.createElement('label');descriptionLabel.className='market-description-field';descriptionLabel.textContent='DESCRIPTION / RIGHTS';const description=document.createElement('textarea');description.rows=2;description.maxLength=240;description.value=item.description||'';description.placeholder='Describe the item, service, and what the ticket lets its owner claim.';description.setAttribute('aria-label','Market listing description and collection rights');description.addEventListener('input',()=>update(item.id,'description',description.value.slice(0,240)));descriptionLabel.append(description);
-      const activeLabel=document.createElement('label');activeLabel.className='market-active-field';const active=document.createElement('input');active.type='checkbox';active.checked=item.active!==false;active.setAttribute('aria-label','Listing available in the market');active.addEventListener('change',()=>update(item.id,'active',active.checked));activeLabel.append(active,document.createTextNode('Available in market'));
-      fields.append(titleLabel,typeLabel,costLabel,descriptionLabel,activeLabel);const remove=mkButton('Remove listing',()=>stageMarketItems((cloud.marketItems||[]).filter(value=>value.id!==item.id),'Listing removed. Publish all changes to update the market.'),true,`Remove market listing: ${item.title}`);row.append(fields,remove);root.append(row);
-    });
-  }
-  $('kissMarketForm')?.addEventListener('submit',event=>{event.preventDefault();const title=$('marketItemTitle').value.trim(),description=$('marketItemDescription').value.trim().slice(0,240),kissCost=Math.floor(Number($('marketItemCost').value)),type=$('marketItemType').value==='service'?'service':'item',status=$('kissMarketAdminStatus');if(!title||kissCost<1||kissCost>100000){status.textContent='Add a title and a kiss price between 1 and 100,000.';return;}if((cloud.marketItems||[]).length>=100){status.textContent='The market can hold up to 100 listings.';return;}stageMarketItems([...(cloud.marketItems||[]),{id:`market-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,title,description,type,kissCost,active:true}],'Listing added. Publish all changes to open it in the market.');event.currentTarget.reset();$('marketItemCost').value='5';});
-  function editPhotoPost(post,row){
-    if(row.querySelector('.inline-edit'))return;
-    const form=window.archiveInlineEdit([{key:'caption',label:'CAPTION',value:post.caption||'',rows:2,max:220},{key:'alt',label:'ALT TEXT',value:post.alt||'',max:220},{key:'date',label:'DATE',value:post.date||'',type:'date'}],values=>{
-      if(!values.caption){$('photoPostStatus').textContent='A caption is required.';return;}
-      stagePhotoPosts((cloud.blogPosts||[]).map(p=>p.id===post.id?{...p,caption:values.caption.slice(0,220),alt:values.alt.slice(0,220),date:values.date||p.date}:p),'Edit staged. Publish all changes to go live.');
-    },()=>form.remove());
-    row.append(form);form.querySelector('textarea,input').focus();
-  }
-  function movePhotoPost(id,dir){const list=[...(cloud.blogPosts||[])];const i=list.findIndex(p=>p.id===id),j=i+dir;if(i<0||j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];stagePhotoPosts(list);}
-  function deletePhotoPost(post){
-    if(!confirm(`Delete “${post.caption||'this photo post'}” from the journal?`))return;
-    if(post.path?.startsWith('assets/archive/'))window.archiveStaging.deletes.add(post.path);
-    stagePhotoPosts((cloud.blogPosts||[]).filter(item=>item.id!==post.id),'Photo post removed. Publish all changes to delete the file.');
-  }
-  async function readSupabaseContent(){const {data,error}=await db.from('archive_content').select('content').eq('id',true).single();if(error)throw error;return normalizeContent(data?.content||cloud);}
-  async function readLatestContent(){if(window.archiveGitHub?.connected){const content=await window.archiveGitHub.getJson('archive-data.json');if(!content)throw new Error('Copy the existing archive to GitHub once before editing it.');return normalizeContent(content);}if(archiveFromGitHub)throw new Error('Reconnect GitHub in the admin dashboard before editing the archive.');return readSupabaseContent();}
-  $('photoPostForm')?.addEventListener('submit',async event=>{
-    event.preventDefault();const form=event.currentTarget,file=$('photoPostFile').files?.[0],caption=$('photoPostCaption').value.trim(),alt=$('photoPostAlt').value.trim(),date=$('photoPostDate').value,status=$('photoPostStatus'),button=$('publishPhotoPost');
-    if(!file||!caption||!date)return;
-    const allowed=['image/jpeg','image/png','image/webp','image/gif','image/avif'];
-    if(!allowed.includes(file.type)){status.textContent='Choose a JPG, PNG, WebP, GIF, or AVIF image.';return;}
-    if(file.size>25*1024*1024){status.textContent='Images must be 25 MB or smaller.';return;}
-    if(!window.archiveGitHub?.connected||!contentLoaded){status.textContent='Connect GitHub before uploading a photo.';return;}
-    button.disabled=true;status.textContent='Optimizing image…';let objectPath='';
-    try{
-      const opt=await window.archiveCompressImage(file,2000);
-      const slug=caption.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'photo';
-      objectPath=`assets/archive/photos/${Date.now()}-${slug}.${opt.ext}`;
-      status.textContent='Uploading image…';
-      await window.archiveGitHub.upload(objectPath,opt.blob,`Add journal photo: ${caption.slice(0,60)}`);
-      window.archiveStaging.uploads.add(objectPath);
-      const post={id:crypto.randomUUID(),image:window.archiveGitHub.pagesUrl(objectPath),path:objectPath,caption:caption.slice(0,220),alt:alt.slice(0,220),date};
-      const list=cloud.blogPosts||[];
-      const note=opt.optimized?` Optimized ${(file.size/1048576).toFixed(1)} MB → ${(opt.blob.size/1048576).toFixed(1)} MB.`:'';
-      stagePhotoPosts(journalMode()==='manual'?[post,...list]:[...list,post],'Photo staged.'+note+' Publish all changes to add it to the journal.');
-      form.reset();
-    }catch(error){if(objectPath)try{await window.archiveGitHub.delete(objectPath,'Remove failed photo upload');window.archiveStaging.uploads.delete(objectPath);}catch(_){}status.textContent=error.message||'Upload failed. Check the GitHub token and repository permissions.';}
-    finally{button.disabled=false;}
-  });
-
-  async function load() {
-    db=window.archiveSupabase; if(!db) return;
-    let githubSource=false,content=null;
-    if(window.archiveGitHub?.connected){try{const repo=await window.archiveGitHub.connect();content=await window.archiveGitHub.getJson('archive-data.json');githubSource=Boolean(content&&typeof content==='object');const connectionStatus=$('githubLoginStatus');if(connectionStatus)connectionStatus.textContent=`GitHub connection restored for ${repo.full_name}.`;}catch(error){window.archiveGitHub.disconnect();const connectionStatus=$('githubLoginStatus');if(connectionStatus)connectionStatus.textContent=`Saved GitHub connection needs attention: ${error.message||'paste the token again.'}`;}}
-    if(!githubSource)try{const response=await fetch(new URL('archive-data.json',location.href),{cache:'no-store'});if(response.ok){content=await response.json();githubSource=Boolean(content&&typeof content==='object');}}catch(_){}
-    if(!githubSource){const {data,error}=await db.from('archive_content').select('content').eq('id',true).single();if(error){$('contentStatus').textContent='Could not load the initial archive. Check Supabase setup, or connect GitHub if archive-data.json is already published.';return;}content=data?.content||{};}
-    archiveFromGitHub=githubSource;fillFields(content);
-    contentLoaded = true;
-    window.dispatchEvent(new CustomEvent('archive-content-loaded',{detail:{content:cloud,githubSource}}));
-    if(githubSource){const status=$('githubStorageStatus');if(status)status.textContent=window.archiveGitHub?.connected?'Loaded archive-data.json from GitHub. Content and media are ready to publish from admin.':'Loaded archive-data.json from GitHub Pages. Connect GitHub here to publish edits.';$('copyArchiveToGitHub').disabled=true;}
-    else if($('copyArchiveToGitHub')){$('copyArchiveToGitHub').disabled=!window.archiveGitHub?.connected;const status=$('githubStorageStatus');if(status&&window.archiveGitHub?.connected)status.textContent='Current content is still in Supabase. Copy it once to GitHub to make GitHub the archive source.';}
-    sendPreview();
-  }
-  const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  async function publishSeoFiles(next){
-    const gh=window.archiveGitHub,base=gh.pagesUrl('').replace(/\/+$/,''),notes=[];
-    const title=(next.title||'רואי')+' — Biggest Fan Archive';
-    const desc=[next.subtitle,next.description].filter(Boolean).join(' ').replace(/\s+/g,' ').trim()||'A personal archive of photographs, music, and notes.';
-    try{
-      const html=await gh.getText('index.html');
-      if(html&&html.includes('<!-- og:start -->')){
-        const image=validPostUrl(next.image);
-        const block=['<!-- og:start -->','<meta property="og:type" content="website">',`<meta property="og:title" content="${esc(title)}">`,`<meta property="og:description" content="${esc(desc)}">`,`<meta property="og:url" content="${esc(base+'/')}">`,...(image?[`<meta property="og:image" content="${esc(image)}">`]:[]),`<meta name="twitter:card" content="${image?'summary_large_image':'summary'}">`,`<link rel="alternate" type="application/rss+xml" title="${esc(next.momentsHeading||'Photo journal')}" href="feed.xml">`,'<!-- og:end -->'].join('\n  ');
-        let out=html.replace(/<!-- og:start -->[\s\S]*?<!-- og:end -->/,()=>block);
-        out=out.replace(/<title>[^<]*<\/title>/,()=>`<title>${esc(title)}</title>`).replace(/<meta name="description" content="[^"]*">/,()=>`<meta name="description" content="${esc(desc)}">`);
-        if(out!==html)await gh.putText('index.html',out,'Update page metadata');
-      }else notes.push('index.html has no og:start marker, so link-preview tags were not updated.');
-    }catch(error){notes.push('Link-preview tags could not be updated.');}
-    try{
-      const mime={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',avif:'image/avif'};
-      const posts=(next.blogPosts||[]).filter(p=>p&&validPostUrl(p.image)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,30);
-      const items=posts.map(p=>{
-        const ext=(new URL(p.image).pathname.split('.').pop()||'').toLowerCase();
-        const when=/^\d{4}-\d{2}-\d{2}$/.test(p.date||'')?new Date(p.date+'T12:00:00Z').toUTCString():'';
-        const id=String(p.id||'').replace(/[^\w-]/g,'');
-        return `<item><title>${esc((p.caption||'Untitled photo').slice(0,80))}</title><link>${esc(base+'/#post-'+id)}</link><guid isPermaLink="false">${esc(id||p.image)}</guid>${when?`<pubDate>${when}</pubDate>`:''}<description>${esc(p.alt||p.caption||'')}</description><media:content url="${esc(validPostUrl(p.image))}" medium="image"${mime[ext]?` type="${mime[ext]}"`:''}/></item>`;
-      }).join('\n');
-      const latest=/^\d{4}-\d{2}-\d{2}$/.test(posts[0]?.date||'')?new Date(posts[0].date+'T12:00:00Z').toUTCString():'';
-      const xml=`<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">\n<channel>\n<title>${esc(title)}</title>\n<link>${esc(base+'/')}</link>\n<description>${esc(desc)}</description>${latest?`\n<lastBuildDate>${latest}</lastBuildDate>`:''}\n${items}\n</channel>\n</rss>\n`;
-      const previous=await gh.getText('feed.xml');
-      if(previous!==xml)await gh.putText('feed.xml',xml,'Update RSS feed');
-    }catch(error){notes.push('The RSS feed could not be updated.');}
-    return notes.length?' '+notes.join(' '):'';
-  }
-  async function cleanupStagedMedia(next){
-    const gh=window.archiveGitHub,stg=window.archiveStaging;
-    const referenced=new Set([next.image,next.mobileImage,...(next.blogPosts||[]).map(p=>p.image),...(next.kamilaPhotos||[]).map(p=>p.image),...(next.noises||[]).map(n=>n.url),...(next.kissMilestones||[]).map(m=>m.graphic)].map(u=>u?gh.repoPathFromPagesUrl(u):null).filter(Boolean));
-    for(const path of new Set([...stg.deletes,...stg.uploads])){if(referenced.has(path))continue;try{await gh.delete(path,'Remove unused archive media');}catch(_){}}
-    stg.deletes.clear();stg.uploads.clear();
-  }
-  async function save(override) {
-    const status=$('contentStatus');
-    try {
-      if(!contentLoaded)throw new Error('Wait for shared content to finish loading before publishing.');
-      const next=override||readFields();
-      const imageUrls=[next.image,next.mobileImage,...(next.blogPosts||[]).map(post=>post.image),...(next.kamilaPhotos||[]).map(photo=>photo.image),...(next.kissMilestones||[]).map(item=>item.graphic)].filter(Boolean);
-      if(imageUrls.some(value=>!validPostUrl(value)))throw new Error('Images must use public HTTPS URLs.');
-      status.textContent='Publishing…';
-      if(!window.archiveGitHub?.connected)throw new Error('Connect GitHub in the admin dashboard before publishing.');
-      await window.archiveGitHub.putJson('archive-data.json',next,'Update archive content');
-      const previousMedia=window.archiveGitHub.repoPathFromPagesUrl(cloud.image||'');
-      const nextMedia=window.archiveGitHub.repoPathFromPagesUrl(next.image||'');
-      const prevMobile=window.archiveGitHub.repoPathFromPagesUrl(cloud.mobileImage||''),nextMobile=window.archiveGitHub.repoPathFromPagesUrl(next.mobileImage||'');
-      const seoNote=await publishSeoFiles(next);
-      cloud=next;archiveFromGitHub=true; status.textContent='Published to the shared site.'+seoNote;$('visualStatus').textContent='Visual settings published for all visitors.';
-      if(previousMedia&&previousMedia!==nextMedia)try{await window.archiveGitHub.delete(previousMedia,'Remove replaced hero image');}catch(error){$('visualStatus').textContent='Content is published, but the replaced hero image could not be removed from the repository.';}
-      if(prevMobile&&prevMobile!==nextMobile)try{await window.archiveGitHub.delete(prevMobile,'Remove replaced mobile hero image');}catch(_){}
-      await cleanupStagedMedia(next);dirty=false;updateBar();
-      try{localStorage.setItem('biggestFanArchiveVisuals', JSON.stringify({theme:next.theme,layout:next.layout,accent:next.accent,background:next.background,text:next.text,title:next.title,subtitle:next.subtitle,description:next.description,image:next.image,mobileImage:next.mobileImage,songLayout:next.songLayout,songCardPadding:next.songCardPadding}));}catch(_){}
-      sendPreview();
-      return true;
-    } catch(e) { status.textContent=e.message || 'Could not publish. Check permissions and database setup.'; $('visualStatus').textContent=e.message||'Could not publish visual settings.'; return false; }
-  }
-  window.archivePublishContent=save;
-  $('connectGitHub')?.addEventListener('click',async event=>{
-    const button=event.currentTarget,status=$('githubLoginStatus'),token=$('githubToken').value;
-    if(!token.trim()){status.textContent='Paste a fine-grained GitHub token first.';return;}
-    button.disabled=true;status.textContent='Checking repository access…';
-    try{
-      window.archiveGitHub.configure($('githubOwner').value.trim(),$('githubRepo').value.trim(),$('githubBranch').value.trim()||'main',token);
-      const repo=await window.archiveGitHub.connect();$('githubToken').value='';
-      const remote=await window.archiveGitHub.getJson('archive-data.json');archiveFromGitHub=Boolean(remote);
-      status.textContent=`Connected to ${repo.full_name}. Publishing is enabled for this admin session.`;
-      const cloudStatus=$('cloudStatus');if(cloudStatus)cloudStatus.textContent='Authenticated · GitHub publishing connected';
-      const copy=$('copyArchiveToGitHub');if(copy)copy.disabled=Boolean(remote)||!contentLoaded;
-      const sharedStatus=$('githubStorageStatus');if(sharedStatus)sharedStatus.textContent=remote?'Connected. Content and uploaded files publish directly to this repository.':(contentLoaded?'Connected. Copy the current archive to GitHub once to start.':'Connected. The current archive will load after sign-in.');
-      if(remote){fillFields(remote);contentLoaded=true;window.dispatchEvent(new CustomEvent('archive-github-content-loaded',{detail:{content:cloud}}));sendPreview();if(copy)copy.disabled=true;}
-    }catch(error){window.archiveGitHub.disconnect();status.textContent=error.message||'Could not connect to GitHub.';}
-    finally{button.disabled=false;}
-  });
-  async function copyRemoteMedia(url,folder,index){
-    if(!validPostUrl(url))return {url,path:null,copied:false};
-    const existingPath=window.archiveGitHub.repoPathFromPagesUrl(url);if(existingPath)return {url,path:existingPath,copied:true};
-    try{
-      const response=await fetch(url,{mode:'cors'});if(!response.ok)throw new Error('Source unavailable');
-      const blob=await response.blob();if(!blob.size||blob.size>25*1024*1024)throw new Error('Media over 25 MB or empty');
-      const sourceUrl=new URL(url),last=sourceUrl.pathname.split('/').pop()||'',suffix=(last.match(/\.[a-z0-9]{2,5}$/i)||[])[0]||({ 'image/jpeg':'.jpg','image/png':'.png','image/webp':'.webp','image/avif':'.avif','image/gif':'.gif','audio/mpeg':'.mp3','audio/mp4':'.m4a','audio/wav':'.wav','audio/ogg':'.ogg','audio/aac':'.aac','audio/webm':'.webm' }[blob.type]||'');
-      if(!suffix)throw new Error('Unsupported media format');
-      const path=`assets/archive/${folder}/${Date.now()}-${index}${suffix}`;
-      await window.archiveGitHub.uploadBytes(path,new Uint8Array(await blob.arrayBuffer()),`Import ${folder} media`);
-      return {url:window.archiveGitHub.pagesUrl(path),path,copied:true};
-    }catch(error){console.warn('Could not copy an existing media URL into GitHub; retaining its source URL.',url,error);return {url,path:null,copied:false};}
-  }
-  $('copyArchiveToGitHub')?.addEventListener('click',async event=>{
-    const button=event.currentTarget,status=$('githubStorageStatus');
-    if(!window.archiveGitHub?.connected){status.textContent='Connect GitHub in this admin panel first.';return;}
-    if(!contentLoaded){status.textContent='Sign in to load the current Supabase archive before copying it.';return;}
-    if(await window.archiveGitHub.getJson('archive-data.json')){status.textContent='A GitHub archive already exists. Connect loaded that version; it was not overwritten.';button.disabled=true;return;}
-    if(!confirm('Copy the current Supabase archive and its downloadable photos/audio into GitHub? After this, GitHub becomes the source for page content.'))return;
-    button.disabled=true;status.textContent='Reading the current Supabase archive…';
-    try{
-      const next=await readSupabaseContent();let copied=0,external=0;
-      if(next.image){const asset=await copyRemoteMedia(next.image,'hero',1);next.image=asset.url;next.heroImagePath=asset.path||'';asset.copied?copied++:external++;}
-      for(let i=0;i<(next.blogPosts||[]).length;i++){const post=next.blogPosts[i],asset=await copyRemoteMedia(post.image,'photos',i+1);post.image=asset.url;post.path=asset.path||post.path||'';asset.copied?copied++:external++;}
-      for(let i=0;i<(next.noises||[]).length;i++){const noise=next.noises[i],asset=await copyRemoteMedia(noise.url,'noises',i+1);noise.url=asset.url;noise.path=asset.path||noise.path||'';asset.copied?copied++:external++;}
-      fillFields(next);const published=await save(next);if(!published)throw new Error($('contentStatus').textContent||'Could not publish the archive to GitHub.');
-      window.dispatchEvent(new CustomEvent('archive-github-content-loaded',{detail:{content:cloud}}));
-      status.textContent=`Archive copied to GitHub with ${copied} media file${copied===1?'':'s'}.${external?` ${external} external media URL${external===1?' was':'s were'} retained because GitHub could not fetch the source.`:''}`;
-      button.disabled=true;
-    }catch(error){status.textContent=error.message||'The archive could not be copied. Check the GitHub token and try again.';button.disabled=false;}
-  });
-  $('saveVisualSettings')?.addEventListener('click',()=>{
-    window.archiveMarkDirty();sendPreview();
-    $('visualStatus').textContent='Visual changes staged and shown in the preview. Use “Publish all changes” to go live.';
-  });
-  $('publishAll')?.addEventListener('click',async event=>{
-    const button=event.currentTarget,text=$('publishBarText');button.disabled=true;text.textContent='Publishing…';
-    const ok=await save();button.disabled=false;
-    text.textContent=ok?'Unpublished changes':($('contentStatus').textContent||'Could not publish.');
-  });
-  $('discardStaged')?.addEventListener('click',async()=>{
-    if(!confirm('Discard all unpublished changes? Files uploaded since your last publish will be removed.'))return;
-    const text=$('publishBarText');text.textContent='Discarding…';
-    try{
-      const content=await readLatestContent(),stg=window.archiveStaging;
-      for(const path of stg.uploads){try{await window.archiveGitHub.delete(path,'Remove unpublished upload');}catch(_){}}
-      stg.uploads.clear();stg.deletes.clear();
-      fillFields(content);
-      window.dispatchEvent(new CustomEvent('archive-github-content-loaded',{detail:{content:cloud}}));
-      window.dispatchEvent(new CustomEvent('archive-visual-settings-changed',{detail:cloud}));
-      dirty=false;updateBar();sendPreview();
-    }catch(error){text.textContent=error.message||'Could not discard changes.';}
-  });
-  let kissOffers=[];
-  function parseKissOffer(message){const value=String(message||'');const head=value.match(/^\[KISS OFFER · (\d+) KISSES\]\s*/);const ref=value.match(/\[OFFER REF: ([^\]]+)\]/)?.[1]||'';return{amount:Math.floor(Number(head?.[1])||0),ref,request:value.replace(/^\[KISS OFFER · \d+ KISSES\]\s*/,'').replace(/^\[OFFER REF: [^\]]+\]\s*/,'').trim()};}
-  async function loadKissOffers(){
-    const root=$('adminKissOfferList');if(!root||!db)return;root.replaceChildren();
-    const {data,error}=await db.from('archive_comments').select('id,display_name,message,approved,created_at').order('created_at',{ascending:false}).limit(200);
-    if(error){root.textContent='Unable to load offers. Check the admin database connection.';$('kissOfferModerationStatus').textContent='Offers could not be loaded.';return;}
-    kissOffers=(data||[]).filter(item=>String(item.message||'').startsWith('[KISS OFFER · '));renderKissOffers();
-  }
-  function renderKissOffers(){
-    const root=$('adminKissOfferList');if(!root)return;root.replaceChildren();const search=($('kissOfferSearch')?.value||'').trim().toLowerCase(),filter=$('kissOfferStatusFilter')?.value||'all';
-    const visible=kissOffers.filter(offer=>{const accepted=Boolean(offer.approved),text=`${offer.display_name} ${offer.message}`.toLowerCase();return(filter==='all'||(filter==='accepted'?accepted:!accepted))&&(!search||text.includes(search));});
-    const count=$('kissOfferCount');if(count)count.textContent=`${visible.length} OF ${kissOffers.length} OFFERS · ${kissOffers.filter(item=>!item.approved).length} PENDING`;
-    if(!visible.length){const empty=document.createElement('div');empty.className='admin-empty';empty.textContent=kissOffers.length?'No offers match this filter.':'No kiss offers yet.';root.append(empty);return;}
-    visible.forEach(offer=>{const parsed=parseKissOffer(offer.message);const row=document.createElement('article');row.className='admin-item kiss-offer-admin-item';row.dataset.status=offer.approved?'accepted':'pending';const body=document.createElement('div');body.className='admin-item-copy';const title=document.createElement('strong');title.className='admin-item-title';title.textContent=`${offer.display_name||'Visitor'} · ${parsed.amount||'?'} KISSES · ${offer.approved?'ACCEPTED':'PENDING'}`;const request=document.createElement('p');request.className='admin-item-text';request.textContent=parsed.request;const date=document.createElement('small');date.className='admin-item-meta';date.textContent=new Date(offer.created_at).toLocaleString();body.append(title,request,date);row.append(body);const actions=document.createElement('div');actions.className='admin-item-actions';
-      if(!offer.approved){const accept=mkButton('Accept & list item',async()=>{accept.disabled=true;const status=$('kissOfferModerationStatus');const listingId=`accepted-offer-${String(offer.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;let listings=cloud.marketItems||[];if(!listings.some(item=>item.id===listingId)){if(listings.length>=100){status.textContent='The market already has 100 listings. Remove one before accepting this offer.';accept.disabled=false;return;}const titleText=parsed.request.slice(0,70)||`Offer from ${offer.display_name||'visitor'}`;listings=[...listings,{id:listingId,title:titleText,description:parsed.request.slice(0,240),type:'item',kissCost:parsed.amount||1,active:true,offerRef:parsed.ref}];stageMarketItems(listings,'Accepted offer listing staged. Publishing the listing…');}const published=await save();if(!published){status.textContent='The listing is staged but could not be published. Connect GitHub, then publish the staged changes before accepting this offer.';accept.disabled=false;return;}const result=await db.from('archive_comments').update({approved:true}).eq('id',offer.id);if(result.error){status.textContent='The market listing is live, but the offer status could not be updated. Try Accept & list item again.';accept.disabled=false;return;}status.textContent=parsed.ref?'Offer accepted, listed in the market, and ready to notify its visitor.':'Offer listed and accepted. This older offer has no visitor notification link.';await loadKissOffers();},false,`Accept offer from ${offer.display_name} and list it in the market`);actions.append(accept);}
-      else{const reopen=mkButton('Mark pending',async()=>{reopen.disabled=true;const result=await db.from('archive_comments').update({approved:false}).eq('id',offer.id);if(result.error){$('kissOfferModerationStatus').textContent='Could not reopen the offer.';reopen.disabled=false;return;}$('kissOfferModerationStatus').textContent='Offer moved back to pending.';await loadKissOffers();},false,`Move offer from ${offer.display_name} back to pending`);actions.append(reopen);}
-      const decline=mkButton('Decline',async()=>{if(!confirm('Decline and remove this offer?'))return;decline.disabled=true;const result=await db.from('archive_comments').delete().eq('id',offer.id);if(result.error){$('kissOfferModerationStatus').textContent='Could not decline the offer.';decline.disabled=false;return;}$('kissOfferModerationStatus').textContent='Offer declined and removed.';await loadKissOffers();},true,`Decline offer from ${offer.display_name}`);actions.append(decline);row.append(actions);root.append(row);
-    });
-  }
-  $('kissOfferSearch')?.addEventListener('input',renderKissOffers);$('kissOfferStatusFilter')?.addEventListener('change',renderKissOffers);
-  window.addEventListener('archive-auth-ready', async()=>{db=window.archiveSupabase; await load();await loadKissOffers();});
-  window.addEventListener('archive-collections-saved',event=>{cloud={...cloud,songs:event.detail?.songs||[],noises:event.detail?.noises||[],thoughts:event.detail?.thoughts||[]};sendPreview();});
-  $('savePageContent')?.addEventListener('click',()=>save());
-  $('saveContentDraft')?.addEventListener('click',()=>{
-    try { localStorage.setItem('biggestFanArchiveContentDraft',JSON.stringify(readFields())); $('contentStatus').textContent='Draft saved in this browser. It is not published yet.'; }
-    catch(error) { $('contentStatus').textContent='Could not save the draft in this browser.'; }
-  });
-  $('restoreContentDraft')?.addEventListener('click',()=>{
-    try {
-      const raw=localStorage.getItem('biggestFanArchiveContentDraft');
-      if(!raw){$('contentStatus').textContent='No saved draft was found in this browser.';return;}
-      fillFields(JSON.parse(raw));
-      window.dispatchEvent(new CustomEvent('archive-content-loaded',{detail:{content:cloud}}));
-      sendPreview();
-      $('contentStatus').textContent='Draft restored. Review it, then publish when ready.';
-    } catch(error) { $('contentStatus').textContent='Could not read this draft. Save a new draft to replace it.'; }
-  });
-  $('resetVisuals')?.addEventListener('click',()=>{
-    const visualDefaults={theme:'noir',layout:'left',accent:'#5f73a5',background:'#ffffff',text:'#090a0c',title:'רואי',subtitle:'A study of ordinary days.','description':'Light shifts across familiar places. A song returns with the weather.',image:'',mobileImage:''};
-    cloud={...cloud,...visualDefaults};
-    window.dispatchEvent(new CustomEvent('archive-visual-settings-changed',{detail:visualDefaults}));
-    window.archiveMarkDirty();sendPreview();$('visualStatus').textContent='Visual defaults loaded. Publish all changes to apply them.';
-  });
-  // Keep old local editor from treating local storage as the authoritative shared source.
-  window.addEventListener('archive-content-loaded', e=>{fillFields(e.detail.content);});
-  window.archiveGetPublishedContent=()=>contentLoaded?({...defaults,...cloud}):null;
-  window.archiveRestorePublishedContent=async content=>{
-    if(!db||!contentLoaded)throw new Error('Wait for the shared content to load before restoring.');
-    fillFields({...defaults,...content});
-    window.dispatchEvent(new CustomEvent('archive-content-loaded',{detail:{content:cloud}}));
-    const published=await save();
-    if(!published)throw new Error($('contentStatus').textContent||'Could not publish the restored content.');
-  };
+  const toys=getDailyToys();toyRoot.replaceChildren();
+  toys.forEach(toy=>{const button=document.createElement('button');button.type='button';button.dataset.petToy=toy.id;button.setAttribute('aria-label',`Choose ${toy.label.toLowerCase()} for ${state.name}`);button.append(document.createTextNode(toy.emoji));const label=document.createElement('span');label.textContent=toy.label;button.append(label);toyRoot.append(button);button.addEventListener('click',()=>{if(gamePlayed)return;gamePlayed=true;const before={...state};state.happiness=clamp(state.happiness+7);state.energy=clamp(state.energy+4);const reward=rewardNeedKisses(before,['happiness','energy']);markDone('Game');write();render();toys.forEach(option=>{const button=toyRoot.querySelector(`[data-pet-toy="${option.id}"]`);if(button)button.disabled=true;});gameMessage.textContent=`${toy.reaction[0].toUpperCase()+toy.reaction.slice(1)}. A little happiness boost earned.${reward.message} See you tomorrow!`;});});
+  if(gamePlayed){toyRoot.querySelectorAll('button').forEach(button=>button.disabled=true);gameMessage.textContent='Today’s toy is picked. Come back tomorrow for another little game.';}
+  render();write();
 })();
 
-/* Expandable admin sections for faster navigation. */
+/* Archive notifications: current kiss, pet care, and newly earned stickers. */
 (() => {
-  const app=document.getElementById('adminApp');
-  if(!app)return;
-  const panels=[...app.querySelectorAll('.admin-panel, .photo-post-manager')];
-  const initiallyCollapsed=new Set(['.github-storage-panel','#pageEditor','#visualManager','#pageContentManager','#noiseManager','#backupManager','.photo-post-manager']);
-  const controls=[];
-  panels.forEach((panel,index)=>{
-    const heading=panel.querySelector(':scope > .panel-heading');
-    if(!heading)return;
-    const title=heading.querySelector('h2,h3')?.textContent.trim()||`Section ${index+1}`;
-    const body=document.createElement('div');
-    body.className='admin-panel-content';
-    body.id=`${panel.id||'admin-subsection'}Content`;
-    [...panel.children].slice([...panel.children].indexOf(heading)+1).forEach(child=>body.append(child));
-    panel.append(body);
-    const toggle=document.createElement('button');
-    toggle.type='button';
-    toggle.className='admin-panel-toggle';
-    toggle.setAttribute('aria-controls',body.id);
-    const initiallyOpen=!([...initiallyCollapsed].some(selector=>panel.matches(selector)));
-    const setOpen=open=>{
-      body.hidden=!open;
-      toggle.setAttribute('aria-expanded',String(open));
-      toggle.setAttribute('aria-label',`${open?'Collapse':'Expand'} ${title}`);
-      toggle.textContent=open?'−':'+';
-    };
-    setOpen(initiallyOpen);
-    toggle.addEventListener('click',()=>setOpen(body.hidden));
-    heading.append(toggle);
-    controls.push(setOpen);
-  });
-  document.getElementById('expandAdminSections')?.addEventListener('click',()=>controls.forEach(setOpen=>setOpen(true)));
-  document.getElementById('collapseAdminSections')?.addEventListener('click',()=>controls.forEach(setOpen=>setOpen(false)));
+  const toggle=document.getElementById('archiveNotificationsToggle'),panel=document.getElementById('archiveNotificationsPanel');
+  if(!toggle||!panel)return;
+  const list=document.getElementById('archiveNotificationList'),badge=document.getElementById('archiveNotificationBadge'),close=document.getElementById('archiveNotificationsClose');
+  let customNotifications=[];
+  function ageLabel(timestamp){if(!timestamp)return 'Age not recorded';const minutes=Math.max(0,Math.floor((Date.now()-Number(timestamp))/60000));if(minutes<1)return 'Just now';if(minutes<60)return `${minutes} min${minutes===1?'':'s'} ago`;const hours=Math.floor(minutes/60);if(hours<24)return `${hours} hr${hours===1?'':'s'} ago`;const days=Math.floor(hours/24);return `${days} day${days===1?'':'s'} ago`;}
+  function readSeenOffers(){try{const refs=JSON.parse(localStorage.getItem('archiveSeenKissOffers')||'[]');return new Set(Array.isArray(refs)?refs:[]);}catch(_){return new Set();}}
+  function readSeenCustom(){try{const ids=JSON.parse(localStorage.getItem('archiveSeenCustomNotifications')||'[]');return new Set(Array.isArray(ids)?ids:[]);}catch(_){return new Set();}}
+  function collect(){const items=[],kiss=window.archiveKissSnapshot,pet=window.archivePetSnapshot;if(kiss?.available)items.push({text:'Today’s kiss is ready to claim.',target:'kiss'});if(pet){const needs=[];if(pet.fullness<=35)needs.push('a snack');if(pet.energy<=30)needs.push('a nap');if(pet.happiness<=25)needs.push('a cuddle');if(needs.length)items.push({text:`${pet.name} could use ${needs.join(' and ')}.`,target:'pet'});}if(kiss?.awards?.length){const pending=new Set(kiss.unseen||[]);kiss.awards.filter(award=>pending.has(`${award.type}-${award.target}`)).forEach(award=>items.push({text:`Claim sticker: ${award.sticker||'✦'} ${award.title}`,age:ageLabel(award.earnedAt),target:'kissAwards',key:`${award.type}-${award.target}`}));}const seen=readSeenOffers();(window.archiveAcceptedKissOffers||[]).filter(offer=>!seen.has(offer.ref)).forEach(offer=>items.push({text:`Your kiss offer was accepted: ${offer.request||'your requested item'} is now in the market.`,age:ageLabel(Date.parse(offer.createdAt)),target:'marketOffer',ref:offer.ref}));const seenCustom=readSeenCustom();customNotifications.filter(item=>!seenCustom.has(item.id)).forEach(item=>items.push({text:`${item.title}: ${item.message}`,age:ageLabel(item.createdAt),target:'custom',key:item.id}));return items;}
+  function renderList(items){list.replaceChildren();if(!items.length){const empty=document.createElement('li');empty.className='notification-empty';empty.textContent='You’re all caught up.';list.append(empty);return;}items.forEach(item=>{const row=document.createElement('li'),button=document.createElement('button');button.type='button';button.textContent=item.text;if(item.age){const age=document.createElement('small');age.className='notification-age';age.textContent=item.age;button.append(document.createElement('br'),age);}button.addEventListener('click',()=>{if(item.target==='kissAwards')window.archiveClaimKissAward?.(item.key);if(item.target==='marketOffer'){try{const seen=readSeenOffers();seen.add(item.ref);localStorage.setItem('archiveSeenKissOffers',JSON.stringify([...seen].slice(-100)));}catch(_){}}if(item.target==='custom'){try{const seen=readSeenCustom();seen.add(item.key);localStorage.setItem('archiveSeenCustomNotifications',JSON.stringify([...seen].slice(-100)));}catch(_){}}panel.hidden=true;toggle.setAttribute('aria-expanded','false');if(item.target==='pet'){document.getElementById('archivePetToggle')?.click();return;}if(item.target==='marketOffer'){const marketItem=(window.archiveMarketItems||[]).find(entry=>entry.offerRef===item.ref),card=marketItem?[...document.querySelectorAll('.kiss-market-card')].find(entry=>entry.dataset.marketId===marketItem.id):null;(card||document.getElementById('guestbook'))?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});card?.querySelector('.kiss-market-buy')?.focus({preventScroll:true});refresh();return;}if(item.target==='custom'){refresh();return;}const target=item.target==='kissAwards'?'#kissAwards':'#kiss';document.querySelector(target)?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});document.getElementById('kissButton')?.focus({preventScroll:true});});row.append(button);list.append(row);});}
+  function refresh(){const items=collect(),count=items.length;badge.textContent=count?String(count):'';badge.hidden=count===0;toggle.setAttribute('aria-label',count?`Notifications, ${count} available`:'Notifications');renderList(items);}
+  window.archiveSetCustomNotifications=items=>{customNotifications=(Array.isArray(items)?items:[]).map((item,index)=>({id:String(item?.id||`custom-${index}`),title:String(item?.title||'').trim().slice(0,60),message:String(item?.message||'').trim().slice(0,240),createdAt:Number(item?.createdAt)||0})).filter(item=>item.title&&item.message).slice(0,30);refresh();};
+  function open(){panel.hidden=false;toggle.setAttribute('aria-expanded','true');refresh();close.focus();}
+  function hide(returnFocus=true){panel.hidden=true;toggle.setAttribute('aria-expanded','false');if(returnFocus)toggle.focus();}
+  toggle.addEventListener('click',()=>panel.hidden?open():hide(false));close.addEventListener('click',()=>hide());document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!panel.hidden)hide();});document.addEventListener('pointerdown',event=>{if(!panel.hidden&&!panel.contains(event.target)&&!toggle.contains(event.target))hide(false);});window.addEventListener('archive-kiss-updated',refresh);window.addEventListener('archive-pet-updated',refresh);window.addEventListener('archive-accepted-offers-updated',refresh);setInterval(()=>{window.archiveCheckAcceptedKissOffers?.();refresh();},60000);window.archiveCheckAcceptedKissOffers?.();refresh();
+})();
+
+/* Tiny page-wide hide-and-catch visitor game. */
+(() => {
+  const button=document.getElementById('kamilaRunner'),status=document.getElementById('kamilaRunnerStatus'),progress=document.getElementById('kamilaTapProgress'),closeCall=document.getElementById('kamilaCloseCall'),catchDialog=document.getElementById('kamilaCatchDialog'),catchMessage=document.getElementById('kamilaCatchMessage'),cardArt=document.getElementById('kamilaCardArt'),cardCaption=document.getElementById('kamilaCardCaption'),cardSerial=document.getElementById('kamilaCardSerial'),cardTier=document.getElementById('kamilaCardTier'),cardWorth=document.getElementById('kamilaCardWorth');
+  if(!button||!status||!progress||!closeCall)return;
+  document.getElementById('kamilaCatchClose')?.addEventListener('click',()=>catchDialog?.close());
+  catchDialog?.addEventListener('close',()=>document.getElementById('pocketToggle')?.focus());
+  document.getElementById('kamilaCatchPocketButton')?.addEventListener('click',()=>{catchDialog?.close();document.querySelector('[data-pocket-tab="collectibles"]')?.click();const pocketToggle=document.getElementById('pocketToggle'),pocketPanel=document.getElementById('pocketPanel');if(pocketToggle&&pocketPanel?.hidden)pocketToggle.click();else document.getElementById('pocketClose')?.focus();});
+  function celebrateCatch(){const photos=(window.archiveKamilaPhotos||[]).filter(photo=>photo?.image);const photo=photos.length?photos[Math.floor(Math.random()*photos.length)]:null;cardArt.replaceChildren();if(photo){const image=document.createElement('img');image.src=photo.image;image.alt=photo.caption||'Kamila collectible photo';cardArt.append(image);cardCaption.textContent=photo.caption||'A little Kamila collectible';const collected=window.archiveCollectKamila?.(photo);if(collected){const tier=collected.tier||'common';cardTier.textContent=tier.toUpperCase();cardTier.className=`kamila-tier-badge ${tier}`;document.getElementById('kamilaTradingCard').className=`kamila-trading-card tier-${tier}`;const value=Number(collected.kissValue)||kamilaCardValues[tier]||1;cardWorth.textContent=`${value} kiss${value===1?'':'es'}`;catchMessage.textContent=`You caught Kamila! Your ${tier.replaceAll('-',' ')} card is worth ${value} kiss${value===1?'':'es'} and has been added to your pocket.`;}else{catchMessage.textContent='You caught Kamila! The card could not be saved; your pocket may be full or unavailable.';}cardSerial.textContent=`NO. ${String(photos.indexOf(photo)+1).padStart(3,'0')}`;}else{const placeholder=document.createElement('p');placeholder.textContent='A Kamila photo card is waiting to be added.';cardArt.append(placeholder);cardCaption.textContent='No card photos have been added yet.';catchMessage.textContent='Congratulations! You caught Kamila. Add photos in the admin to start your card collection.';cardTier.textContent='COMMON';cardTier.className='kamila-tier-badge common';cardWorth.textContent='1 kiss';cardSerial.textContent='NO. —';}catchDialog?.showModal();}
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const tapsToCatch=5+Math.floor(Math.random()*6),gameToggle=document.getElementById('kamilaGameToggle'),gameSettingStatus=document.getElementById('kamilaGameSettingStatus'),enabledKey='archiveKamilaGameEnabled';let enabled=true;try{enabled=localStorage.getItem(enabledKey)!=='off';}catch(_){}let tapCount=0,caught=false,moveTimer,hideTimer,appearTimer,closeCallTimer,peekTimer,entranceTimer,fastUntil=0,runnerPositioned=false;
+  function updateGameControl(message=''){if(gameToggle){gameToggle.textContent=enabled?'Turn Kamila off':'Turn Kamila back on';gameToggle.setAttribute('aria-pressed',String(enabled));}if(gameSettingStatus)gameSettingStatus.textContent=message;}
+  function clearGameTimers(){clearTimeout(moveTimer);clearTimeout(hideTimer);clearTimeout(appearTimer);clearTimeout(closeCallTimer);clearTimeout(peekTimer);clearTimeout(entranceTimer);moveTimer=hideTimer=appearTimer=closeCallTimer=peekTimer=entranceTimer=null;button.classList.remove('kamila-hiding','kamila-peeking','kamila-leaving','kamila-entering');button.style.zIndex='';}
+  updateGameControl(enabled?'Kamila is playing hide-and-seek.':'Kamila is turned off.');
+  gameToggle?.addEventListener('click',()=>{enabled=!enabled;try{localStorage.setItem(enabledKey,enabled?'on':'off');}catch(_){}if(!enabled){clearGameTimers();button.hidden=true;closeCall.hidden=true;updateGameControl('Kamila is turned off.');status.textContent='Kamila is turned off.';return;}if(caught){caught=false;tapCount=0;progress.textContent='';button.setAttribute('aria-label','Catch Kamila');}updateGameControl('Kamila is back to playing hide-and-seek.');status.textContent='Kamila is back! Keep an eye out.';scheduleAppear(1200);});
+  function move(){
+    const pad=14,width=button.offsetWidth||78,height=button.offsetHeight||78,maxX=Math.max(pad,innerWidth-width-pad),minY=Math.min(90,Math.max(pad,innerHeight*.12)),maxY=Math.max(minY,innerHeight-height-94),chasing=fastChase();
+    const objects=[...document.querySelectorAll('.blog-post,.archive-song,.archive-thought,.deal-stack')].filter(el=>{const r=el.getBoundingClientRect();return !el.hidden&&r.width>0&&r.height>0&&r.bottom>90&&r.top<innerHeight-40&&r.right>0&&r.left<innerWidth;});
+    const target=objects.length&&Math.random()<(chasing ? .16 : .48)?objects[Math.floor(Math.random()*objects.length)].getBoundingClientRect():null;
+    const rect=button.getBoundingClientRect(),startX=Number.isFinite(rect.left)&&rect.width?rect.left:pad+Math.random()*Math.max(0,maxX-pad),startY=Number.isFinite(rect.top)&&rect.height?rect.top:minY+Math.random()*Math.max(0,maxY-minY);
+    let x,y;
+    if(target){
+      const side=Math.floor(Math.random()*4);
+      if(side===0){x=target.left-width*.62;y=target.top+Math.random()*Math.max(0,target.height-height);}
+      else if(side===1){x=target.right-width*.38;y=target.top+Math.random()*Math.max(0,target.height-height);}
+      else if(side===2){x=target.left+Math.random()*Math.max(0,target.width-width);y=target.top-height*.62;}
+      else{x=target.left+Math.random()*Math.max(0,target.width-width);y=target.bottom-height*.38;}
+      // Approach a hiding place in a short, believable scurry instead of leaping across the page.
+      const approach=chasing ? .48 : .3;x=startX+(x-startX)*approach;y=startY+(y-startY)*approach;
+    }else{
+      const reachX=innerWidth*(chasing ? .42 : .12),reachY=innerHeight*(chasing ? .32 : .095);
+      x=startX+(Math.random()*2-1)*reachX;y=startY+(Math.random()*2-1)*reachY;
+    }
+    x=Math.max(pad,Math.min(maxX,x));y=Math.max(minY,Math.min(maxY,y));
+    if(!runnerPositioned){x=pad+Math.random()*Math.max(0,maxX-pad);y=minY+Math.random()*Math.max(0,maxY-minY);button.style.transitionDuration='0s';button.style.left=`${x}px`;button.style.top=`${y}px`;runnerPositioned=true;return;}
+    const distance=Math.hypot(x-startX,y-startY),duration=reduced?0:chasing?Math.max(300,Math.min(520,260+distance*.2)):Math.max(2600,Math.min(3900,2300+distance*.45));
+    button.style.transitionDuration=reduced?'0s':`${duration}ms`;button.style.left=`${x}px`;button.style.top=`${y}px`;
+    clearTimeout(peekTimer);button.classList.remove('kamila-peeking','kamila-hiding');
+    if(target&&!reduced){button.classList.add('kamila-hiding');peekTimer=setTimeout(()=>{button.classList.remove('kamila-hiding');button.classList.add('kamila-peeking');peekTimer=setTimeout(()=>button.classList.remove('kamila-peeking'),700+Math.random()*700);},duration*.72);}
+  }
+  function fastChase(){return Date.now()<fastUntil;}
+  function scheduleMove(){if(reduced||!enabled||caught||button.hidden)return;clearTimeout(moveTimer);moveTimer=setTimeout(()=>{if(!enabled||caught||button.hidden)return;move();scheduleMove();},fastChase()?280+Math.random()*170:1900+Math.random()*700);}
+  function scheduleAppear(delay){if(!enabled||caught)return;clearTimeout(appearTimer);appearTimer=setTimeout(()=>{appearTimer=null;appear();},delay);}
+  function hide(){
+    clearTimeout(moveTimer);clearTimeout(peekTimer);clearTimeout(entranceTimer);moveTimer=peekTimer=entranceTimer=null;button.classList.remove('kamila-peeking','kamila-hiding','kamila-entering');
+    if(reduced){button.hidden=true;if(enabled&&!caught)scheduleAppear(6500+Math.random()*6500);return;}
+    const current=button.getBoundingClientRect(),width=button.offsetWidth||78,height=button.offsetHeight||78;
+    const distances=[current.left,innerWidth-current.right,current.top,innerHeight-current.bottom],edge=distances.indexOf(Math.min(...distances));
+    let x=current.left,y=current.top;
+    if(edge===0)x=-width-12;else if(edge===1)x=innerWidth+12;else if(edge===2)y=-height-12;else y=innerHeight+12;
+    button.style.transitionDuration='1450ms';button.classList.add('kamila-leaving');button.style.left=`${x}px`;button.style.top=`${y}px`;
+    hideTimer=setTimeout(()=>{button.hidden=true;button.classList.remove('kamila-leaving');button.style.transitionDuration='';runnerPositioned=false;if(enabled&&!caught)scheduleAppear(6500+Math.random()*6500);},1500);
+  }
+  function appear(){
+    if(!enabled||caught||document.hidden)return;
+    button.classList.remove('kamila-leaving');button.style.zIndex='';button.hidden=false;
+    if(reduced){button.style.transitionDuration='';runnerPositioned=false;move();scheduleMove();hideTimer=setTimeout(hide,12000);return;}
+    const width=button.offsetWidth||78,height=button.offsetHeight||78,minY=Math.min(90,Math.max(14,innerHeight*.12)),maxY=Math.max(minY,innerHeight-height-94),fromLeft=Math.random()<.5,y=minY+Math.random()*Math.max(0,maxY-minY);
+    const offscreenX=fromLeft?-width-12:innerWidth+12,peekX=fromLeft?-width+24:innerWidth-24,settledX=fromLeft?14:Math.max(14,innerWidth-width-14);
+    button.style.transitionDuration='0s';button.style.left=`${offscreenX}px`;button.style.top=`${y}px`;button.classList.add('kamila-entering');runnerPositioned=true;
+    requestAnimationFrame(()=>{if(!enabled||caught||button.hidden)return;button.style.transitionDuration='3200ms';button.style.left=`${peekX}px`;entranceTimer=setTimeout(()=>{if(!enabled||caught||button.hidden)return;button.style.transitionDuration='2100ms';button.style.left=`${settledX}px`;entranceTimer=setTimeout(()=>{button.classList.remove('kamila-entering');button.style.transitionDuration='';move();scheduleMove();entranceTimer=null;},2150);},3250);});
+    hideTimer=setTimeout(hide,10500+Math.random()*1500);
+  }
+  button.addEventListener('click',()=>{if(!enabled||caught)return;const old=button.getBoundingClientRect();clearTimeout(entranceTimer);entranceTimer=null;button.classList.remove('kamila-entering');button.style.transitionDuration='';fastUntil=Date.now()+10000;tapCount++;if(tapCount>=tapsToCatch){caught=true;enabled=false;try{localStorage.setItem(enabledKey,'off');}catch(_){}clearTimeout(moveTimer);clearTimeout(hideTimer);clearTimeout(appearTimer);clearTimeout(closeCallTimer);clearTimeout(peekTimer);clearTimeout(entranceTimer);closeCall.hidden=true;button.hidden=true;updateGameControl('Kamila is taking a break after you caught her. Turn her back on when you want to play again.');status.textContent=`You caught Kamila after ${tapCount} quick taps!`;celebrateCatch();return;}progress.textContent=`${tapCount}/${tapsToCatch}`;button.setAttribute('aria-label',`Tap Kamila, ${tapCount} of ${tapsToCatch}`);move();scheduleMove();const remaining=tapsToCatch-tapCount;if(remaining<=2){closeCall.textContent=remaining===1?'Almost!':'So close!';closeCall.style.left=`${Math.min(innerWidth-100,Math.max(10,old.left))}px`;closeCall.style.top=`${Math.max(10,old.top-40)}px`;closeCall.hidden=false;clearTimeout(closeCallTimer);closeCallTimer=setTimeout(()=>{closeCall.hidden=true;},950);}status.textContent=`Kamila dodged you! ${tapCount} of ${tapsToCatch} taps. Keep going.`;});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){clearTimeout(moveTimer);moveTimer=null;clearTimeout(hideTimer);hideTimer=null;clearTimeout(appearTimer);appearTimer=null;clearTimeout(closeCallTimer);clearTimeout(peekTimer);clearTimeout(entranceTimer);peekTimer=entranceTimer=null;button.classList.remove('kamila-peeking','kamila-hiding','kamila-entering');closeCall.hidden=true;button.hidden=true;}else if(enabled&&!caught)scheduleAppear(1800);});
+  if(enabled)scheduleAppear(3200);else button.hidden=true;
 })();
