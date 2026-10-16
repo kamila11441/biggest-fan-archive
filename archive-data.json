@@ -2,6 +2,14 @@
   "songs": [
     {
       "kind": "spotify",
+      "embed": "https://open.spotify.com/embed/track/7nRFsITVaSHko2Fw2Gcy59",
+      "title": "Spotify track",
+      "original": "https://open.spotify.com/track/7nRFsITVaSHko2Fw2Gcy59?si=WiwvGYmoTPy23qxWXBgGmg&utm_source=copy-link&rowId=356c5fede5deeb2e",
+      "label": "I think it was the first new year’s knowing you",
+      "addedAt": 1792151596587
+    },
+    {
+      "kind": "spotify",
       "embed": "https://open.spotify.com/embed/track/2e1cxDtd6Pm31HcbRAcwgy",
       "label": "I think of you every time I hear it play",
       "title": "Spotify track",
