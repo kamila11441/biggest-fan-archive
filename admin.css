@@ -233,3 +233,14 @@ body[data-layout="split"] .hero h1{font-size:clamp(76px,10vw,130px)}
   .admin-panel:has(> .panel-heading + .admin-panel-content[hidden]){padding-block:14px}
   .admin-panel-toggle{width:32px;height:32px;min-width:32px;min-height:32px}
 }
+#kissMilestoneManager #kissMilestoneRows{display:grid;gap:16px;width:100%;min-width:0}
+#kissMilestoneManager .kiss-milestone-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end;gap:14px;width:100%;min-width:0;padding:18px;background:#f7f9fc;border:1px solid #dce4ee;border-radius:16px;box-sizing:border-box}
+#kissMilestoneManager .kiss-milestone-field{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;min-width:0;margin:0;color:#66748a;font:600 10px/1.35 var(--mono);letter-spacing:.08em}
+#kissMilestoneManager .kiss-milestone-field:nth-of-type(3),#kissMilestoneManager .kiss-milestone-field:nth-of-type(5){grid-column:1/-1}
+#kissMilestoneManager .kiss-milestone-field input,#kissMilestoneManager .kiss-milestone-field select{display:block;width:100%;min-width:0;min-height:44px;margin:0;padding:10px 12px;box-sizing:border-box;border:1px solid #dce3ec;border-radius:11px;background:#fff;color:#293548;font:500 14px/1.35 var(--sans);letter-spacing:normal}
+#kissMilestoneManager .kiss-milestone-preview{grid-column:1/-1;width:72px;height:72px;object-fit:contain;padding:7px;box-sizing:border-box;background:#fff;border:1px solid #dce3ec;border-radius:12px}
+#kissMilestoneManager .kiss-milestone-file{position:absolute;width:1px;height:1px;margin:0;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+#kissMilestoneManager .kiss-milestone-upload,#kissMilestoneManager .kiss-milestone-remove{justify-self:start;margin:0}
+#kissMilestoneManager .kiss-milestone-actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:16px}
+#kissMilestoneManager .kiss-milestone-actions .admin-message{margin:0}
+@media(max-width:600px){#kissMilestoneManager .kiss-milestone-row{grid-template-columns:minmax(0,1fr);gap:12px;padding:14px}#kissMilestoneManager .kiss-milestone-field:nth-of-type(3),#kissMilestoneManager .kiss-milestone-field:nth-of-type(5){grid-column:auto}#kissMilestoneManager .kiss-milestone-actions{align-items:flex-start;flex-direction:column}}
