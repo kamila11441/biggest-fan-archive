@@ -42,6 +42,12 @@
       <div class="admin-status"><span class="status-dot" aria-hidden="true"></span> SHARED CONTENT <small id="cloudStatus" role="status" aria-live="polite">Connecting to backend…</small><button type="button" class="text-button" id="adminSignOut">Sign out</button></div>
     </section>
 
+    <div class="admin-section-controls" role="group" aria-label="Admin section controls">
+      <p>OPEN THE AREAS YOU NEED</p>
+      <button type="button" id="expandAdminSections">Expand all</button>
+      <button type="button" id="collapseAdminSections">Collapse all</button>
+    </div>
+
     <section class="admin-panel full-panel github-storage-panel" aria-labelledby="githubStorageHeading">
       <div class="panel-heading"><div><span class="panel-index">GITHUB / CONTENT STORAGE</span><h2 id="githubStorageHeading">Publish to GitHub</h2></div><span class="panel-icon" aria-hidden="true">↗</span></div>
       <p class="panel-description">Connect once here, then publish page edits, songs, photos, and recordings directly from admin. GitHub commits the changes; you do not need to download and re-upload each content change. New photos and audio can take 1–2 minutes to appear while GitHub Pages rebuilds.</p>
@@ -103,6 +109,7 @@
       </section>
       <div class="visual-actions"><button type="button" class="primary-button" id="savePageContent">Publish changes ↗</button><button type="button" class="secondary-button" id="saveContentDraft">Save draft</button><button type="button" class="secondary-button" id="restoreContentDraft">Restore draft</button><p id="contentStatus" class="admin-message" role="status" aria-live="polite"></p></div>
     </section>
+    <section class="admin-panel full-panel" id="kissMilestoneManager" aria-labelledby="kissMilestoneHeading"><div class="panel-heading"><div><span class="panel-index">DAILY RITUAL / REWARDS</span><h2 id="kissMilestoneHeading">Kiss sticker awards</h2></div><span class="panel-icon" aria-hidden="true">♡</span></div><p class="panel-description">Design a sticker for each consecutive-day streak or total-kiss milestone. Upload a graphic or paste a public HTTPS image URL. These settings publish with the rest of your page content.</p><div id="kissMilestoneFields"><div id="kissMilestoneRows" class="kiss-milestone-rows"></div><div class="kiss-milestone-actions"><button type="button" class="secondary-button" id="addKissMilestone">Add a milestone</button><p id="kissMilestoneStatus" class="admin-message" role="status" aria-live="polite"></p></div></div></section>
     <details class="admin-panel live-preview-panel" id="previewPanel"><summary>Live page preview <span>Updates as you edit · changes are not published until you publish</span></summary><iframe id="pagePreview" title="Preview of the public archive page" src="index.html?preview=1#home" loading="lazy"></iframe></details>
     <div class="admin-grid">
       <section class="admin-panel" id="songManager" aria-labelledby="songHeading">
