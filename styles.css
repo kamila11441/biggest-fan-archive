@@ -621,6 +621,24 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex;flex-dir
 .market-ticket-card{position:relative;overflow:hidden;gap:9px;padding:18px;border:1px dashed #d6c080;border-radius:16px;background:linear-gradient(110deg,#fffdf5,#fff8e7);box-shadow:0 6px 16px #77602a0d}
 .market-ticket-card::before,.market-ticket-card::after{position:absolute;top:50%;width:18px;height:18px;border:1px solid #dce2eb;border-radius:50%;background:#fbfcfe;content:"";transform:translateY(-50%)}
 .market-ticket-card::before{left:-10px}.market-ticket-card::after{right:-10px}
+
+/* Keep pocket collectibles readable at narrow and wide panel sizes. */
+.pocket-panel,#pocketItems,.pocket-collection-group,.pocket-item{box-sizing:border-box;min-width:0;max-width:100%}
+.pocket-collection-group>*{min-width:0;max-width:100%}
+.pocket-award-card{grid-template-columns:42px minmax(0,1fr);overflow:hidden}
+.pocket-award-copy{min-width:0;overflow-wrap:anywhere}
+.pocket-award-copy strong,.pocket-award-copy small,.market-ticket-card strong,.market-ticket-card p,.market-ticket-card>small{max-width:100%;overflow-wrap:anywhere;word-break:normal}
+.kamila-pocket-card{width:100%;grid-template-columns:minmax(0,1fr);justify-items:stretch;overflow:hidden}
+.kamila-pocket-card>.pocket-photo{justify-self:center;width:min(100%,230px);min-width:0;padding:0;overflow:hidden}
+.kamila-pocket-card .pocket-photo img{display:block;width:100%;max-width:220px;height:auto;aspect-ratio:1/1;box-sizing:border-box}
+.kamila-pocket-card>.kamila-tier-badge,.kamila-pocket-card>.kamila-card-worth,.kamila-pocket-card>.kamila-card-number{justify-self:center;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.kamila-pocket-card>p{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.kamila-pocket-card .kamila-card-exchange{width:100%;min-width:0;white-space:normal;line-height:1.35;overflow-wrap:anywhere}
+.kamila-pocket-card>button:last-child:not(.kamila-card-exchange){justify-self:end;max-width:100%;white-space:normal}
+.kamila-pocket-card::after{z-index:1}
+.kamila-pocket-card>*{position:relative;z-index:2}
+.kamila-pocket-card::after{position:absolute}
+@media(max-width:420px){.pocket-panel{padding:14px}.kamila-pocket-card{padding:10px}.pocket-award-card{gap:8px;padding:9px}.market-ticket-card{padding:14px}}
 .market-ticket-ribbon{padding:6px 9px;border:1px solid #e6d4a5;background:#fff8df;color:#826a35}
 @media(max-width:760px){.kiss-market-section{padding:24px 20px;border-radius:22px}.kiss-market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kiss-market-card{min-height:240px}}
 @media(max-width:560px){.kiss-market-section{padding:22px 16px;border-radius:18px}.kiss-market-grid{grid-template-columns:minmax(0,1fr);gap:12px;margin:20px 0 30px}.kiss-market-card{min-height:0;padding:19px 17px 16px;border-radius:16px}.offer-layout{margin-top:24px;padding-top:22px}}
