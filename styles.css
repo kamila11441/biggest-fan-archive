@@ -650,6 +650,15 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex;flex-dir
   .archive-pet-toggle{bottom:calc(74px + env(safe-area-inset-bottom));font-size:21px}
   .pocket-toggle{bottom:calc(132px + env(safe-area-inset-bottom));font-size:25px}
 }
+
+/* Kiss awards use separate grid cells for the sticker and its text. */
+.kiss-awards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr));align-items:stretch;width:100%;max-width:560px;box-sizing:border-box}
+.kiss-awards-heading,.kiss-awards-empty{grid-column:1/-1;min-width:0;overflow-wrap:anywhere}
+.kiss-award{min-width:0;width:100%;height:100%;box-sizing:border-box;align-content:start;justify-items:center;gap:7px;text-align:center;overflow-wrap:anywhere}
+.kiss-award-sticker{display:grid;place-items:center;width:48px;height:48px;font-size:30px;line-height:1}
+.kiss-award-image{display:block;width:48px;height:48px;max-width:100%;object-fit:contain}
+.kiss-award-title{display:block;max-width:100%;overflow-wrap:anywhere;word-break:normal;line-height:1.4}
+.kiss-award small{display:block;max-width:100%;overflow-wrap:anywhere;line-height:1.35;text-align:center}
 .market-ticket-ribbon{padding:6px 9px;border:1px solid #e6d4a5;background:#fff8df;color:#826a35}
 @media(max-width:760px){.kiss-market-section{padding:24px 20px;border-radius:22px}.kiss-market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kiss-market-card{min-height:240px}}
 @media(max-width:560px){.kiss-market-section{padding:22px 16px;border-radius:18px}.kiss-market-grid{grid-template-columns:minmax(0,1fr);gap:12px;margin:20px 0 30px}.kiss-market-card{min-height:0;padding:19px 17px 16px;border-radius:16px}.offer-layout{margin-top:24px;padding-top:22px}}
