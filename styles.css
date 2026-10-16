@@ -745,3 +745,63 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex;flex-dir
 .pet-kiss-reward>strong span:last-child{display:inline-grid;place-items:center;min-width:22px;height:22px;margin-left:5px;padding:0 6px;border-radius:999px;background:#edf1f8;color:var(--rose);font-size:11px}
 .pet-kiss-reward>span{align-self:center;color:var(--rose);font-size:11px;font-weight:600}
 .pet-kiss-reward>small{grid-column:1/-1;color:var(--muted);font-size:10px;line-height:1.45}
+
+/* Compact collectible rows mirror the kiss-award layout on phones and desktop. */
+.kamila-pocket-card{grid-template-columns:58px minmax(0,1fr)!important;grid-template-rows:auto auto auto auto auto auto;align-items:center;justify-items:stretch;gap:4px 11px;padding:10px 12px;border-radius:14px;text-align:left;animation:kamila-pocket-preview-in .32s ease-out both}
+.kamila-pocket-card>.pocket-photo{grid-column:1!important;grid-row:1/7!important;align-self:center;width:58px!important;max-width:58px!important;min-width:58px}
+.kamila-pocket-card .pocket-photo img{display:block;width:58px!important;height:58px!important;max-width:58px!important;aspect-ratio:1/1;object-fit:cover;padding:3px;border-width:1px;border-radius:10px}
+.kamila-pocket-card>.kamila-tier-badge{grid-column:2;grid-row:1;justify-self:start}
+.kamila-pocket-card>p{grid-column:2;grid-row:2;align-self:center;margin:0;text-align:left;line-height:1.3}
+.kamila-pocket-card>.kamila-card-worth{grid-column:2;grid-row:3;justify-self:start}
+.kamila-pocket-card>.kamila-card-number{grid-column:2;grid-row:4;justify-self:start}
+.kamila-pocket-card>.kamila-card-exchange{grid-column:2;grid-row:5;justify-self:start!important;width:auto;min-height:30px;margin:2px 0!important;padding:6px 10px;font-size:10px}
+.kamila-pocket-card>button:last-child:not(.kamila-card-exchange){grid-column:2;grid-row:6;justify-self:start;min-height:28px;padding:4px 10px;font-size:10px}
+@keyframes kamila-pocket-preview-in{from{opacity:0;transform:translateY(5px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+.kamila-card-preview-dialog{width:min(350px,calc(100vw - 28px));padding:18px}
+.kamila-card-flip-scene{width:min(100%,250px);height:326px;margin:6px auto 12px;animation:kamila-pocket-preview-in .32s ease-out both}
+.kamila-card-face{padding:9px;border-radius:16px}
+.kamila-card-front .kamila-card-art{border-radius:10px}
+.kamila-card-front .kamila-card-art img{height:100%;min-height:0}
+.kamila-card-preview-dialog .kamila-catch-heading p{font-size:8px}
+@media(max-width:620px){.kamila-pocket-card{grid-template-columns:52px minmax(0,1fr)!important;column-gap:9px;padding:9px 10px}.kamila-pocket-card>.pocket-photo{width:52px!important;max-width:52px!important;min-width:52px}.kamila-pocket-card .pocket-photo img{width:52px!important;height:52px!important;max-width:52px!important}.kamila-card-preview-dialog{width:min(320px,calc(100vw - 24px));padding:16px}.kamila-card-flip-scene{width:min(100%,230px);height:300px}}
+@media(prefers-reduced-motion:reduce){.kamila-pocket-card,.kamila-card-flip-scene{animation:none!important}}
+/* Safari/iOS needs prefixed 3D preservation for the two-sided card flip. */
+.kamila-card-preview-dialog,.kamila-card-flip-scene{-webkit-perspective:1100px}
+.kamila-card-flip-inner{-webkit-transform-style:preserve-3d;-webkit-transition:-webkit-transform .68s cubic-bezier(.2,.75,.25,1);will-change:transform}
+.kamila-card-flip-inner.is-flipped{-webkit-transform:rotateY(180deg)}
+.kamila-card-face{-webkit-backface-visibility:hidden}
+.kamila-card-face.kamila-card-back{-webkit-transform:rotateY(180deg)}
+@media(prefers-reduced-motion:reduce){.kamila-card-flip-inner{-webkit-transition:none}}
+
+/* Kamila collectible cards: holographic foil, rarity glow, and a polished reveal. */
+.kamila-card-preview-dialog{border-color:#c8d7ee;background:radial-gradient(ellipse at 50% 0%,#eef5ff 0,#fbfcff 48%,#f6f3fb 100%);box-shadow:0 28px 100px #15234270}
+.kamila-card-preview-dialog .kamila-catch-heading p{color:#7886a3}
+.kamila-card-preview-dialog h2{font-size:clamp(25px,7vw,34px);letter-spacing:-.055em}
+.kamila-card-flip-scene{filter:drop-shadow(0 16px 19px #1a28452b);animation:kamila-showcase-in .55s cubic-bezier(.18,.78,.24,1) both}
+.kamila-card-flip-inner{border-radius:17px}
+.kamila-card-face{isolation:isolate;border:1px solid #fff8;background:linear-gradient(145deg,#fffdf8,#f4e8d0 55%,#fffaf0);box-shadow:0 0 0 2px #dfc98e,0 0 0 5px #fff9,0 14px 30px #3b2c4c27,inset 0 0 0 1px #fff}
+.kamila-card-face::before{position:absolute;z-index:5;inset:0;pointer-events:none;border-radius:inherit;content:"";opacity:.28;background:linear-gradient(112deg,transparent 16%,#fff0 30%,#ffffffc9 42%,#b5e6ff88 48%,#ffdff588 54%,transparent 68%);background-size:240% 100%;mix-blend-mode:screen;animation:kamila-foil-sweep 5.2s ease-in-out infinite}
+.kamila-card-face::after{position:absolute;z-index:4;inset:0;pointer-events:none;border-radius:inherit;content:"";opacity:.18;background:radial-gradient(circle at 13% 14%,#fff 0 1px,transparent 2px),radial-gradient(circle at 84% 25%,#fff 0 1px,transparent 2px),radial-gradient(circle at 18% 78%,#fff 0 1px,transparent 2px),radial-gradient(circle at 91% 84%,#fff 0 1px,transparent 2px)}
+.kamila-card-front .kamila-card-top{padding:2px 4px 9px;color:#6b6078;text-shadow:0 1px #fff}
+.kamila-card-front .kamila-card-art{border:2px solid #fff;border-radius:12px;background:linear-gradient(135deg,#dce9f5,#f7dce4 52%,#efe4cf);box-shadow:0 0 0 1px #d9c9a4,0 5px 15px #493b5426,inset 0 0 0 2px #ffffff80}
+.kamila-card-front .kamila-card-art img{border-radius:9px;filter:saturate(1.06) contrast(1.02)}
+.kamila-card-front .kamila-card-caption{margin:8px 2px 6px;color:#30394d;font-weight:700}
+.kamila-card-front .kamila-card-bottom{border-top-color:#d9c69d}
+.kamila-card-face.kamila-card-back{border-color:#f1d88c;background:radial-gradient(circle at 50% 30%,#455c82 0,#253657 48%,#182540 100%);box-shadow:0 0 0 2px #dfc98e,0 0 0 5px #fff9,0 14px 30px #18254045,inset 0 0 0 1px #fff5}
+.kamila-card-back-star{width:62px;height:62px;border-color:#f1d88c;background:linear-gradient(145deg,#fff9e8,#e8c979);color:#665183;font-size:30px;box-shadow:0 0 24px #f7dc8c66,inset 0 0 0 4px #fff9}
+.kamila-card-back-label,.kamila-card-back-mark{color:#f5dfa4}
+.kamila-card-description{max-width:220px;color:#fff9eb;font-size:14px;text-shadow:0 2px 12px #0005}
+.kamila-card-flip-button{border-color:#d8c48d;background:linear-gradient(135deg,#fffdf7,#f6ebd2);color:#635477;box-shadow:0 5px 16px #29355217;transition:transform .2s ease,box-shadow .2s ease}
+.kamila-card-flip-button:hover{transform:translateY(-2px);box-shadow:0 8px 22px #29355225}
+.kamila-flippable-card.tier-rare .kamila-card-face{box-shadow:0 0 0 2px #94bfe8,0 0 0 5px #fff9,0 0 28px #83b9f066,inset 0 0 0 1px #fff}
+.kamila-flippable-card.tier-epic .kamila-card-face{box-shadow:0 0 0 2px #ba91db,0 0 0 5px #fff9,0 0 30px #b68bd966,inset 0 0 0 1px #fff}
+.kamila-flippable-card.tier-legendary .kamila-card-face,.kamila-flippable-card.tier-priceless .kamila-card-face{box-shadow:0 0 0 2px #e2bd58,0 0 0 5px #fff9,0 0 34px #f0ca5c88,inset 0 0 0 1px #fff}
+.kamila-flippable-card.tier-extremely-rare .kamila-card-face{box-shadow:0 0 0 2px #80c8d1,0 0 0 5px #fff9,0 0 34px #70d8e888,inset 0 0 0 1px #fff}
+.kamila-pocket-card{background:linear-gradient(120deg,#fff 0%,#f3f7fc 52%,#fff7fa 100%);box-shadow:inset 0 1px #fff,0 5px 16px #24344d12}
+.kamila-pocket-card .pocket-photo img{border:2px solid #fff;box-shadow:0 0 0 1px #d9c995,0 5px 12px #26354b24}
+.kamila-pocket-card .pocket-photo:focus-visible{outline:3px solid var(--rose);outline-offset:3px}
+@keyframes kamila-showcase-in{from{opacity:0;transform:translateY(12px) scale(.92) rotate(-2deg)}to{opacity:1;transform:translateY(0) scale(1) rotate(0)}}
+@keyframes kamila-foil-sweep{0%,18%{background-position:180% 0}68%,100%{background-position:-130% 0}}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){.kamila-card-flip-scene:hover{filter:drop-shadow(0 19px 22px #1a284538)}}
+@media(max-width:620px){.kamila-card-preview-dialog{padding:14px}.kamila-card-flip-scene{width:min(100%,220px);height:288px}.kamila-card-face{padding:8px}.kamila-card-description{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.kamila-card-flip-scene,.kamila-card-face::before{animation:none!important}.kamila-card-flip-button{transition:none}.kamila-card-flip-button:hover{transform:none}}
