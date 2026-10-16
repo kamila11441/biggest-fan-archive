@@ -219,11 +219,11 @@
   "kissMessages": [],
   "kissMilestones": [
     {
-      "type": "total",
-      "target": 1,
-      "title": "happy first kiss!",
-      "sticker": "💋",
-      "graphic": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/stickers/1792161688448-x553s.jpg"
+      "type": "streak",
+      "target": 3,
+      "title": "A little beginning",
+      "sticker": "🌱",
+      "graphic": ""
     },
     {
       "type": "streak",
