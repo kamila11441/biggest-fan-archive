@@ -217,6 +217,57 @@
   ],
   "journalOrder": "date",
   "kissMessages": [],
+  "kissMilestones": [
+    {
+      "type": "total",
+      "target": 1,
+      "title": "happy first kiss!",
+      "sticker": "💋",
+      "graphic": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/stickers/1792161688448-x553s.jpg"
+    },
+    {
+      "type": "streak",
+      "target": 7,
+      "title": "One lovely week",
+      "sticker": "🌷",
+      "graphic": ""
+    },
+    {
+      "type": "streak",
+      "target": 14,
+      "title": "Two weeks close",
+      "sticker": "💌",
+      "graphic": ""
+    },
+    {
+      "type": "streak",
+      "target": 30,
+      "title": "A month of kisses",
+      "sticker": "💖",
+      "graphic": ""
+    },
+    {
+      "type": "total",
+      "target": 10,
+      "title": "Ten kisses kept",
+      "sticker": "✨",
+      "graphic": ""
+    },
+    {
+      "type": "total",
+      "target": 50,
+      "title": "Fifty sweet days",
+      "sticker": "🌟",
+      "graphic": ""
+    },
+    {
+      "type": "total",
+      "target": 100,
+      "title": "One hundred kisses",
+      "sticker": "💎",
+      "graphic": ""
+    }
+  ],
   "aboutBody": "This archive gathers photographs, music, and brief notes from shared places and familiar routines.\n\nSome days return as a particular light through a window; others arrive by way of a song heard again years later.\n\nA collection still in progress.",
   "momentsHeading": "Photo journal.",
   "momentsIntro": "Images, captions, and dates. One entry at a time.",
