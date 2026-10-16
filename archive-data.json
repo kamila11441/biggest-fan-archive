@@ -331,6 +331,35 @@
       "caption": "caught in 4k kamila"
     }
   ],
+  "kamilaTraits": {
+    "Temperament": [
+      "curious little cloud",
+      "sunbeam chaser",
+      "quiet observer",
+      "mischief in velvet paws",
+      "gentle daydreamer",
+      "tiny brave heart",
+      "professional napper"
+    ],
+    "Specialty": [
+      "finding cozy corners",
+      "perfectly timed appearances",
+      "expert-level hiding",
+      "making ordinary days softer",
+      "collecting curious glances",
+      "vanishing mid-blink",
+      "excellent company"
+    ],
+    "Habitat": [
+      "the sunny windowsill",
+      "between songs",
+      "a soft blanket fort",
+      "the edge of the page",
+      "the quiet side of the room",
+      "a pocket-sized daydream",
+      "wherever you are"
+    ]
+  },
   "marketItems": [],
   "customNotifications": [],
   "journalOrder": "date",
