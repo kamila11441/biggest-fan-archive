@@ -219,18 +219,18 @@
   "kissMessages": [],
   "kissMilestones": [
     {
-      "type": "total",
-      "target": 1,
-      "title": "happy first kiss!",
-      "sticker": "💋",
-      "graphic": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/stickers/1792161954657-mubbw.jpg"
-    },
-    {
       "type": "streak",
       "target": 2,
       "title": "you back already??!!!!",
       "sticker": "🌷",
       "graphic": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/stickers/1792163305050-dggio.jpg"
+    },
+    {
+      "type": "total",
+      "target": 1,
+      "title": "happy first kiss!",
+      "sticker": "💋",
+      "graphic": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/stickers/1792161954657-mubbw.jpg"
     },
     {
       "type": "total",
@@ -240,32 +240,11 @@
       "graphic": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/stickers/1792163313299-eyk8w.jpg"
     },
     {
-      "type": "streak",
-      "target": 30,
-      "title": "A month of kisses",
-      "sticker": "💖",
-      "graphic": ""
-    },
-    {
       "type": "total",
-      "target": 10,
-      "title": "Ten kisses kept",
-      "sticker": "✨",
-      "graphic": ""
-    },
-    {
-      "type": "total",
-      "target": 50,
-      "title": "Fifty sweet days",
-      "sticker": "🌟",
-      "graphic": ""
-    },
-    {
-      "type": "total",
-      "target": 100,
-      "title": "One hundred kisses",
-      "sticker": "💎",
-      "graphic": ""
+      "target": 7,
+      "title": "one weeks worth of kisses",
+      "sticker": "☺️",
+      "graphic": "https://kamila11441.github.io/biggest-fan-archive/assets/archive/stickers/1792163479866-p740h.jpg"
     }
   ],
   "aboutBody": "This archive gathers photographs, music, and brief notes from shared places and familiar routines.\n\nSome days return as a particular light through a window; others arrive by way of a song heard again years later.\n\nA collection still in progress.",
