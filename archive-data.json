@@ -360,26 +360,7 @@
       "wherever you are"
     ]
   },
-  "marketItems": [
-    {
-      "id": "accepted-offer-0431eafb-7db6-4e07-b222-344110e695b1",
-      "title": "morę kid in my bed",
-      "description": "morę kid in my bed",
-      "type": "item",
-      "kissCost": 1,
-      "active": true,
-      "offerRef": "b9f27243-875b-40a1-8363-50c057e1a20c"
-    },
-    {
-      "id": "accepted-offer-8dd8a2ce-494d-4088-b7c4-86ca37af6496",
-      "title": "1 snus",
-      "description": "1 snus",
-      "type": "item",
-      "kissCost": 1,
-      "active": true,
-      "offerRef": "b8205ce7-89b1-4904-aaa0-71fc89bfcda5"
-    }
-  ],
+  "marketItems": [],
   "customNotifications": [],
   "journalOrder": "date",
   "kissMessages": [],
