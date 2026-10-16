@@ -678,6 +678,21 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex;flex-dir
 .kiss-award-graphic .kiss-award-sticker{display:grid;place-items:center;width:48px;height:48px;max-width:100%;max-height:100%;object-fit:contain}
 .kiss-award-copy{display:grid;justify-items:center;align-content:start;gap:4px;width:100%;min-width:0;text-align:center}
 .kiss-award-copy .kiss-award-title,.kiss-award-copy small{position:static;display:block;width:100%;min-width:0;margin:0;overflow-wrap:anywhere;text-align:center}
+
+/* Lay out every saved pocket item vertically, then use a dedicated image/text
+   split only for the compact sticker rows. */
+.pocket-item:not(.pocket-award-card):not(.kamila-pocket-card):not(.market-ticket-card){display:grid;grid-template-columns:minmax(0,1fr);justify-items:start;gap:10px;min-width:0}
+.pocket-item:not(.pocket-award-card):not(.kamila-pocket-card):not(.market-ticket-card)>p{width:100%;min-width:0;margin:0;overflow-wrap:anywhere;line-height:1.5}
+.pocket-item:not(.pocket-award-card):not(.kamila-pocket-card):not(.market-ticket-card)>.pocket-photo{display:block;width:min(100%,240px);max-width:100%;padding:0;overflow:hidden;border-radius:12px}
+.pocket-item:not(.pocket-award-card):not(.kamila-pocket-card):not(.market-ticket-card)>.pocket-photo img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover}
+.pocket-item:not(.pocket-award-card):not(.kamila-pocket-card):not(.market-ticket-card)>iframe{width:100%;max-width:100%;box-sizing:border-box}
+.pocket-item:not(.pocket-award-card):not(.kamila-pocket-card):not(.market-ticket-card)>button:last-child{justify-self:end;max-width:100%;margin:0;white-space:normal}
+.pocket-award-card>.pocket-award-art{width:42px;height:42px;max-width:100%;box-sizing:border-box}
+.pocket-award-copy{grid-column:2;grid-row:1;min-width:0;overflow-wrap:anywhere}
+.pocket-award-copy strong,.pocket-award-copy small{display:block;max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:normal}
+.market-ticket-card>*{position:relative;z-index:1;min-width:0;max-width:100%;overflow-wrap:anywhere}
+.pocket-kiss-balance{max-width:100%;overflow-wrap:anywhere}
+.pocket-tabs button{min-width:0;max-width:100%;overflow-wrap:anywhere;white-space:normal}
 .market-ticket-ribbon{padding:6px 9px;border:1px solid #e6d4a5;background:#fff8df;color:#826a35}
 @media(max-width:760px){.kiss-market-section{padding:24px 20px;border-radius:22px}.kiss-market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kiss-market-card{min-height:240px}}
 @media(max-width:560px){.kiss-market-section{padding:22px 16px;border-radius:18px}.kiss-market-grid{grid-template-columns:minmax(0,1fr);gap:12px;margin:20px 0 30px}.kiss-market-card{min-height:0;padding:19px 17px 16px;border-radius:16px}.offer-layout{margin-top:24px;padding-top:22px}}
