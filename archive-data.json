@@ -360,7 +360,17 @@
       "wherever you are"
     ]
   },
-  "marketItems": [],
+  "marketItems": [
+    {
+      "id": "accepted-offer-0431eafb-7db6-4e07-b222-344110e695b1",
+      "title": "morę kid in my bed",
+      "description": "morę kid in my bed",
+      "type": "item",
+      "kissCost": 1,
+      "active": true,
+      "offerRef": "b9f27243-875b-40a1-8363-50c057e1a20c"
+    }
+  ],
   "customNotifications": [],
   "journalOrder": "date",
   "kissMessages": [],
