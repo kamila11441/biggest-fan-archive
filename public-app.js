@@ -352,6 +352,13 @@ function retryMedia(el,max=6){const src=el.getAttribute('src');let n=0;if(!src)r
   const read = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || '{}'); return { last: typeof v.last === 'string' ? v.last : '', streak: Number(v.streak) || 0, total: Number(v.total) || 0, wallet:Number.isFinite(Number(v.wallet))?Math.max(0,Math.floor(Number(v.wallet))):(Number(v.total)||0), awards:Array.isArray(v.awards)?v.awards.filter(a=>a&&['streak','total'].includes(a.type)&&Number(a.target)>0&&(a.sticker||safeStickerGraphic(a.graphic))&&a.title).map(a=>({...a,graphic:safeStickerGraphic(a.graphic),earnedAt:Number(a.earnedAt)||0})).slice(0,100):[], unseen:Array.isArray(v.unseen)?v.unseen.filter(x=>typeof x==='string').slice(0,100):[] }; } catch (_) { return { last: '', streak: 0, total: 0, awards:[], unseen:[] }; } };
   const write = value => { try { localStorage.setItem(KEY, JSON.stringify(value)); return true; } catch (_) { return false; } };
   let state = read();
+  function awardReachedTotalMilestones(){
+    const unlocked=milestones.filter(item=>item.type==='total'&&state.total>=item.target&&!state.awards.some(award=>award.type==='total'&&Number(award.target)===item.target));
+    if(!unlocked.length)return false;
+    unlocked.forEach(item=>{const award={type:'total',target:item.target,sticker:item.sticker,title:item.title,graphic:item.graphic||'',earnedAt:Date.now()};state.awards.push(award);state.unseen.push(`total-${award.target}`);});
+    write(state);
+    return true;
+  }
   const todaysMessage = () => messages[dayNumber() % messages.length];
   function untilMidnight() {
     const now = new Date(), next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
@@ -394,17 +401,18 @@ function retryMedia(el,max=6){const src=el.getAttribute('src');let n=0;if(!src)r
     if (state.last === today) return;
     const streak = state.last === yesterdayKey() ? state.streak + 1 : 1;
     state = {...state,last:today,streak,total:state.total+1,wallet:(state.wallet||0)+1,awards:state.awards||[],unseen:state.unseen||[]};
-    const unlocked=milestones.filter(item=>(item.type==='streak'?streak:state.total)>=item.target&&!state.awards.some(award=>award.type===item.type&&Number(award.target)===item.target));
+    const unlocked=milestones.filter(item=>item.type==='streak'&&streak>=item.target&&!state.awards.some(award=>award.type===item.type&&Number(award.target)===item.target));
     unlocked.forEach(item=>{const award={type:item.type,target:item.target,sticker:item.sticker,title:item.title,graphic:item.graphic||'',earnedAt:Date.now()};state.awards.push(award);state.unseen.push(`${award.type}-${award.target}`);});
+    awardReachedTotalMilestones();
     write(state);
     render();
     floatHearts();
     navigator.vibrate?.(25);
   });
-  window.archiveAddKisses = amount => {const value=Math.max(0,Math.floor(Number(amount)||0));if(!value)return false;const previous=state;state={...state,total:(state.total||0)+value,wallet:(state.wallet||0)+value,awards:state.awards||[],unseen:state.unseen||[]};const unlocked=milestones.filter(item=>item.type==='total'&&state.total>=item.target&&!state.awards.some(award=>award.type==='total'&&Number(award.target)===item.target));unlocked.forEach(item=>{const award={type:'total',target:item.target,sticker:item.sticker,title:item.title,graphic:item.graphic||'',earnedAt:Date.now()};state.awards.push(award);state.unseen.push(`total-${award.target}`);});if(!write(state)){state=previous;return false;}render();return true;};
+  window.archiveAddKisses = amount => {const value=Math.max(0,Math.floor(Number(amount)||0));if(!value)return false;const previous=state;state={...state,total:(state.total||0)+value,wallet:(state.wallet||0)+value,awards:state.awards||[],unseen:state.unseen||[]};awardReachedTotalMilestones();if(!write(state)){state=previous;return false;}render();return true;};
   window.archiveSpendKisses = amount => {const value=Math.max(0,Math.floor(Number(amount)||0));if(!value||(state.wallet||0)<value)return false;const previous=state;state={...state,wallet:state.wallet-value};if(!write(state)){state=previous;return false;}render();return true;};
   window.archiveSetKissMessages = list => { messages = Array.isArray(list) && list.length ? list : defaults; render(); };
-  window.archiveSetKissMilestones = list => {milestones=(Array.isArray(list)?list:defaultMilestones).map(item=>({type:item?.type==='total'?'total':'streak',target:Math.floor(Number(item?.target)),sticker:String(item?.sticker||'').trim().slice(0,12),title:String(item?.title||'').trim().slice(0,70),graphic:safeStickerGraphic(item?.graphic)})).filter(item=>item.target>0&&item.target<=10000&&(item.sticker||item.graphic)&&item.title);};
+  window.archiveSetKissMilestones = list => {milestones=(Array.isArray(list)?list:defaultMilestones).map(item=>({type:item?.type==='total'?'total':'streak',target:Math.floor(Number(item?.target)),sticker:String(item?.sticker||'').trim().slice(0,12),title:String(item?.title||'').trim().slice(0,70),graphic:safeStickerGraphic(item?.graphic)})).filter(item=>item.target>0&&item.target<=10000&&(item.sticker||item.graphic)&&item.title);if(awardReachedTotalMilestones())render();};
   window.archiveClaimKissAward = key => {state.unseen=state.unseen.filter(item=>item!==key);write(state);render();};
   setInterval(render, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
