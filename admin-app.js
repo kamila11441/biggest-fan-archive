@@ -365,7 +365,7 @@
     songs:[],noises:[],thoughts:[],
     navAbout:'About', navMoments:'Journal', navNotes:'Notes', navGuestbook:'Contact',
     aboutHeading:'A record of ordinary days.', aboutLead:'Everyday life leaves its marks in unexpected places.',
-    blogPosts:[],journalOrder:'date',kissMessages:[],kissMilestones:[
+    blogPosts:[],kamilaPhotos:[],journalOrder:'date',kissMessages:[],kissMilestones:[
       {type:'streak',target:3,sticker:'🌱',title:'A little beginning'},
       {type:'streak',target:7,sticker:'🌷',title:'One lovely week'},
       {type:'streak',target:14,sticker:'💌',title:'Two weeks close'},
@@ -382,6 +382,7 @@
   function validPostUrl(value){try{const u=new URL(value);return u.protocol==='https:'&&u.hostname&&!u.username&&!u.password?u.href:null;}catch(_){return null;}}
   function normalizeContent(value={}){
     const next={...defaults,...(value||{})};
+    next.kamilaPhotos=(Array.isArray(value?.kamilaPhotos)?value.kamilaPhotos:[]).map((photo,index)=>typeof photo==='string'?{id:`kamila-${index}`,image:validPostUrl(photo),path:'',caption:''}:{id:String(photo?.id||`kamila-${index}`),image:validPostUrl(photo?.image),path:typeof photo?.path==='string'?photo.path:'',caption:typeof photo?.caption==='string'?photo.caption.trim().slice(0,100):''}).filter(photo=>photo.image).slice(0,100);
     if(!Array.isArray(value?.blogPosts))next.blogPosts=(value?.galleryImages||[]).map((image,index)=>({id:`legacy-${index}`,image,path:'',caption:value?.galleryCaptions?.[index]||'From the archive',date:''})).filter(post=>validPostUrl(post.image));
     if(!value?.accent||['#778173','#2456d7','#315bff'].includes(String(value.accent).toLowerCase()))next.accent='#5f73a5';
     if(!value?.background||value.background==='#f4f1ea')next.background='#f4f7fb';
@@ -431,6 +432,7 @@
     setVal('songLayout',cloud.songLayout==='grid'?'grid':'masonry');setVal('songCardPadding',Math.max(12,Math.min(32,Number(cloud.songCardPadding)||24)));
     const spacing=$('songCardPaddingValue');if(spacing)spacing.value=`${$('songCardPadding').value} px`;
     renderAdminPhotoPosts(cloud.blogPosts);
+    renderAdminKamilaPhotos(cloud.kamilaPhotos);
     renderKissMilestoneRows(cloud.kissMilestones);
   }
   function readFields() {
@@ -440,7 +442,7 @@
       if(k==='qualities'||k==='kissMessages') result[k]=el.value.split('\n').map(x=>x.trim()).filter(Boolean);
       else result[k]=el.value;
     });
-    result.blogPosts=cloud.blogPosts||[];delete result.galleryImages;delete result.galleryCaptions;delete result.notes;
+    result.blogPosts=cloud.blogPosts||[];result.kamilaPhotos=cloud.kamilaPhotos||[];delete result.galleryImages;delete result.galleryCaptions;delete result.notes;
     result.kissMilestones=[...document.querySelectorAll('.kiss-milestone-row')].map(row=>({type:row.querySelector('select')?.value==='total'?'total':'streak',target:Math.floor(Number(row.querySelector('input[type="number"]')?.value)),title:row.querySelector('input[aria-label="Award title"]')?.value.trim().slice(0,70)||'',sticker:row.querySelector('input[aria-label="Fallback emoji"]')?.value.trim().slice(0,12)||'',graphic:validPostUrl(row.querySelector('input[type="url"]')?.value.trim())||''})).filter(item=>item.target>0&&item.target<=10000&&item.title&&(item.sticker||item.graphic)).filter((item,index,array)=>array.findIndex(other=>other.type===item.type&&other.target===item.target)===index).slice(0,40);
     result.theme='noir'; result.layout='left';
     result.accent=$('accentColor')?.value || '#5f73a5'; result.background='#ffffff'; result.text='#090a0c';
@@ -492,6 +494,13 @@
       row.append(img,main,actions);root.append(row);
     });
   }
+  function stageKamilaPhotos(photos,message){cloud={...cloud,kamilaPhotos:photos.slice(0,100)};window.archiveMarkDirty();renderAdminKamilaPhotos();sendPreview();if(message)$('kamilaPhotoStatus').textContent=message;}
+  function renderAdminKamilaPhotos(photos=cloud.kamilaPhotos||[]){
+    const root=$('adminKamilaPhotoList');if(!root)return;root.replaceChildren();const items=photos.slice(0,100);$('kamilaPhotoCount').textContent=`${items.length} CARD${items.length===1?'':'S'}`;
+    if(!items.length){const empty=document.createElement('div');empty.className='admin-empty';empty.textContent='No Kamila card photos yet. Upload a few to start the collection.';root.append(empty);return;}
+    items.forEach(photo=>{const row=document.createElement('article');row.className='admin-item kamila-photo-admin-item';const img=document.createElement('img');img.className='photo-post-thumb';img.src=photo.image;img.alt='';img.loading='lazy';const main=document.createElement('div');main.className='admin-item-main';const label=document.createElement('label');label.className='kamila-photo-caption-label';label.textContent='CARD CAPTION';const caption=document.createElement('input');caption.type='text';caption.maxLength=100;caption.value=photo.caption||'';caption.placeholder='A little moment with Kamila';caption.setAttribute('aria-label','Kamila card caption');caption.addEventListener('input',()=>{cloud.kamilaPhotos=(cloud.kamilaPhotos||[]).map(item=>item.id===photo.id?{...item,caption:caption.value.slice(0,100)}:item);window.archiveMarkDirty();schedulePreview();});main.append(label,caption);const remove=mkButton('Remove',()=>{if(photo.path?.startsWith('assets/archive/'))window.archiveStaging.deletes.add(photo.path);stageKamilaPhotos((cloud.kamilaPhotos||[]).filter(item=>item.id!==photo.id),'Photo removed from the card folder. Publish all changes to update the live collection.');},true,`Remove Kamila card photo${photo.caption?': '+photo.caption:''}`);row.append(img,main,remove);root.append(row);});
+  }
+  $('kamilaPhotoFiles')?.addEventListener('change',async event=>{const files=[...(event.currentTarget.files||[])],status=$('kamilaPhotoStatus');if(!files.length)return;if(!window.archiveGitHub?.connected||!contentLoaded){status.textContent='Connect GitHub and load the archive before adding card photos.';event.currentTarget.value='';return;}const chosen=files.slice(0,Math.max(0,100-(cloud.kamilaPhotos||[]).length));if(!chosen.length){status.textContent='The card folder holds up to 100 photos.';event.currentTarget.value='';return;}const allowed=['image/jpeg','image/png','image/webp','image/gif','image/avif'],added=[];event.currentTarget.disabled=true;try{for(let i=0;i<chosen.length;i++){const file=chosen[i];if(!allowed.includes(file.type)||file.size>25*1024*1024)throw new Error('Use JPG, PNG, WebP, GIF or AVIF images under 25 MB each.');status.textContent=`Preparing card photo ${i+1} of ${chosen.length}…`;const opt=await window.archiveCompressImage(file,1800);const ext=opt.ext||'jpg',path=`assets/archive/kamila-cards/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;await window.archiveGitHub.upload(path,opt.blob,`Add Kamila collectible photo`);window.archiveStaging.uploads.add(path);added.push({id:crypto.randomUUID(),image:window.archiveGitHub.pagesUrl(path),path,caption:file.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ').slice(0,100)});}stageKamilaPhotos([...(cloud.kamilaPhotos||[]),...added],'Card photos uploaded and staged. Publish all changes to make them available.');}catch(error){status.textContent=error.message||'Could not upload the card photos. Check GitHub access.';}finally{event.currentTarget.disabled=false;event.currentTarget.value='';}});
   function editPhotoPost(post,row){
     if(row.querySelector('.inline-edit'))return;
     const form=window.archiveInlineEdit([{key:'caption',label:'CAPTION',value:post.caption||'',rows:2,max:220},{key:'alt',label:'ALT TEXT',value:post.alt||'',max:220},{key:'date',label:'DATE',value:post.date||'',type:'date'}],values=>{
@@ -579,7 +588,7 @@
   }
   async function cleanupStagedMedia(next){
     const gh=window.archiveGitHub,stg=window.archiveStaging;
-    const referenced=new Set([next.image,next.mobileImage,...(next.blogPosts||[]).map(p=>p.image),...(next.noises||[]).map(n=>n.url),...(next.kissMilestones||[]).map(m=>m.graphic)].map(u=>u?gh.repoPathFromPagesUrl(u):null).filter(Boolean));
+    const referenced=new Set([next.image,next.mobileImage,...(next.blogPosts||[]).map(p=>p.image),...(next.kamilaPhotos||[]).map(p=>p.image),...(next.noises||[]).map(n=>n.url),...(next.kissMilestones||[]).map(m=>m.graphic)].map(u=>u?gh.repoPathFromPagesUrl(u):null).filter(Boolean));
     for(const path of new Set([...stg.deletes,...stg.uploads])){if(referenced.has(path))continue;try{await gh.delete(path,'Remove unused archive media');}catch(_){}}
     stg.deletes.clear();stg.uploads.clear();
   }
@@ -588,7 +597,7 @@
     try {
       if(!contentLoaded)throw new Error('Wait for shared content to finish loading before publishing.');
       const next=override||readFields();
-      const imageUrls=[next.image,next.mobileImage,...(next.blogPosts||[]).map(post=>post.image),...(next.kissMilestones||[]).map(item=>item.graphic)].filter(Boolean);
+      const imageUrls=[next.image,next.mobileImage,...(next.blogPosts||[]).map(post=>post.image),...(next.kamilaPhotos||[]).map(photo=>photo.image),...(next.kissMilestones||[]).map(item=>item.graphic)].filter(Boolean);
       if(imageUrls.some(value=>!validPostUrl(value)))throw new Error('Images must use public HTTPS URLs.');
       status.textContent='Publishing…';
       if(!window.archiveGitHub?.connected)throw new Error('Connect GitHub in the admin dashboard before publishing.');
