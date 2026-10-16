@@ -365,7 +365,15 @@
     songs:[],noises:[],thoughts:[],
     navAbout:'About', navMoments:'Journal', navNotes:'Notes', navGuestbook:'Contact',
     aboutHeading:'A record of ordinary days.', aboutLead:'Everyday life leaves its marks in unexpected places.',
-    blogPosts:[],journalOrder:'date',kissMessages:[],
+    blogPosts:[],journalOrder:'date',kissMessages:[],kissMilestones:[
+      {type:'streak',target:3,sticker:'🌱',title:'A little beginning'},
+      {type:'streak',target:7,sticker:'🌷',title:'One lovely week'},
+      {type:'streak',target:14,sticker:'💌',title:'Two weeks close'},
+      {type:'streak',target:30,sticker:'💖',title:'A month of kisses'},
+      {type:'total',target:10,sticker:'✨',title:'Ten kisses kept'},
+      {type:'total',target:50,sticker:'🌟',title:'Fifty sweet days'},
+      {type:'total',target:100,sticker:'💎',title:'One hundred kisses'}
+    ],
     aboutBody:"This archive gathers photographs, music, and brief notes from shared places and familiar routines.\n\nSome days return as a particular light through a window; others arrive by way of a song heard again years later.\n\nA collection still in progress.",
     momentsHeading:'Photo journal.', momentsIntro:'Images, captions, and dates. One entry at a time.',
     footerText:'A personal archive of photographs, music, and notes.',
@@ -379,6 +387,7 @@
     if(!value?.background||value.background==='#f4f1ea')next.background='#f4f7fb';
     if(!value?.text||value.text==='#292a27')next.text='#111827';
     next.songLayout=value?.songLayout==='grid'?'grid':'masonry';next.songCardPadding=Math.max(12,Math.min(32,Number(value?.songCardPadding)||24));
+    const milestoneSource=Array.isArray(value?.kissMilestones)?value.kissMilestones:defaults.kissMilestones;const seenMilestones=new Set();next.kissMilestones=milestoneSource.map(item=>({type:item?.type==='total'?'total':'streak',target:Math.floor(Number(item?.target)),sticker:String(item?.sticker||'').trim().slice(0,12),title:String(item?.title||'').trim().slice(0,70),graphic:validPostUrl(item?.graphic)||''})).filter(item=>item.target>0&&item.target<=10000&&(item.sticker||item.graphic)&&item.title).filter(item=>{const id=`${item.type}-${item.target}`;if(seenMilestones.has(id))return false;seenMilestones.add(id);return true;}).sort((a,b)=>a.type.localeCompare(b.type)||a.target-b.target).slice(0,40);
     if(!value?.navMoments||['Work','Moments'].includes(value.navMoments))next.navMoments='Journal';
     if(!value?.momentsHeading||value.momentsHeading==='Selected frames.')next.momentsHeading='Photo journal.';
     if(!value?.momentsIntro||value.momentsIntro==='Photographs and fragments from the archive.')next.momentsIntro='Images, captions, and dates. One entry at a time.';
@@ -386,11 +395,34 @@
     return next;
   }
   function setVal(id, value) { const el=$(id); if (el && value !== undefined) el.value = value; }
+  let appendKissMilestoneRow=()=>{};
+  function renderKissMilestoneRows(items){
+    const root=$('kissMilestoneRows');if(!root)return;root.replaceChildren();
+    const makeField=(label,control)=>{const wrap=document.createElement('label');wrap.className='kiss-milestone-field';wrap.append(document.createTextNode(label),control);return wrap;};
+    const addRow=(item={type:'streak',target:3,sticker:'✨',title:'',graphic:''})=>{
+      const row=document.createElement('article');row.className='kiss-milestone-row';
+      const type=document.createElement('select');type.setAttribute('aria-label','Milestone type');[['streak','Consecutive-day streak'],['total','Total kisses']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;type.append(o);});type.value=item.type;
+      const target=document.createElement('input');target.type='number';target.min='1';target.max='10000';target.step='1';target.value=String(item.target);target.setAttribute('aria-label','Milestone number');
+      const title=document.createElement('input');title.type='text';title.maxLength=70;title.value=item.title||'';title.placeholder='Award title';title.setAttribute('aria-label','Award title');
+      const sticker=document.createElement('input');sticker.type='text';sticker.maxLength=12;sticker.value=item.sticker||'';sticker.placeholder='✨';sticker.setAttribute('aria-label','Fallback emoji');
+      const graphic=document.createElement('input');graphic.type='url';graphic.value=item.graphic||'';graphic.placeholder='https://… image URL';graphic.setAttribute('aria-label','Sticker image URL');
+      const preview=document.createElement('img');preview.className='kiss-milestone-preview';preview.alt='Sticker preview';preview.hidden=!item.graphic;preview.src=item.graphic||'';
+      graphic.addEventListener('input',()=>{const safe=validPostUrl(graphic.value.trim());preview.hidden=!safe;preview.src=safe||'';});
+      const file=document.createElement('input');file.type='file';file.accept='image/png,image/jpeg,image/webp,image/gif,image/avif';file.className='kiss-milestone-file';file.setAttribute('aria-label','Upload sticker graphic');
+      file.addEventListener('change',async()=>{const chosen=file.files?.[0],status=$('kissMilestoneStatus');if(!chosen)return;if(!/^image\/(png|jpeg|webp|gif|avif)$/.test(chosen.type)||chosen.size>10*1024*1024){if(status)status.textContent='Choose a PNG, JPEG, WebP, GIF, or AVIF image under 10 MB.';file.value='';return;}if(!window.archiveGitHub?.connected){if(status)status.textContent='Connect GitHub before uploading a sticker graphic.';file.value='';return;}const ext=chosen.type.split('/')[1].replace('jpeg','jpg');const path=`assets/archive/stickers/${Date.now()}-${Math.random().toString(36).slice(2,7)}.${ext}`;const uploadButton=row.querySelector('.kiss-milestone-upload');uploadButton.disabled=true;if(status)status.textContent='Uploading sticker graphic…';try{await window.archiveGitHub.upload(path,chosen,'Add kiss milestone sticker');window.archiveStaging.uploads.add(path);graphic.value=window.archiveGitHub.pagesUrl(path);graphic.dispatchEvent(new Event('input',{bubbles:true}));graphic.dispatchEvent(new Event('change',{bubbles:true}));if(status)status.textContent='Sticker graphic uploaded. Publish changes to make it live.';}catch(error){if(status)status.textContent=error.message||'Could not upload sticker graphic.';}finally{uploadButton.disabled=false;file.value='';}});
+      const upload=document.createElement('button');upload.type='button';upload.className='secondary-button kiss-milestone-upload';upload.textContent='Upload image';upload.addEventListener('click',()=>file.click());
+      const remove=document.createElement('button');remove.type='button';remove.className='text-button kiss-milestone-remove';remove.textContent='Remove milestone';remove.addEventListener('click',()=>{row.remove();window.archiveMarkDirty();schedulePreview();});
+      row.append(makeField('MILESTONE',type),makeField('NUMBER',target),makeField('TITLE',title),makeField('FALLBACK EMOJI',sticker),makeField('GRAPHIC URL',graphic),preview,file,upload,remove);root.append(row);
+    };
+    appendKissMilestoneRow=addRow;
+    (items||[]).forEach(addRow);
+  }
+  $('addKissMilestone')?.addEventListener('click',()=>{appendKissMilestoneRow({type:'streak',target:3,sticker:'✨',title:'',graphic:''});window.archiveMarkDirty();schedulePreview();});
   function fillFields(data) {
     cloud = normalizeContent(data || {});
     Object.keys(cloud).forEach(k => {
       const el = document.querySelector(`[data-content="${k}"]`); if (!el) return;
-      const v=cloud[k]; el.value = Array.isArray(v) ? (k==='notes' ? JSON.stringify(v,null,2) : v.join('\n')) : String(v ?? '');
+      const v=cloud[k]; if(k==='kissMilestones')return;el.value = Array.isArray(v) ? (k==='notes' ? JSON.stringify(v,null,2) : v.join('\n')) : String(v ?? '');
     });
     if ($('accentColor')) setVal('accentColor', cloud.accent || '#5f73a5');
     if ($('backgroundColor')) setVal('backgroundColor', cloud.background || '#f4f7fb');
@@ -399,6 +431,7 @@
     setVal('songLayout',cloud.songLayout==='grid'?'grid':'masonry');setVal('songCardPadding',Math.max(12,Math.min(32,Number(cloud.songCardPadding)||24)));
     const spacing=$('songCardPaddingValue');if(spacing)spacing.value=`${$('songCardPadding').value} px`;
     renderAdminPhotoPosts(cloud.blogPosts);
+    renderKissMilestoneRows(cloud.kissMilestones);
   }
   function readFields() {
     const result={...cloud};
@@ -408,6 +441,7 @@
       else result[k]=el.value;
     });
     result.blogPosts=cloud.blogPosts||[];delete result.galleryImages;delete result.galleryCaptions;delete result.notes;
+    result.kissMilestones=[...document.querySelectorAll('.kiss-milestone-row')].map(row=>({type:row.querySelector('select')?.value==='total'?'total':'streak',target:Math.floor(Number(row.querySelector('input[type="number"]')?.value)),title:row.querySelector('input[aria-label="Award title"]')?.value.trim().slice(0,70)||'',sticker:row.querySelector('input[aria-label="Fallback emoji"]')?.value.trim().slice(0,12)||'',graphic:validPostUrl(row.querySelector('input[type="url"]')?.value.trim())||''})).filter(item=>item.target>0&&item.target<=10000&&item.title&&(item.sticker||item.graphic)).filter((item,index,array)=>array.findIndex(other=>other.type===item.type&&other.target===item.target)===index).slice(0,40);
     result.theme='noir'; result.layout='left';
     result.accent=$('accentColor')?.value || '#5f73a5'; result.background='#ffffff'; result.text='#090a0c';
     result.title=$('heroTitle')?.value || 'רואי'; result.subtitle=$('heroSubtitle')?.value || ''; result.description=$('heroDescription')?.value || ''; result.image=$('heroImageUrl')?.value || '';result.mobileImage=$('heroMobileImageUrl')?.value || '';
@@ -417,8 +451,8 @@
   let dirty=false;
   const updateBar=()=>{const bar=$('publishBar');if(bar)bar.hidden=!dirty;};
   window.archiveMarkDirty=()=>{dirty=true;updateBar();};
-  ['contentFields','visualManager'].forEach(id=>$(id)?.addEventListener('input',()=>window.archiveMarkDirty()));
-  ['contentFields','visualManager'].forEach(id=>$(id)?.addEventListener('change',()=>window.archiveMarkDirty()));
+  ['contentFields','visualManager','kissMilestoneFields'].forEach(id=>$(id)?.addEventListener('input',()=>window.archiveMarkDirty()));
+  ['contentFields','visualManager','kissMilestoneFields'].forEach(id=>$(id)?.addEventListener('change',()=>window.archiveMarkDirty()));
   window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
   const previewFrame=$('pagePreview');
   function sendPreview(){
@@ -427,8 +461,8 @@
     catch(error){$('visualStatus').textContent=error.message||'Preview could not update.';}
   }
   function schedulePreview(){clearTimeout(schedulePreview.timer);schedulePreview.timer=setTimeout(sendPreview,120);}
-  ['contentFields','visualManager'].forEach(id=>$(id)?.addEventListener('input',schedulePreview));
-  ['contentFields','visualManager'].forEach(id=>$(id)?.addEventListener('change',schedulePreview));
+  ['contentFields','visualManager','kissMilestoneFields'].forEach(id=>$(id)?.addEventListener('input',schedulePreview));
+  ['contentFields','visualManager','kissMilestoneFields'].forEach(id=>$(id)?.addEventListener('change',schedulePreview));
   window.addEventListener('message',event=>{
     if(event.origin===location.origin&&event.source===previewFrame?.contentWindow&&event.data?.type==='biggest-fan-preview-ready')sendPreview();
   });
@@ -545,7 +579,7 @@
   }
   async function cleanupStagedMedia(next){
     const gh=window.archiveGitHub,stg=window.archiveStaging;
-    const referenced=new Set([next.image,next.mobileImage,...(next.blogPosts||[]).map(p=>p.image),...(next.noises||[]).map(n=>n.url)].map(u=>u?gh.repoPathFromPagesUrl(u):null).filter(Boolean));
+    const referenced=new Set([next.image,next.mobileImage,...(next.blogPosts||[]).map(p=>p.image),...(next.noises||[]).map(n=>n.url),...(next.kissMilestones||[]).map(m=>m.graphic)].map(u=>u?gh.repoPathFromPagesUrl(u):null).filter(Boolean));
     for(const path of new Set([...stg.deletes,...stg.uploads])){if(referenced.has(path))continue;try{await gh.delete(path,'Remove unused archive media');}catch(_){}}
     stg.deletes.clear();stg.uploads.clear();
   }
@@ -554,7 +588,7 @@
     try {
       if(!contentLoaded)throw new Error('Wait for shared content to finish loading before publishing.');
       const next=override||readFields();
-      const imageUrls=[next.image,next.mobileImage,...(next.blogPosts||[]).map(post=>post.image)].filter(Boolean);
+      const imageUrls=[next.image,next.mobileImage,...(next.blogPosts||[]).map(post=>post.image),...(next.kissMilestones||[]).map(item=>item.graphic)].filter(Boolean);
       if(imageUrls.some(value=>!validPostUrl(value)))throw new Error('Images must use public HTTPS URLs.');
       status.textContent='Publishing…';
       if(!window.archiveGitHub?.connected)throw new Error('Connect GitHub in the admin dashboard before publishing.');
@@ -693,4 +727,40 @@
     const published=await save();
     if(!published)throw new Error($('contentStatus').textContent||'Could not publish the restored content.');
   };
+})();
+
+/* Expandable admin sections for faster navigation. */
+(() => {
+  const app=document.getElementById('adminApp');
+  if(!app)return;
+  const panels=[...app.querySelectorAll('.admin-panel, .photo-post-manager')];
+  const initiallyCollapsed=new Set(['.github-storage-panel','#visualManager','#pageContentManager','#noiseManager','#guestbookManager','#backupManager','.photo-post-manager']);
+  const controls=[];
+  panels.forEach((panel,index)=>{
+    const heading=panel.querySelector(':scope > .panel-heading');
+    if(!heading)return;
+    const title=heading.querySelector('h2,h3')?.textContent.trim()||`Section ${index+1}`;
+    const body=document.createElement('div');
+    body.className='admin-panel-content';
+    body.id=`${panel.id||'admin-subsection'}Content`;
+    [...panel.children].slice([...panel.children].indexOf(heading)+1).forEach(child=>body.append(child));
+    panel.append(body);
+    const toggle=document.createElement('button');
+    toggle.type='button';
+    toggle.className='admin-panel-toggle';
+    toggle.setAttribute('aria-controls',body.id);
+    const initiallyOpen=!([...initiallyCollapsed].some(selector=>panel.matches(selector)));
+    const setOpen=open=>{
+      body.hidden=!open;
+      toggle.setAttribute('aria-expanded',String(open));
+      toggle.setAttribute('aria-label',`${open?'Collapse':'Expand'} ${title}`);
+      toggle.textContent=open?'−':'+';
+    };
+    setOpen(initiallyOpen);
+    toggle.addEventListener('click',()=>setOpen(body.hidden));
+    heading.append(toggle);
+    controls.push(setOpen);
+  });
+  document.getElementById('expandAdminSections')?.addEventListener('click',()=>controls.forEach(setOpen=>setOpen(true)));
+  document.getElementById('collapseAdminSections')?.addEventListener('click',()=>controls.forEach(setOpen=>setOpen(false)));
 })();
