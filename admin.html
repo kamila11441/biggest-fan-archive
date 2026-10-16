@@ -25,9 +25,9 @@
 <body class="admin-body">
   <a class="skip-link" href="#adminMain">Skip to admin content</a>
   <header class="header admin-header">
-    <a class="logo" href="index.html"><span lang="he">רואי</span><span class="logo-heart" aria-hidden="true">/</span></a>
+    <a class="logo" href="index-17.html"><span lang="he">רואי</span><span class="logo-heart" aria-hidden="true">/</span></a>
     <div class="admin-header-title">CONTENT MANAGEMENT <span> / SECURE ADMIN</span></div>
-    <a class="header-link" href="index.html">VIEW WEBSITE <span>↗</span></a>
+    <a class="header-link" href="index-17.html">VIEW WEBSITE <span>↗</span></a>
   </header>
   <main class="admin-main" id="adminMain" tabindex="-1">
     <section id="authGate" class="admin-panel auth-gate" aria-labelledby="authTitle">
@@ -58,12 +58,14 @@
     <section class="admin-stats" aria-label="Content overview">
       <article><span class="stat-label">SAVED SONGS</span><strong id="songStat">0</strong><small>Spotify / YouTube</small></article>
       <article><span class="stat-label">PUBLISHED NOTES</span><strong id="thoughtStat">0</strong><small>Visible to visitors</small></article>
-      <article><span class="stat-label">GUESTBOOK NOTES</span><strong id="guestStat">0</strong><small>Shared visitor notes</small></article>
+      <article><span class="stat-label">MARKET LISTINGS</span><strong id="marketStat">0</strong><small>Available to visitors</small></article>
     </section>
 
 
-      <section class="admin-panel full-panel" id="visualManager" aria-labelledby="visualHeading">
-        <div class="panel-heading"><div><span class="panel-index">01 / ART DIRECTION</span><h2 id="visualHeading">Visual editor</h2></div><span class="panel-icon">✳</span></div>
+    <section class="admin-panel full-panel page-editor-panel" id="pageEditor" aria-labelledby="pageEditorHeading">
+      <div class="panel-heading"><div><span class="panel-index">01 / PAGE EDITOR</span><h2 id="pageEditorHeading">Page edits</h2></div><span class="panel-icon" aria-hidden="true">✎</span></div>
+      <section class="page-editor-group" id="visualManager" aria-labelledby="visualHeading">
+        <div class="panel-heading"><div><span class="panel-index">VISUAL SETTINGS</span><h3 id="visualHeading">Visual editor</h3></div><span class="panel-icon">✳</span></div>
         <p class="panel-description">The page uses a fixed black-and-white base. Edit the shared accent color, hero copy, and image; preview changes below, then publish them for visitors.</p>
         <div class="visual-editor-grid">
           <div class="visual-field"><label for="accentColor">ACCENT COLOR — LINKS, BUTTONS &amp; HIGHLIGHTS</label><input id="accentColor" type="color" aria-describedby="contrastStatus" value="#5f73a5"></div>
@@ -79,9 +81,9 @@
         <div class="visual-actions"><button type="button" class="text-button" id="resetVisuals">Reset visuals</button><button type="button" class="primary-button" id="saveVisualSettings">Apply visual changes <span>↗</span></button><p id="visualStatus" class="admin-message" role="status" aria-live="polite"></p></div>
       </section>
 
-    <section class="admin-panel full-panel" id="pageContentManager" aria-labelledby="contentHeading">
-      <div class="panel-heading"><div><span class="panel-index">02 / SITE CONTENT</span><h2 id="contentHeading">Edit the whole page</h2></div><span class="panel-icon">✎</span></div>
-      <p class="panel-description">Edit the page copy and manage dated photo journal posts here. Photos upload to the repository right away, but nothing goes live until you press Publish all changes.</p>
+      <section class="page-editor-group" id="pageContentManager" aria-labelledby="contentHeading">
+      <div class="panel-heading"><div><span class="panel-index">TEXT &amp; PAGE CONTENT</span><h3 id="contentHeading">Page copy</h3></div></div>
+      <p class="panel-description">Edit navigation labels and the words visitors see across the page. Publish changes when you are ready.</p>
       <div class="visual-editor-grid" id="contentFields">
         <div class="visual-field"><label for="editNavAbout">NAVIGATION — ABOUT</label><input id="editNavAbout" data-content="navAbout" value="About"></div>
         <div class="visual-field"><label for="editNavMoments">NAVIGATION — PHOTO JOURNAL</label><input id="editNavMoments" data-content="navMoments" value="Journal"></div>
@@ -94,7 +96,11 @@
         <div class="visual-field"><label for="editJournalOrder">JOURNAL ORDER</label><select id="editJournalOrder" data-content="journalOrder"><option value="date">Newest date first</option><option value="manual">Manual order (use ↑ ↓ below)</option></select></div>
         <div class="visual-field full-visual-field"><label for="editFooter">FOOTER MESSAGE</label><input id="editFooter" data-content="footerText" value="A personal archive of photographs, music, and notes."></div>
       </div>
-      <section class="photo-post-manager" aria-labelledby="photoPostManagerHeading">
+      <div class="visual-actions"><button type="button" class="primary-button" id="savePageContent">Publish changes ↗</button><button type="button" class="secondary-button" id="saveContentDraft">Save draft</button><button type="button" class="secondary-button" id="restoreContentDraft">Restore draft</button><p id="contentStatus" class="admin-message" role="status" aria-live="polite"></p></div>
+      </section>
+    </section>
+
+      <section class="admin-panel full-panel photo-post-manager" aria-labelledby="photoPostManagerHeading">
         <div class="panel-heading"><div><span class="panel-index">PHOTO JOURNAL / PUBLISH</span><h3 id="photoPostManagerHeading">Add a photo post</h3></div></div>
         <p class="panel-description">Choose a photo, write a caption, and set its date. Photos are optimized in your browser and staged; they go live with the next publish. Add alt text so screen readers can describe them.</p>
         <form id="photoPostForm" class="admin-form photo-post-form">
@@ -107,20 +113,37 @@
         <div class="photo-post-list-heading"><h3>Published photo posts</h3><span id="photoPostCount">0 POSTS</span></div>
         <div id="adminPhotoPostList" class="admin-item-list" aria-label="Published photo posts"></div>
       </section>
-      <section class="photo-post-manager kamila-photo-manager" aria-labelledby="kamilaPhotoManagerHeading">
+      <section class="admin-panel full-panel photo-post-manager kamila-photo-manager" aria-labelledby="kamilaPhotoManagerHeading">
         <div class="panel-heading"><div><span class="panel-index">HIDE-AND-CATCH / COLLECTIBLES</span><h3 id="kamilaPhotoManagerHeading">Kamila card photos</h3></div><span class="panel-icon" aria-hidden="true">✦</span></div>
         <p class="panel-description">Upload photos for the collectible card awarded when a visitor catches Kamila. One photo is chosen at random each time. Add, caption, or remove photos; visitors receive a personal card copy in their local pocket.</p>
         <label class="kamila-photo-upload-label" for="kamilaPhotoFiles">ADD CARD PHOTOS</label><input id="kamilaPhotoFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple><p id="kamilaPhotoStatus" class="admin-message" role="status" aria-live="polite"></p>
         <div class="photo-post-list-heading"><h3>Card photo folder</h3><span id="kamilaPhotoCount">0 CARDS</span></div>
         <div id="adminKamilaPhotoList" class="admin-item-list" aria-label="Kamila collectible card photos"></div>
       </section>
-      <div class="visual-actions"><button type="button" class="primary-button" id="savePageContent">Publish changes ↗</button><button type="button" class="secondary-button" id="saveContentDraft">Save draft</button><button type="button" class="secondary-button" id="restoreContentDraft">Restore draft</button><p id="contentStatus" class="admin-message" role="status" aria-live="polite"></p></div>
-    </section>
+
     <section class="admin-panel full-panel" id="kissMilestoneManager" aria-labelledby="kissMilestoneHeading"><div class="panel-heading"><div><span class="panel-index">DAILY RITUAL / REWARDS</span><h2 id="kissMilestoneHeading">Kiss sticker awards</h2></div><span class="panel-icon" aria-hidden="true">♡</span></div><p class="panel-description">Design a sticker for each consecutive-day streak or total-kiss milestone. Upload a graphic or paste a public HTTPS image URL. These settings publish with the rest of your page content.</p><div id="kissMilestoneFields"><div id="kissMilestoneRows" class="kiss-milestone-rows"></div><div class="kiss-milestone-actions"><button type="button" class="secondary-button" id="addKissMilestone">Add a milestone</button><p id="kissMilestoneStatus" class="admin-message" role="status" aria-live="polite"></p></div></div></section>
-    <details class="admin-panel live-preview-panel" id="previewPanel"><summary>Live page preview <span>Updates as you edit · changes are not published until you publish</span></summary><iframe id="pagePreview" title="Preview of the public archive page" src="index.html?preview=1#home" loading="lazy"></iframe></details>
+    <section class="admin-panel full-panel" id="kissMarketManager" aria-labelledby="kissMarketHeading">
+      <div class="panel-heading"><div><span class="panel-index">KISS EXCHANGE / MARKET</span><h2 id="kissMarketHeading">Market listings</h2></div><span class="panel-icon" aria-hidden="true">◇</span></div>
+      <p class="panel-description">List items or services visitors can claim by spending kisses. Each purchase creates a collectible ticket in that visitor’s pocket. Listings publish with the rest of the page content.</p>
+      <form id="kissMarketForm" class="admin-form kiss-market-admin-form"><label for="marketItemTitle">ITEM OR SERVICE</label><input id="marketItemTitle" maxlength="70" placeholder="e.g. Choose the next song" required><label for="marketItemType">LISTING TYPE</label><select id="marketItemType"><option value="item">Item</option><option value="service">Service</option></select><label for="marketItemCost">PRICE IN KISSES</label><input id="marketItemCost" type="number" min="1" max="100000" step="1" value="5" required><label for="marketItemDescription">DESCRIPTION / COLLECTION RIGHTS</label><textarea id="marketItemDescription" maxlength="240" rows="3" placeholder="What the ticket includes and what the visitor may claim…"></textarea><button type="submit" class="primary-button">Add market listing <span>＋</span></button><p id="kissMarketAdminStatus" class="admin-message" role="status" aria-live="polite"></p></form>
+      <div class="photo-post-list-heading"><h3>Published listings</h3><span id="kissMarketCount">0 LISTINGS</span></div><div id="adminKissMarketList" class="admin-item-list" aria-label="Kiss market listings"></div>
+    </section>
+    <section class="admin-panel full-panel" id="kissOfferModeration" aria-labelledby="kissOfferModerationHeading">
+      <div class="panel-heading"><div><span class="panel-index">KISS EXCHANGE / MODERATION</span><h2 id="kissOfferModerationHeading">Review market offers</h2></div><span class="panel-icon" aria-hidden="true">♡</span></div>
+      <p class="panel-description">Review, accept, or decline visitor offers here. Accepting publishes the requested item in the market at the offered kiss price and adds a private notification for the visitor who sent it. Offers do not spend kisses until the visitor claims the market ticket.</p>
+      <div class="kiss-offer-admin-controls"><label class="sr-only" for="kissOfferSearch">Search kiss offers</label><input class="list-search" id="kissOfferSearch" type="search" placeholder="Search offers…" autocomplete="off"><label class="sr-only" for="kissOfferStatusFilter">Filter kiss offers</label><select class="list-filter" id="kissOfferStatusFilter"><option value="all">All offers</option><option value="pending">Pending</option><option value="accepted">Accepted</option></select></div>
+      <p class="list-count" id="kissOfferCount" role="status" aria-live="polite"></p><p id="kissOfferModerationStatus" class="admin-message" role="status" aria-live="polite"></p><div id="adminKissOfferList" class="admin-item-list" aria-label="Market offers awaiting moderation"></div>
+    </section>
+    <section class="admin-panel full-panel" id="customNotificationManager" aria-labelledby="customNotificationHeading">
+      <div class="panel-heading"><div><span class="panel-index">VISITOR UPDATES / PUBLISHED WITH THE PAGE</span><h2 id="customNotificationHeading">Custom notifications</h2></div><span class="panel-icon" aria-hidden="true">♧</span></div>
+      <p class="panel-description">Write an update for the notification bell. It appears for visitors after you publish, and stays there until each visitor opens it.</p>
+      <form id="customNotificationForm" class="admin-form custom-notification-form"><label for="customNotificationTitle">SHORT TITLE</label><input id="customNotificationTitle" maxlength="60" placeholder="A little update" required><label for="customNotificationMessage">MESSAGE</label><textarea id="customNotificationMessage" maxlength="240" rows="3" placeholder="What would you like visitors to know?" required></textarea><button type="submit" class="primary-button">Add notification <span>＋</span></button><p id="customNotificationStatus" class="admin-message" role="status" aria-live="polite"></p></form>
+      <div class="photo-post-list-heading"><h3>Current notifications</h3><span id="customNotificationCount">0 UPDATES</span></div><div id="adminCustomNotificationList" class="admin-item-list" aria-label="Custom visitor notifications"></div>
+    </section>
+    <details class="admin-panel live-preview-panel" id="previewPanel"><summary>Live page preview <span>Updates as you edit · changes are not published until you publish</span></summary><iframe id="pagePreview" title="Preview of the public archive page" src="index-17.html?preview=1#home" loading="lazy"></iframe></details>
     <div class="admin-grid">
       <section class="admin-panel" id="songManager" aria-labelledby="songHeading">
-        <div class="panel-heading"><div><span class="panel-index">03 / SOUNDTRACK</span><h2 id="songHeading">Manage songs</h2></div><span class="panel-icon">♫</span></div>
+        <div class="panel-heading"><div><span class="panel-index">02 / SOUNDTRACK</span><h2 id="songHeading">Manage songs</h2></div><span class="panel-icon">♫</span></div>
         <p class="panel-description">Add or remove tracks from the archive. Paste a full Spotify or YouTube link.</p>
         <form id="adminSongForm" class="admin-form">
           <label for="adminSongLink">SONG LINK</label><input id="adminSongLink" type="url" placeholder="https://open.spotify.com/track/…" required>
@@ -131,7 +154,7 @@
       </section>
 
       <section class="admin-panel full-panel" id="noiseManager" aria-labelledby="noiseHeading">
-        <div class="panel-heading"><div><span class="panel-index">04 / FIELD RECORDINGS</span><h2 id="noiseHeading">Manage noises</h2></div><span class="panel-icon" aria-hidden="true">◖</span></div>
+        <div class="panel-heading"><div><span class="panel-index">03 / FIELD RECORDINGS</span><h2 id="noiseHeading">Manage noises</h2></div><span class="panel-icon" aria-hidden="true">◖</span></div>
         <p class="panel-description">Upload short audio clips as voice-note style entries. Visitors can play each recording directly on the page.</p>
         <form id="adminNoiseForm" class="admin-form">
           <label for="adminNoiseFile">AUDIO FILE</label><input id="adminNoiseFile" type="file" accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac,.webm" required><small>MP3, M4A, WAV, OGG, AAC, or WebM · up to 25 MB</small>
@@ -145,7 +168,7 @@
       </section>
 
       <section class="admin-panel" id="thoughtManager" aria-labelledby="thoughtHeading">
-        <div class="panel-heading"><div><span class="panel-index">05 / TEXT INDEX</span><h2 id="thoughtHeading">Page notes</h2></div><span class="panel-icon">—</span></div>
+        <div class="panel-heading"><div><span class="panel-index">04 / TEXT INDEX</span><h2 id="thoughtHeading">Page notes</h2></div><span class="panel-icon">—</span></div>
         <p class="panel-description">These short notes appear on the public page. Add an observation, edit it later, or remove it from the collection.</p>
         <form id="adminThoughtForm" class="admin-form">
           <label for="adminThoughtText">ARCHIVE NOTE</label><textarea id="adminThoughtText" maxlength="500" rows="3" placeholder="A short observation…" required></textarea>
@@ -155,23 +178,17 @@
         <label class="sr-only" for="thoughtSearch">Search quick thoughts</label><input class="list-search" id="thoughtSearch" type="search" placeholder="Search thoughts…" autocomplete="off"><p class="list-count" id="thoughtSearchCount" role="status" aria-live="polite"></p><div id="adminThoughtList" class="admin-item-list" aria-label="Saved thoughts"></div>
       </section>
 
-      <section class="admin-panel full-panel" id="guestbookManager" aria-labelledby="guestHeading">
-        <div class="panel-heading"><div><span class="panel-index">06 / VISITOR NOTES</span><h2 id="guestHeading">Guestbook moderation</h2></div><span class="panel-icon">/</span></div>
-        <p class="panel-description">Only real visitor submissions appear here. Approve pending notes to publish them, or delete notes you do not want to keep.</p>
-        <label class="sr-only" for="guestSearch">Search guestbook notes</label><input class="list-search" id="guestSearch" type="search" placeholder="Search visitor notes…" autocomplete="off"><label class="sr-only" for="guestStatusFilter">Filter guestbook notes by status</label><select class="list-filter" id="guestStatusFilter"><option value="all">All notes</option><option value="pending">Pending approval</option><option value="published">Published</option></select><p class="list-count" id="guestSearchCount" role="status" aria-live="polite"></p><p id="guestbookModerationStatus" class="admin-message" role="status" aria-live="polite"></p><div id="adminGuestList" class="admin-item-list" aria-label="Visitor notes"></div>
-      </section>
-
       <section class="admin-panel full-panel" id="backupManager" aria-labelledby="backupHeading">
-        <div class="panel-heading"><div><span class="panel-index">07 / PORTABILITY</span><h2 id="backupHeading">Backup &amp; restore</h2></div><span class="panel-icon">↗</span></div>
-        <p class="panel-description">Export or restore published page content, songs, and notes. Visitor submissions remain separate in guestbook moderation.</p>
+        <div class="panel-heading"><div><span class="panel-index">05 / PORTABILITY</span><h2 id="backupHeading">Backup &amp; restore</h2></div><span class="panel-icon">↗</span></div>
+        <p class="panel-description">Export or restore published page content, songs, and notes. Kiss offers remain in the offer moderation panel.</p>
         <div class="backup-actions"><button type="button" class="primary-button" id="exportBackup">Export backup <span>↓</span></button><label class="upload-button">Import backup <span>↑</span><input type="file" id="importBackup" aria-label="Choose a JSON backup file to import" accept="application/json,.json"></label></div>
         <p id="backupStatus" class="admin-message" role="status"></p>
       </section>
     </div>
 
-    <aside class="admin-notice"><span>!</span><div><strong>Secure hosting note</strong><p>Supabase protects admin sign-in and visitor comments; GitHub stores the public archive. Use a fine-grained token limited to this repository with Contents read/write. Never add a service-role key to this repository.</p></div></aside>
+    <aside class="admin-notice"><span>!</span><div><strong>Secure hosting note</strong><p>Supabase protects admin sign-in and visitor offers; GitHub stores the public archive. Use a fine-grained token limited to this repository with Contents read/write. Never add a service-role key to this repository.</p></div></aside>
     <div id="publishBar" class="publish-bar" role="status" aria-live="polite" hidden><span id="publishBarText">Unpublished changes</span><div class="publish-bar-actions"><button type="button" class="text-button" id="discardStaged">Discard</button><button type="button" class="primary-button" id="publishAll">Publish all changes ↗</button></div></div>
-    <footer class="admin-footer"><a href="index.html">← Back to the archive</a><span>ROEE / PERSONAL ARCHIVE</span></footer>
+    <footer class="admin-footer"><a href="index-17.html">← Back to the archive</a><span>ROEE / PERSONAL ARCHIVE</span></footer>
     </div>
   </main>
 </body>
