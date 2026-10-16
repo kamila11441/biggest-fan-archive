@@ -393,10 +393,31 @@ function retryMedia(el,max=6){const src=el.getAttribute('src');let n=0;if(!src)r
   let snackClaimed=wasDone('Snack'),gamePlayed=wasDone('Game');
   const sections=[...document.querySelectorAll('main section[id]')].filter(section=>section.id!=='kiss');
   if(sections.length){let dayNumber=Number(today.replaceAll('-',''));const index=(dayNumber*7)%sections.length,section=sections[index],snack=document.createElement('div');snack.className='pet-hidden-snack';const snackButton=document.createElement('button');snackButton.type='button';snackButton.className='pet-snack-button';snackButton.textContent=snackClaimed?'🍓 Today’s treat found':'🍓 A tiny treat';snackButton.setAttribute('aria-label',snackClaimed?'Today’s hidden treat has been found':'Find and give Peanut today’s hidden treat');snackButton.disabled=snackClaimed;const snackStatus=document.createElement('span');snackStatus.className='pet-snack-status';snackStatus.setAttribute('role','status');snackStatus.setAttribute('aria-live','polite');snack.append(snackButton,snackStatus);const heading=section.querySelector('.section-heading');if(heading)heading.after(snack);else section.append(snack);snackButton.addEventListener('click',()=>{if(snackClaimed)return;snackClaimed=true;state.fullness=clamp(state.fullness+18);state.happiness=clamp(state.happiness+4);const saved=write();markDone('Snack');render();snackButton.disabled=true;snackButton.textContent='🍓 Today’s treat found';snackButton.setAttribute('aria-label',`You found a treat for ${state.name}`);snackStatus.textContent=` A little snack for ${state.name}!${saved?'':' Care progress could not be saved here.'}`;snack.classList.add('pet-snack-found');});}
-  /* One cozy, accessible toy choice per day; rewards stay in local care state. */
-  const toys=[...document.querySelectorAll('[data-pet-toy]')],gameMessage=$('petGameMessage');
-  if(gamePlayed){toys.forEach(button=>button.disabled=true);gameMessage.textContent='Today’s toy is picked. Come back tomorrow for another little game.';}
-  toys.forEach(button=>button.addEventListener('click',()=>{if(gamePlayed)return;gamePlayed=true;state.happiness=clamp(state.happiness+7);state.energy=clamp(state.energy+4);const reactions={ball:`${state.name} bats the ball around with great determination.`,yarn:`${state.name} discovers that yarn is full of surprises.`,feather:`${state.name} gives the feather a very serious little pounce.`};markDone('Game');write();render();toys.forEach(option=>option.disabled=true);gameMessage.textContent=`${reactions[button.dataset.petToy]} A little happiness boost earned. See you tomorrow!`;}));
+  /* Three unique toys are shuffled and saved per local calendar day. */
+  const toyPool=[
+    {id:'ball',emoji:'⚽',label:'Ball',reaction:'bats the ball around with great determination'},
+    {id:'yarn',emoji:'🧶',label:'Yarn',reaction:'discovers that yarn is full of surprises'},
+    {id:'feather',emoji:'🪶',label:'Feather',reaction:'gives the feather a very serious little pounce'},
+    {id:'mouse',emoji:'🐭',label:'Toy mouse',reaction:'chases the toy mouse across the room'},
+    {id:'fish',emoji:'🐟',label:'Fish',reaction:'gives the little fish toy a triumphant toss'},
+    {id:'bell',emoji:'🔔',label:'Bell',reaction:'pats the bell and listens to its tiny song'},
+    {id:'tunnel',emoji:'🌀',label:'Tunnel',reaction:'dashes through the tunnel and peeks out proudly'},
+    {id:'ribbon',emoji:'🎀',label:'Ribbon',reaction:'pounces on the ribbon with perfect timing'},
+    {id:'plush',emoji:'🧸',label:'Plush friend',reaction:'cuddles the plush friend after a playful wrestle'},
+    {id:'bubbles',emoji:'🫧',label:'Bubbles',reaction:'tries to catch every floating bubble'},
+    {id:'leaf',emoji:'🍃',label:'Leaf',reaction:'chases the leaf as it skitters along'},
+    {id:'box',emoji:'📦',label:'Little box',reaction:'investigates the little box from every angle'}
+  ];
+  const dailyToysKey='archivePetToyChoices',gameMessage=$('petGameMessage'),toyRoot=$('petToys');
+  function getDailyToys(){
+    try{const saved=JSON.parse(localStorage.getItem(dailyToysKey)||'null');if(saved?.day===today&&Array.isArray(saved.ids)){const chosen=saved.ids.map(id=>toyPool.find(toy=>toy.id===id)).filter(Boolean);if(chosen.length===3)return chosen;}}catch(_){}
+    const shuffled=[...toyPool];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}const chosen=shuffled.slice(0,3);
+    try{localStorage.setItem(dailyToysKey,JSON.stringify({day:today,ids:chosen.map(toy=>toy.id)}));}catch(_){}
+    return chosen;
+  }
+  const toys=getDailyToys();toyRoot.replaceChildren();
+  toys.forEach(toy=>{const button=document.createElement('button');button.type='button';button.dataset.petToy=toy.id;button.setAttribute('aria-label',`Choose ${toy.label.toLowerCase()} for ${state.name}`);button.append(document.createTextNode(toy.emoji));const label=document.createElement('span');label.textContent=toy.label;button.append(label);toyRoot.append(button);button.addEventListener('click',()=>{if(gamePlayed)return;gamePlayed=true;state.happiness=clamp(state.happiness+7);state.energy=clamp(state.energy+4);markDone('Game');write();render();toys.forEach(option=>{const button=toyRoot.querySelector(`[data-pet-toy="${option.id}"]`);if(button)button.disabled=true;});gameMessage.textContent=`${toy.reaction[0].toUpperCase()+toy.reaction.slice(1)}. A little happiness boost earned. See you tomorrow!`;});});
+  if(gamePlayed){toyRoot.querySelectorAll('button').forEach(button=>button.disabled=true);gameMessage.textContent='Today’s toy is picked. Come back tomorrow for another little game.';}
   render();write();
 })();
 
