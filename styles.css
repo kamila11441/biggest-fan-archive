@@ -550,8 +550,86 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex;flex-dir
 
 /* Mobile-only companion and pocket dock; desktop corner placement stays as-is. */
 @media(max-width:620px){
-  .archive-pet-toggle{left:calc(50% - 53px);right:auto;bottom:calc(76px + env(safe-area-inset-bottom));width:46px;height:46px}
-  .pocket-toggle{left:calc(50% + 7px);right:auto;bottom:calc(76px + env(safe-area-inset-bottom));width:46px;height:46px}
-  .archive-pet-panel,.pocket-panel{left:12px;right:12px;bottom:calc(132px + env(safe-area-inset-bottom));width:auto;max-width:420px;margin-inline:auto}
+  .archive-pet-toggle{left:12px;right:auto;bottom:calc(76px + env(safe-area-inset-bottom));width:46px;height:46px}
+  .pocket-toggle{left:12px;right:auto;bottom:calc(130px + env(safe-area-inset-bottom));width:46px;height:46px}
+  .archive-pet-panel,.pocket-panel{left:12px;right:12px;width:auto;max-width:420px;margin-inline:auto}
+  .archive-pet-panel{bottom:calc(132px + env(safe-area-inset-bottom))}.pocket-panel{bottom:calc(186px + env(safe-area-inset-bottom))}
 }
 @media(max-width:400px){.pocket-tabs button{padding-inline:3px;font-size:9px}}
+.kamila-setting{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 12px;margin:-3px 16px 22px;color:var(--muted);text-align:center}.kamila-setting button{min-height:32px;padding:7px 12px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);font:600 10px var(--sans);cursor:pointer}.kamila-setting button:hover{border-color:var(--rose);color:var(--rose)}.kamila-setting button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}.kamila-setting span{font:500 9px var(--mono)}
+@media(prefers-reduced-motion:reduce){.kamila-setting button{transition:none}}
+
+/* Kamila card finish and collectible kiss values. */
+.kamila-card-worth{display:inline-flex;align-items:center;justify-content:center;padding:4px 7px;border-radius:999px;background:#fff9;color:#806642;font:700 8px/1.2 var(--mono);letter-spacing:.02em;white-space:nowrap}
+.kamila-pocket-card,.kamila-trading-card{position:relative;overflow:hidden}
+.kamila-pocket-card::after,.kamila-trading-card::after{position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;content:"";opacity:0}
+.kamila-pocket-card.tier-rare::after,.kamila-trading-card.tier-rare::after{opacity:.42;background:linear-gradient(115deg,transparent 25%,#fff9 43%,#b9dcff55 49%,transparent 62%);background-size:240% 100%;animation:kamila-card-gloss 5s ease-in-out infinite}
+.kamila-pocket-card.tier-epic::after,.kamila-trading-card.tier-epic::after{opacity:.55;background:linear-gradient(115deg,transparent 20%,#fff9 39%,#e8d3ff88 47%,#c6eaff66 52%,transparent 67%);background-size:240% 100%;animation:kamila-card-gloss 4s ease-in-out infinite}
+.kamila-pocket-card.tier-legendary::after,.kamila-trading-card.tier-legendary::after{opacity:.68;background:linear-gradient(115deg,transparent 18%,#fff9 34%,#ffe797b3 43%,#fffde2cc 48%,#f5c95f77 53%,transparent 68%);background-size:240% 100%;animation:kamila-card-gloss 3.4s ease-in-out infinite}
+.kamila-pocket-card.tier-extremely-rare,.kamila-trading-card.tier-extremely-rare{border-color:#83b9c4;box-shadow:0 10px 32px #50a9b044,inset 0 0 0 2px #ddfbff}
+.kamila-pocket-card.tier-extremely-rare::after,.kamila-trading-card.tier-extremely-rare::after{opacity:.72;background:linear-gradient(115deg,transparent 14%,#fff9 30%,#a9f3ffc4 42%,#f5ceffbd 49%,#fff 53%,transparent 69%);background-size:260% 100%;animation:kamila-card-gloss 2.8s ease-in-out infinite}
+.kamila-pocket-card.tier-priceless,.kamila-trading-card.tier-priceless{border-color:#d7a940;box-shadow:0 0 0 2px #fff1c8,0 12px 36px #d9a82b77,inset 0 0 0 3px #fff2c8;background:linear-gradient(145deg,#fff9dc,#fff,#f7e7ad)}
+.kamila-pocket-card.tier-priceless::after,.kamila-trading-card.tier-priceless::after{opacity:.82;background:linear-gradient(115deg,transparent 12%,#fff9 27%,#fff1a8d9 39%,#fff 47%,#fff4c5 52%,#f9d9ff99 58%,transparent 72%);background-size:270% 100%;animation:kamila-card-gloss 2.2s ease-in-out infinite}
+.kamila-pocket-card.tier-extremely-rare .kamila-tier-badge,.kamila-tier-badge.extremely-rare{border-color:#83b9c4;background:#e9fbff;color:#367988}
+.kamila-pocket-card.tier-priceless .kamila-tier-badge,.kamila-tier-badge.priceless{border-color:#d7a940;background:#fff4c2;color:#8b6519}
+@keyframes kamila-card-gloss{0%,18%{background-position:150% 0}75%,100%{background-position:-80% 0}}
+@media(prefers-reduced-motion:reduce){.kamila-pocket-card::after,.kamila-trading-card::after{animation:none!important;background-position:center!important}}
+.pocket-kiss-balance{margin:10px 0;padding:12px 14px;border:1px solid #e7d8df;border-radius:14px;background:linear-gradient(110deg,#fff7fa,#f7f8fd);color:var(--ink);font:600 13px/1.4 var(--sans)}
+.kamila-card-exchange{justify-self:stretch!important;margin:4px 0!important;border-color:#d9c5d2!important;background:#fff8fb!important;color:#79596d!important;font-size:11px}
+.offer-balance{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 18px;padding:15px 17px;border:1px solid #e5d6df;border-radius:16px;background:linear-gradient(120deg,#fff7fa,#f4f7fc);color:var(--muted);font:500 13px/1.4 var(--sans)}
+.offer-balance strong{color:var(--rose);font:700 22px/1 var(--sans)}
+.guestbook-form input[type=number]{width:100%;min-height:48px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font:500 15px var(--sans)}
+.guestbook-form>small{display:block;margin-top:-10px;margin-bottom:16px;color:var(--muted);font:11px/1.5 var(--sans)}
+
+/* Kiss market listings and collectible tickets. */
+.kiss-market-section>.section-heading{margin-bottom:24px}
+.kiss-market-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:22px 0 36px}
+.kiss-market-card{display:flex;flex-direction:column;align-items:flex-start;gap:11px;min-width:0;padding:20px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#fff,#f7f9fc);box-shadow:0 12px 28px #172b4310}
+.kiss-market-kind,.market-ticket-ribbon{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;background:#f8edf2;color:#805a6d;font:700 9px/1.2 var(--mono);letter-spacing:.1em}
+.kiss-market-card h3{margin:0;color:var(--ink);font:650 clamp(19px,2vw,25px)/1.15 var(--sans);letter-spacing:-.04em}
+.kiss-market-card>p{flex:1;margin:0;color:var(--muted);font:13px/1.6 var(--sans);white-space:pre-wrap}
+.kiss-market-price{color:var(--rose);font:700 15px var(--sans)}
+.kiss-market-card .pill-button{margin-top:4px}
+.offer-layout{margin-top:32px;padding-top:30px;border-top:1px solid var(--line)}
+.market-ticket-card{display:grid;justify-items:start;gap:8px;padding:16px;border:1px solid #dfd0a7;background:linear-gradient(145deg,#fffdf4,#fff9e8)}
+.market-ticket-card strong{font:650 16px/1.3 var(--sans);color:var(--ink)}
+.market-ticket-card p{margin:0;color:var(--muted);font:12px/1.5 var(--sans);white-space:pre-wrap}
+.market-ticket-card>small{color:#806d42;font:9px/1.4 var(--mono);letter-spacing:.04em}
+@media(max-width:760px){.kiss-market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.kiss-market-grid{grid-template-columns:minmax(0,1fr);gap:11px}.kiss-market-card{padding:18px;border-radius:16px}.offer-layout{margin-top:25px;padding-top:22px}}
+
+/* Storefront styling for the kiss market. */
+.kiss-market-section{position:relative;overflow:hidden;padding:clamp(24px,4vw,48px);border:1px solid #dce5f2;border-radius:28px;background:radial-gradient(ellipse at 100% 0%,#f8eaf0 0,transparent 38%),linear-gradient(145deg,#f2f6fc,#fbfcfe 60%,#f7f0f4)}
+.kiss-market-section>.section-label{margin-bottom:18px}
+.kiss-market-section>.section-heading{position:relative;margin-bottom:30px}
+.kiss-market-section>.section-heading::after{display:block;width:72px;height:3px;margin-top:18px;border-radius:9px;background:linear-gradient(90deg,var(--rose),#9eb3dc);content:""}
+.kiss-market-grid{position:relative;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px;margin:26px 0 42px}
+.kiss-market-card{position:relative;overflow:hidden;gap:13px;min-height:255px;padding:22px 20px 18px;border:1px solid #dbe3ef;border-radius:20px;background:linear-gradient(165deg,#fff 0%,#fff 72%,#f8f5f8 100%);box-shadow:0 12px 28px #23385812;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
+.kiss-market-card::before{position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--rose),#9cb4df);content:""}
+.kiss-market-card:hover{transform:translateY(-4px);border-color:#c8d5e9;box-shadow:0 18px 34px #23385820}
+.kiss-market-kind{padding:6px 10px;border:1px solid #e8d8e0;background:#fff8fb;color:#80576c}
+.kiss-market-card h3{font-size:clamp(20px,2vw,27px);line-height:1.12}
+.kiss-market-card>p{margin:0 0 4px}
+.kiss-market-offer{display:flex;align-items:baseline;justify-content:space-between;gap:10px;width:100%;margin-top:auto;padding-top:12px;border-top:1px solid #e8edf4}
+.kiss-market-offer>span{color:#748198;font:700 9px var(--mono);letter-spacing:.12em}
+.kiss-market-price{padding:6px 10px;border:1px solid #e6d3dc;border-radius:999px;background:#fff5f8;color:#8a526c;font:700 13px var(--sans)}
+.kiss-market-card .kiss-market-buy{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:46px;margin:0;padding:11px 15px;border-color:#536f9e;background:#536f9e;color:#fff;font:650 12px var(--sans);box-shadow:0 5px 14px #536f9e22}
+.kiss-market-card .kiss-market-buy:hover{transform:translateY(-1px);background:#415d89;color:#fff}
+.kiss-market-buy span{font-size:16px}
+.offer-layout{position:relative;margin-top:36px;padding:30px 0 0;border-top:1px solid #dce3ed}
+.kiss-market-section .guestbook-heading h2{font-size:clamp(30px,4vw,50px)}
+.market-ticket-card{position:relative;overflow:hidden;gap:9px;padding:18px;border:1px dashed #d6c080;border-radius:16px;background:linear-gradient(110deg,#fffdf5,#fff8e7);box-shadow:0 6px 16px #77602a0d}
+.market-ticket-card::before,.market-ticket-card::after{position:absolute;top:50%;width:18px;height:18px;border:1px solid #dce2eb;border-radius:50%;background:#fbfcfe;content:"";transform:translateY(-50%)}
+.market-ticket-card::before{left:-10px}.market-ticket-card::after{right:-10px}
+.market-ticket-ribbon{padding:6px 9px;border:1px solid #e6d4a5;background:#fff8df;color:#826a35}
+@media(max-width:760px){.kiss-market-section{padding:24px 20px;border-radius:22px}.kiss-market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kiss-market-card{min-height:240px}}
+@media(max-width:560px){.kiss-market-section{padding:22px 16px;border-radius:18px}.kiss-market-grid{grid-template-columns:minmax(0,1fr);gap:12px;margin:20px 0 30px}.kiss-market-card{min-height:0;padding:19px 17px 16px;border-radius:16px}.offer-layout{margin-top:24px;padding-top:22px}}
+@media(prefers-reduced-motion:reduce){.kiss-market-card,.kiss-market-card:hover{transition:none;transform:none}}
+.kiss-market-status{min-height:1.5em;margin:-26px 0 26px;color:#536175;font:500 12px/1.5 var(--sans)}
+
+/* Pet care kiss rewards */
+.pet-kiss-reward{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;margin:12px 0;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(135deg,#f7f9fd,#fff);color:var(--ink)}
+.pet-kiss-reward>strong{font-size:12px;font-weight:650}
+.pet-kiss-reward>strong span:last-child{display:inline-grid;place-items:center;min-width:22px;height:22px;margin-left:5px;padding:0 6px;border-radius:999px;background:#edf1f8;color:var(--rose);font-size:11px}
+.pet-kiss-reward>span{align-self:center;color:var(--rose);font-size:11px;font-weight:600}
+.pet-kiss-reward>small{grid-column:1/-1;color:var(--muted);font-size:10px;line-height:1.45}
