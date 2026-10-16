@@ -116,6 +116,13 @@
       <section class="admin-panel full-panel photo-post-manager kamila-photo-manager" aria-labelledby="kamilaPhotoManagerHeading">
         <div class="panel-heading"><div><span class="panel-index">HIDE-AND-CATCH / COLLECTIBLES</span><h3 id="kamilaPhotoManagerHeading">Kamila card photos</h3></div><span class="panel-icon" aria-hidden="true">✦</span></div>
         <p class="panel-description">Upload photos for the collectible card awarded when a visitor catches Kamila. One photo is chosen at random each time. Add, caption, or remove photos; visitors receive a personal card copy in their local pocket.</p>
+        <div id="kamilaTraitFields" class="kamila-trait-fields" aria-labelledby="kamilaTraitsHeading">
+          <h3 id="kamilaTraitsHeading">Card trait options</h3><p class="panel-description">Add one option per line. New cards will randomly choose one option from each list.</p>
+          <label for="kamilaTemperamentTraits">TEMPERAMENT</label><textarea id="kamilaTemperamentTraits" rows="5" aria-label="Temperament trait options"></textarea>
+          <label for="kamilaSpecialtyTraits">SPECIALTY</label><textarea id="kamilaSpecialtyTraits" rows="5" aria-label="Specialty trait options"></textarea>
+          <label for="kamilaHabitatTraits">HABITAT</label><textarea id="kamilaHabitatTraits" rows="5" aria-label="Habitat trait options"></textarea>
+          <p class="admin-message">At least one option is needed in each list. Publish changes to make updated options live.</p>
+        </div>
         <label class="kamila-photo-upload-label" for="kamilaPhotoFiles">ADD CARD PHOTOS</label><input id="kamilaPhotoFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple><p id="kamilaPhotoStatus" class="admin-message" role="status" aria-live="polite"></p>
         <div class="photo-post-list-heading"><h3>Card photo folder</h3><span id="kamilaPhotoCount">0 CARDS</span></div>
         <div id="adminKamilaPhotoList" class="admin-item-list" aria-label="Kamila collectible card photos"></div>
