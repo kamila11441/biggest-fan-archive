@@ -229,7 +229,6 @@
   }
   attachListFilter('songSearch','adminSongList','songSearchCount');
   attachListFilter('thoughtSearch','adminThoughtList','thoughtSearchCount');
-  attachListFilter('guestSearch','adminGuestList','guestSearchCount','guestStatusFilter');
 
   ['heroTitle','heroSubtitle','heroDescription','adminThoughtText'].forEach(id=>{
     const field=$(id);if(!field)return;
@@ -365,7 +364,7 @@
     songs:[],noises:[],thoughts:[],
     navAbout:'About', navMoments:'Journal', navNotes:'Notes', navGuestbook:'Contact',
     aboutHeading:'A record of ordinary days.', aboutLead:'Everyday life leaves its marks in unexpected places.',
-    blogPosts:[],kamilaPhotos:[],journalOrder:'date',kissMessages:[],kissMilestones:[
+    blogPosts:[],kamilaPhotos:[],marketItems:[],customNotifications:[],journalOrder:'date',kissMessages:[],kissMilestones:[
       {type:'streak',target:3,sticker:'🌱',title:'A little beginning'},
       {type:'streak',target:7,sticker:'🌷',title:'One lovely week'},
       {type:'streak',target:14,sticker:'💌',title:'Two weeks close'},
@@ -383,6 +382,8 @@
   function normalizeContent(value={}){
     const next={...defaults,...(value||{})};
     next.kamilaPhotos=(Array.isArray(value?.kamilaPhotos)?value.kamilaPhotos:[]).map((photo,index)=>typeof photo==='string'?{id:`kamila-${index}`,image:validPostUrl(photo),path:'',caption:''}:{id:String(photo?.id||`kamila-${index}`),image:validPostUrl(photo?.image),path:typeof photo?.path==='string'?photo.path:'',caption:typeof photo?.caption==='string'?photo.caption.trim().slice(0,100):''}).filter(photo=>photo.image).slice(0,100);
+    next.marketItems=(Array.isArray(value?.marketItems)?value.marketItems:[]).map((item,index)=>({id:String(item?.id||`market-${index}`),title:String(item?.title||'').trim().slice(0,70),description:String(item?.description||'').trim().slice(0,240),type:item?.type==='service'?'service':'item',kissCost:Math.floor(Number(item?.kissCost)),active:item?.active!==false,offerRef:String(item?.offerRef||'')})).filter(item=>item.title&&item.kissCost>0&&item.kissCost<=100000).slice(0,100);
+    next.customNotifications=(Array.isArray(value?.customNotifications)?value.customNotifications:[]).map((item,index)=>({id:String(item?.id||`notification-${index}`),title:String(item?.title||'').trim().slice(0,60),message:String(item?.message||'').trim().slice(0,240),createdAt:Number(item?.createdAt)||0})).filter(item=>item.title&&item.message).slice(0,30);
     if(!Array.isArray(value?.blogPosts))next.blogPosts=(value?.galleryImages||[]).map((image,index)=>({id:`legacy-${index}`,image,path:'',caption:value?.galleryCaptions?.[index]||'From the archive',date:''})).filter(post=>validPostUrl(post.image));
     if(!value?.accent||['#778173','#2456d7','#315bff'].includes(String(value.accent).toLowerCase()))next.accent='#5f73a5';
     if(!value?.background||value.background==='#f4f1ea')next.background='#f4f7fb';
@@ -433,7 +434,8 @@
     const spacing=$('songCardPaddingValue');if(spacing)spacing.value=`${$('songCardPadding').value} px`;
     renderAdminPhotoPosts(cloud.blogPosts);
     renderAdminKamilaPhotos(cloud.kamilaPhotos);
-    renderKissMilestoneRows(cloud.kissMilestones);
+    renderKissMilestoneRows(cloud.kissMilestones);renderAdminMarketItems(cloud.marketItems);
+    renderAdminCustomNotifications(cloud.customNotifications);
   }
   function readFields() {
     const result={...cloud};
@@ -442,7 +444,7 @@
       if(k==='qualities'||k==='kissMessages') result[k]=el.value.split('\n').map(x=>x.trim()).filter(Boolean);
       else result[k]=el.value;
     });
-    result.blogPosts=cloud.blogPosts||[];result.kamilaPhotos=cloud.kamilaPhotos||[];delete result.galleryImages;delete result.galleryCaptions;delete result.notes;
+    result.blogPosts=cloud.blogPosts||[];result.kamilaPhotos=cloud.kamilaPhotos||[];result.marketItems=cloud.marketItems||[];result.customNotifications=cloud.customNotifications||[];delete result.galleryImages;delete result.galleryCaptions;delete result.notes;
     result.kissMilestones=[...document.querySelectorAll('.kiss-milestone-row')].map(row=>({type:row.querySelector('select')?.value==='total'?'total':'streak',target:Math.floor(Number(row.querySelector('input[type="number"]')?.value)),title:row.querySelector('input[aria-label="Award title"]')?.value.trim().slice(0,70)||'',sticker:row.querySelector('input[aria-label="Fallback emoji"]')?.value.trim().slice(0,12)||'',graphic:validPostUrl(row.querySelector('input[type="url"]')?.value.trim())||''})).filter(item=>item.target>0&&item.target<=10000&&item.title&&(item.sticker||item.graphic)).filter((item,index,array)=>array.findIndex(other=>other.type===item.type&&other.target===item.target)===index).slice(0,40);
     result.theme='noir'; result.layout='left';
     result.accent=$('accentColor')?.value || '#5f73a5'; result.background='#ffffff'; result.text='#090a0c';
@@ -501,6 +503,28 @@
     items.forEach(photo=>{const row=document.createElement('article');row.className='admin-item kamila-photo-admin-item';const img=document.createElement('img');img.className='photo-post-thumb';img.src=photo.image;img.alt='';img.loading='lazy';const main=document.createElement('div');main.className='admin-item-main';const label=document.createElement('label');label.className='kamila-photo-caption-label';label.textContent='CARD CAPTION';const caption=document.createElement('input');caption.type='text';caption.maxLength=100;caption.value=photo.caption||'';caption.placeholder='A little moment with Kamila';caption.setAttribute('aria-label','Kamila card caption');caption.addEventListener('input',()=>{cloud.kamilaPhotos=(cloud.kamilaPhotos||[]).map(item=>item.id===photo.id?{...item,caption:caption.value.slice(0,100)}:item);window.archiveMarkDirty();schedulePreview();});main.append(label,caption);const remove=mkButton('Remove',()=>{if(photo.path?.startsWith('assets/archive/'))window.archiveStaging.deletes.add(photo.path);stageKamilaPhotos((cloud.kamilaPhotos||[]).filter(item=>item.id!==photo.id),'Photo removed from the card folder. Publish all changes to update the live collection.');},true,`Remove Kamila card photo${photo.caption?': '+photo.caption:''}`);row.append(img,main,remove);root.append(row);});
   }
   $('kamilaPhotoFiles')?.addEventListener('change',async event=>{const files=[...(event.currentTarget.files||[])],status=$('kamilaPhotoStatus');if(!files.length)return;if(!window.archiveGitHub?.connected||!contentLoaded){status.textContent='Connect GitHub and load the archive before adding card photos.';event.currentTarget.value='';return;}const chosen=files.slice(0,Math.max(0,100-(cloud.kamilaPhotos||[]).length));if(!chosen.length){status.textContent='The card folder holds up to 100 photos.';event.currentTarget.value='';return;}const allowed=['image/jpeg','image/png','image/webp','image/gif','image/avif'],added=[];event.currentTarget.disabled=true;try{for(let i=0;i<chosen.length;i++){const file=chosen[i];if(!allowed.includes(file.type)||file.size>25*1024*1024)throw new Error('Use JPG, PNG, WebP, GIF or AVIF images under 25 MB each.');status.textContent=`Preparing card photo ${i+1} of ${chosen.length}…`;const opt=await window.archiveCompressImage(file,1800);const ext=opt.ext||'jpg',path=`assets/archive/kamila-cards/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;await window.archiveGitHub.upload(path,opt.blob,`Add Kamila collectible photo`);window.archiveStaging.uploads.add(path);added.push({id:crypto.randomUUID(),image:window.archiveGitHub.pagesUrl(path),path,caption:file.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ').slice(0,100)});}stageKamilaPhotos([...(cloud.kamilaPhotos||[]),...added],'Card photos uploaded and staged. Publish all changes to make them available.');}catch(error){status.textContent=error.message||'Could not upload the card photos. Check GitHub access.';}finally{event.currentTarget.disabled=false;event.currentTarget.value='';}});
+  function stageMarketItems(items,message){cloud={...cloud,marketItems:items.slice(0,100)};window.archiveMarkDirty();renderAdminMarketItems();sendPreview();if(message)$('kissMarketAdminStatus').textContent=message;}
+  function stageCustomNotifications(items,message){cloud={...cloud,customNotifications:items.slice(0,30)};window.archiveMarkDirty();renderAdminCustomNotifications();sendPreview();if(message)$('customNotificationStatus').textContent=message;}
+  function renderAdminCustomNotifications(items=cloud.customNotifications||[]){
+    const root=$('adminCustomNotificationList');if(!root)return;root.replaceChildren();const list=items.slice(0,30),count=$('customNotificationCount');if(count)count.textContent=`${list.length} UPDATE${list.length===1?'':'S'}`;
+    if(!list.length){const empty=document.createElement('div');empty.className='admin-empty';empty.textContent='No custom notifications yet.';root.append(empty);return;}
+    list.slice().reverse().forEach(item=>{const row=document.createElement('article');row.className='admin-item custom-notification-admin-item';const body=document.createElement('div');body.className='admin-item-copy';const title=document.createElement('strong');title.className='admin-item-title';title.textContent=item.title;const message=document.createElement('p');message.className='admin-item-text';message.textContent=item.message;const date=document.createElement('small');date.className='admin-item-meta';date.textContent=item.createdAt?new Date(item.createdAt).toLocaleString():'Not published yet';body.append(title,message,date);row.append(body);const remove=mkButton('Remove',()=>stageCustomNotifications((cloud.customNotifications||[]).filter(value=>value.id!==item.id),'Notification removed. Publish all changes to remove it for visitors.'),true,`Remove notification: ${item.title}`);row.append(remove);root.append(row);});
+  }
+  $('customNotificationForm')?.addEventListener('submit',event=>{event.preventDefault();const title=$('customNotificationTitle').value.trim(),message=$('customNotificationMessage').value.trim(),status=$('customNotificationStatus');if(!title||!message)return;if((cloud.customNotifications||[]).length>=30){status.textContent='The page can have up to 30 custom notifications. Remove one first.';return;}const notification={id:`notice-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,title,message,createdAt:Date.now()};stageCustomNotifications([...(cloud.customNotifications||[]),notification],'Notification added. Publish all changes to send it to visitors.');event.currentTarget.reset();});
+  function renderAdminMarketItems(items=cloud.marketItems||[]){
+    const root=$('adminKissMarketList');if(!root)return;root.replaceChildren();const list=items.slice(0,100);const count=$('kissMarketCount');if(count)count.textContent=`${list.length} LISTING${list.length===1?'':'S'}`;const stat=$('marketStat');if(stat)stat.textContent=String(list.filter(item=>item.active!==false).length);
+    if(!list.length){const empty=document.createElement('div');empty.className='admin-empty';empty.textContent='No market listings yet. Add an item or service above.';root.append(empty);return;}
+    const update=(id,key,value)=>{cloud={...cloud,marketItems:(cloud.marketItems||[]).map(item=>item.id===id?{...item,[key]:value}:item)};window.archiveMarkDirty();schedulePreview();};
+    list.forEach(item=>{const row=document.createElement('article');row.className='admin-item market-admin-item';const fields=document.createElement('div');fields.className='market-admin-fields';
+      const titleLabel=document.createElement('label');titleLabel.textContent='LISTING TITLE';const title=document.createElement('input');title.type='text';title.maxLength=70;title.value=item.title;title.setAttribute('aria-label','Market listing title');title.addEventListener('input',()=>update(item.id,'title',title.value.slice(0,70).trimStart()));titleLabel.append(title);
+      const typeLabel=document.createElement('label');typeLabel.textContent='TYPE';const type=document.createElement('select');[['item','Item'],['service','Service']].forEach(([value,label])=>{const option=document.createElement('option');option.value=value;option.textContent=label;type.append(option);});type.value=item.type;type.setAttribute('aria-label','Market listing type');type.addEventListener('change',()=>update(item.id,'type',type.value));typeLabel.append(type);
+      const costLabel=document.createElement('label');costLabel.textContent='KISS PRICE';const cost=document.createElement('input');cost.type='number';cost.min='1';cost.max='100000';cost.step='1';cost.value=String(item.kissCost);cost.setAttribute('aria-label','Kiss price');cost.addEventListener('change',()=>update(item.id,'kissCost',Math.max(1,Math.min(100000,Math.floor(Number(cost.value)||1)))));costLabel.append(cost);
+      const descriptionLabel=document.createElement('label');descriptionLabel.className='market-description-field';descriptionLabel.textContent='DESCRIPTION / RIGHTS';const description=document.createElement('textarea');description.rows=2;description.maxLength=240;description.value=item.description||'';description.placeholder='Describe the item, service, and what the ticket lets its owner claim.';description.setAttribute('aria-label','Market listing description and collection rights');description.addEventListener('input',()=>update(item.id,'description',description.value.slice(0,240)));descriptionLabel.append(description);
+      const activeLabel=document.createElement('label');activeLabel.className='market-active-field';const active=document.createElement('input');active.type='checkbox';active.checked=item.active!==false;active.setAttribute('aria-label','Listing available in the market');active.addEventListener('change',()=>update(item.id,'active',active.checked));activeLabel.append(active,document.createTextNode('Available in market'));
+      fields.append(titleLabel,typeLabel,costLabel,descriptionLabel,activeLabel);const remove=mkButton('Remove listing',()=>stageMarketItems((cloud.marketItems||[]).filter(value=>value.id!==item.id),'Listing removed. Publish all changes to update the market.'),true,`Remove market listing: ${item.title}`);row.append(fields,remove);root.append(row);
+    });
+  }
+  $('kissMarketForm')?.addEventListener('submit',event=>{event.preventDefault();const title=$('marketItemTitle').value.trim(),description=$('marketItemDescription').value.trim().slice(0,240),kissCost=Math.floor(Number($('marketItemCost').value)),type=$('marketItemType').value==='service'?'service':'item',status=$('kissMarketAdminStatus');if(!title||kissCost<1||kissCost>100000){status.textContent='Add a title and a kiss price between 1 and 100,000.';return;}if((cloud.marketItems||[]).length>=100){status.textContent='The market can hold up to 100 listings.';return;}stageMarketItems([...(cloud.marketItems||[]),{id:`market-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,title,description,type,kissCost,active:true}],'Listing added. Publish all changes to open it in the market.');event.currentTarget.reset();$('marketItemCost').value='5';});
   function editPhotoPost(post,row){
     if(row.querySelector('.inline-edit'))return;
     const form=window.archiveInlineEdit([{key:'caption',label:'CAPTION',value:post.caption||'',rows:2,max:220},{key:'alt',label:'ALT TEXT',value:post.alt||'',max:220},{key:'date',label:'DATE',value:post.date||'',type:'date'}],values=>{
@@ -553,7 +577,6 @@
     if(githubSource){const status=$('githubStorageStatus');if(status)status.textContent=window.archiveGitHub?.connected?'Loaded archive-data.json from GitHub. Content and media are ready to publish from admin.':'Loaded archive-data.json from GitHub Pages. Connect GitHub here to publish edits.';$('copyArchiveToGitHub').disabled=true;}
     else if($('copyArchiveToGitHub')){$('copyArchiveToGitHub').disabled=!window.archiveGitHub?.connected;const status=$('githubStorageStatus');if(status&&window.archiveGitHub?.connected)status.textContent='Current content is still in Supabase. Copy it once to GitHub to make GitHub the archive source.';}
     sendPreview();
-    await loadComments();
   }
   const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   async function publishSeoFiles(next){
@@ -685,25 +708,27 @@
       dirty=false;updateBar();sendPreview();
     }catch(error){text.textContent=error.message||'Could not discard changes.';}
   });
-  async function loadComments() {
-    const list=$('adminGuestList'); if(!list) return;
-    const {data,error}=await db.from('archive_comments').select('*').order('created_at',{ascending:false}).limit(100);
-    list.replaceChildren(); if(error){list.textContent='Unable to load comments. Check database schema and admin session.';const n=$('guestStat');if(n)n.textContent='—';$('guestbookModerationStatus').textContent='Comments could not be loaded.';return;}
-    const stat=$('guestStat');if(stat)stat.textContent=String(data?.length||0);
-    $('guestbookModerationStatus').textContent=`${(data||[]).filter(c=>!c.approved).length} pending · ${(data||[]).filter(c=>c.approved).length} published`;
-    if(!data?.length){list.textContent='No visitor comments yet.';return;}
-    data.forEach(c=>{
-      const item=document.createElement('article'); item.className='admin-item';item.dataset.status=c.approved?'published':'pending';
-      const body=document.createElement('div'); body.className='admin-item-copy';
-      const title=document.createElement('strong'); title.textContent=c.display_name+(c.approved?' · PUBLISHED':' · PENDING');
-      const msg=document.createElement('p'); msg.textContent=c.message;
-      const date=document.createElement('small'); date.textContent=new Date(c.created_at).toLocaleString(); body.append(title,msg,date); item.append(body);
-      const actions=document.createElement('div'); actions.className='admin-item-actions';
-      if(!c.approved){const approve=document.createElement('button');approve.className='primary-button';approve.type='button';approve.textContent='Approve';approve.setAttribute('aria-label','Approve note from '+c.display_name);approve.onclick=async()=>{approve.disabled=true;const r=await db.from('archive_comments').update({approved:true}).eq('id',c.id); if(!r.error){$('guestbookModerationStatus').textContent='Note approved and published.';loadComments();}else{$('guestbookModerationStatus').textContent='Could not approve this note. Check your connection and permissions.';approve.disabled=false;}};actions.append(approve);}
-      const del=document.createElement('button');del.className='text-button';del.type='button';del.textContent='Delete';del.setAttribute('aria-label','Delete note from '+c.display_name);del.onclick=async()=>{if(confirm('Delete this comment permanently?')){const r=await db.from('archive_comments').delete().eq('id',c.id);if(!r.error){$('guestbookModerationStatus').textContent='Note deleted.';loadComments();}else $('guestbookModerationStatus').textContent='Could not delete this note. Check your connection and permissions.';}};actions.append(del);item.append(actions);list.append(item);
+  let kissOffers=[];
+  function parseKissOffer(message){const value=String(message||'');const head=value.match(/^\[KISS OFFER · (\d+) KISSES\]\s*/);const ref=value.match(/\[OFFER REF: ([^\]]+)\]/)?.[1]||'';return{amount:Math.floor(Number(head?.[1])||0),ref,request:value.replace(/^\[KISS OFFER · \d+ KISSES\]\s*/,'').replace(/^\[OFFER REF: [^\]]+\]\s*/,'').trim()};}
+  async function loadKissOffers(){
+    const root=$('adminKissOfferList');if(!root||!db)return;root.replaceChildren();
+    const {data,error}=await db.from('archive_comments').select('id,display_name,message,approved,created_at').order('created_at',{ascending:false}).limit(200);
+    if(error){root.textContent='Unable to load offers. Check the admin database connection.';$('kissOfferModerationStatus').textContent='Offers could not be loaded.';return;}
+    kissOffers=(data||[]).filter(item=>String(item.message||'').startsWith('[KISS OFFER · '));renderKissOffers();
+  }
+  function renderKissOffers(){
+    const root=$('adminKissOfferList');if(!root)return;root.replaceChildren();const search=($('kissOfferSearch')?.value||'').trim().toLowerCase(),filter=$('kissOfferStatusFilter')?.value||'all';
+    const visible=kissOffers.filter(offer=>{const accepted=Boolean(offer.approved),text=`${offer.display_name} ${offer.message}`.toLowerCase();return(filter==='all'||(filter==='accepted'?accepted:!accepted))&&(!search||text.includes(search));});
+    const count=$('kissOfferCount');if(count)count.textContent=`${visible.length} OF ${kissOffers.length} OFFERS · ${kissOffers.filter(item=>!item.approved).length} PENDING`;
+    if(!visible.length){const empty=document.createElement('div');empty.className='admin-empty';empty.textContent=kissOffers.length?'No offers match this filter.':'No kiss offers yet.';root.append(empty);return;}
+    visible.forEach(offer=>{const parsed=parseKissOffer(offer.message);const row=document.createElement('article');row.className='admin-item kiss-offer-admin-item';row.dataset.status=offer.approved?'accepted':'pending';const body=document.createElement('div');body.className='admin-item-copy';const title=document.createElement('strong');title.className='admin-item-title';title.textContent=`${offer.display_name||'Visitor'} · ${parsed.amount||'?'} KISSES · ${offer.approved?'ACCEPTED':'PENDING'}`;const request=document.createElement('p');request.className='admin-item-text';request.textContent=parsed.request;const date=document.createElement('small');date.className='admin-item-meta';date.textContent=new Date(offer.created_at).toLocaleString();body.append(title,request,date);row.append(body);const actions=document.createElement('div');actions.className='admin-item-actions';
+      if(!offer.approved){const accept=mkButton('Accept & list item',async()=>{accept.disabled=true;const status=$('kissOfferModerationStatus');const listingId=`accepted-offer-${String(offer.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;let listings=cloud.marketItems||[];if(!listings.some(item=>item.id===listingId)){if(listings.length>=100){status.textContent='The market already has 100 listings. Remove one before accepting this offer.';accept.disabled=false;return;}const titleText=parsed.request.slice(0,70)||`Offer from ${offer.display_name||'visitor'}`;listings=[...listings,{id:listingId,title:titleText,description:parsed.request.slice(0,240),type:'item',kissCost:parsed.amount||1,active:true,offerRef:parsed.ref}];stageMarketItems(listings,'Accepted offer listing staged. Publishing the listing…');}const published=await save();if(!published){status.textContent='The listing is staged but could not be published. Connect GitHub, then publish the staged changes before accepting this offer.';accept.disabled=false;return;}const result=await db.from('archive_comments').update({approved:true}).eq('id',offer.id);if(result.error){status.textContent='The market listing is live, but the offer status could not be updated. Try Accept & list item again.';accept.disabled=false;return;}status.textContent=parsed.ref?'Offer accepted, listed in the market, and ready to notify its visitor.':'Offer listed and accepted. This older offer has no visitor notification link.';await loadKissOffers();},false,`Accept offer from ${offer.display_name} and list it in the market`);actions.append(accept);}
+      else{const reopen=mkButton('Mark pending',async()=>{reopen.disabled=true;const result=await db.from('archive_comments').update({approved:false}).eq('id',offer.id);if(result.error){$('kissOfferModerationStatus').textContent='Could not reopen the offer.';reopen.disabled=false;return;}$('kissOfferModerationStatus').textContent='Offer moved back to pending.';await loadKissOffers();},false,`Move offer from ${offer.display_name} back to pending`);actions.append(reopen);}
+      const decline=mkButton('Decline',async()=>{if(!confirm('Decline and remove this offer?'))return;decline.disabled=true;const result=await db.from('archive_comments').delete().eq('id',offer.id);if(result.error){$('kissOfferModerationStatus').textContent='Could not decline the offer.';decline.disabled=false;return;}$('kissOfferModerationStatus').textContent='Offer declined and removed.';await loadKissOffers();},true,`Decline offer from ${offer.display_name}`);actions.append(decline);row.append(actions);root.append(row);
     });
   }
-  window.addEventListener('archive-auth-ready', async()=>{db=window.archiveSupabase; await load();});
+  $('kissOfferSearch')?.addEventListener('input',renderKissOffers);$('kissOfferStatusFilter')?.addEventListener('change',renderKissOffers);
+  window.addEventListener('archive-auth-ready', async()=>{db=window.archiveSupabase; await load();await loadKissOffers();});
   window.addEventListener('archive-collections-saved',event=>{cloud={...cloud,songs:event.detail?.songs||[],noises:event.detail?.noises||[],thoughts:event.detail?.thoughts||[]};sendPreview();});
   $('savePageContent')?.addEventListener('click',()=>save());
   $('saveContentDraft')?.addEventListener('click',()=>{
@@ -743,7 +768,7 @@
   const app=document.getElementById('adminApp');
   if(!app)return;
   const panels=[...app.querySelectorAll('.admin-panel, .photo-post-manager')];
-  const initiallyCollapsed=new Set(['.github-storage-panel','#visualManager','#pageContentManager','#noiseManager','#guestbookManager','#backupManager','.photo-post-manager']);
+  const initiallyCollapsed=new Set(['.github-storage-panel','#pageEditor','#visualManager','#pageContentManager','#noiseManager','#backupManager','.photo-post-manager']);
   const controls=[];
   panels.forEach((panel,index)=>{
     const heading=panel.querySelector(':scope > .panel-heading');
