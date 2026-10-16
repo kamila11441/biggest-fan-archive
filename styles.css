@@ -765,6 +765,43 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex;flex-dir
 .kamila-card-preview-dialog .kamila-catch-heading p{font-size:8px}
 @media(max-width:620px){.kamila-pocket-card{grid-template-columns:52px minmax(0,1fr)!important;column-gap:9px;padding:9px 10px}.kamila-pocket-card>.pocket-photo{width:52px!important;max-width:52px!important;min-width:52px}.kamila-pocket-card .pocket-photo img{width:52px!important;height:52px!important;max-width:52px!important}.kamila-card-preview-dialog{width:min(320px,calc(100vw - 24px));padding:16px}.kamila-card-flip-scene{width:min(100%,230px);height:300px}}
 @media(prefers-reduced-motion:reduce){.kamila-pocket-card,.kamila-card-flip-scene{animation:none!important}}
+
+/* Rarity-specific futuristic finishes and a cinematic product-launch reveal. */
+.kamila-flippable-card{--card-accent:#e5eaf2;--card-ink:#26364b;--card-front:linear-gradient(145deg,#fbfdff,#e8eef5 58%,#fff);--card-back:radial-gradient(ellipse at 50% 25%,#62708a,#27344c 72%,#172238);--card-glow:#d8e4f4;filter:drop-shadow(0 0 16px color-mix(in srgb,var(--card-glow) 45%,transparent))}
+.kamila-flippable-card .kamila-card-face{border-color:var(--card-accent);background:var(--card-front);box-shadow:0 0 0 1px #ffffffa8,0 0 0 3px color-mix(in srgb,var(--card-accent) 80%,transparent),0 18px 42px #101b3040,inset 0 1px 0 #fff}
+.kamila-flippable-card .kamila-card-face.kamila-card-back{border-color:var(--card-accent);background:var(--card-back);box-shadow:0 0 0 1px #ffffff88,0 0 0 3px color-mix(in srgb,var(--card-accent) 80%,transparent),0 18px 42px #101b3040,inset 0 1px 0 #ffffff44}
+.kamila-flippable-card .kamila-card-back-label,.kamila-flippable-card .kamila-card-back-mark,.kamila-flippable-card .kamila-card-market-stats>span,.kamila-flippable-card .kamila-card-traits dt{color:var(--card-accent)}
+.kamila-flippable-card .kamila-card-description,.kamila-flippable-card .kamila-card-market-stats strong,.kamila-flippable-card .kamila-card-traits dd{color:#fff}
+.kamila-flippable-card .kamila-card-back-star{border-color:var(--card-accent);color:var(--card-ink);background:linear-gradient(145deg,#fff,var(--card-accent));box-shadow:0 0 24px color-mix(in srgb,var(--card-accent) 65%,transparent),inset 0 0 0 4px #ffffff9c}
+.kamila-flippable-card .kamila-card-market-stats>span,.kamila-flippable-card .kamila-card-traits>div{border-color:color-mix(in srgb,var(--card-accent) 40%,transparent);background:#ffffff12}
+.kamila-flippable-card .kamila-card-top,.kamila-flippable-card .kamila-card-caption{color:var(--card-ink)}
+.kamila-flippable-card .kamila-card-art{border-color:var(--card-accent);box-shadow:0 0 0 1px #ffffffaa,0 6px 18px #101b3040}
+.kamila-flippable-card .kamila-card-bottom{border-color:color-mix(in srgb,var(--card-accent) 65%,transparent)}
+.kamila-flippable-card.tier-common{--card-accent:#dce5f1;--card-ink:#26364b;--card-front:linear-gradient(140deg,#ffffff,#e6edf5 55%,#f9fbff);--card-back:radial-gradient(ellipse at 50% 25%,#73839a,#34445d 72%,#1c2a40);--card-glow:#cbdcf2}
+.kamila-flippable-card.tier-uncommon{--card-accent:#7af0c0;--card-ink:#124c43;--card-front:linear-gradient(145deg,#effff9,#c8f4e3 48%,#e8fff6);--card-back:radial-gradient(ellipse at 50% 25%,#247e6c,#10483f 70%,#092e31);--card-glow:#59e8bc}
+.kamila-flippable-card.tier-rare{--card-accent:#8bc6ff;--card-ink:#153a75;--card-front:linear-gradient(145deg,#f4faff,#cfe5ff 45%,#f0e9ff);--card-back:radial-gradient(ellipse at 50% 25%,#3974c4,#183c78 68%,#101d4a);--card-glow:#63aaff}
+.kamila-flippable-card.tier-extremely-rare{--card-accent:#7ef8ff;--card-ink:#075966;--card-front:linear-gradient(145deg,#f1ffff,#bafaff 40%,#d5e4ff 72%,#fff);--card-back:radial-gradient(ellipse at 50% 25%,#087d90,#073a63 64%,#101632);--card-glow:#42edff}
+.kamila-flippable-card.tier-epic{--card-accent:#e6a5ff;--card-ink:#57218b;--card-front:linear-gradient(145deg,#fff6ff,#edc9ff 38%,#cbc5ff 70%,#f8edff);--card-back:radial-gradient(ellipse at 50% 25%,#7541ac,#372267 66%,#191438);--card-glow:#c782ff}
+.kamila-flippable-card.tier-legendary{--card-accent:#ffe18a;--card-ink:#593c08;--card-front:linear-gradient(145deg,#fffdf0,#ffe5a0 40%,#f2bd62 70%,#fff7d9);--card-back:radial-gradient(ellipse at 50% 25%,#7b5a1f,#382a16 65%,#17141b);--card-glow:#ffd15c}
+.kamila-flippable-card.tier-priceless{--card-accent:#ffb7e8;--card-ink:#66144d;--card-front:linear-gradient(145deg,#fff7ff,#ffcaea 30%,#d4c6ff 58%,#c4f8ff 82%,#fff);--card-back:radial-gradient(ellipse at 50% 25%,#a13e82,#49214f 56%,#171631);--card-glow:#f48bdb}
+.kamila-flippable-card.tier-uncommon .kamila-card-face::after{opacity:.4;background:repeating-linear-gradient(135deg,transparent 0 13px,#ffffff26 14px 15px)}
+.kamila-flippable-card.tier-rare .kamila-card-face::after{opacity:.42;background:repeating-linear-gradient(0deg,transparent 0 8px,#bde0ff30 9px 10px)}
+.kamila-flippable-card.tier-extremely-rare .kamila-card-face::after{opacity:.5;background:repeating-linear-gradient(0deg,transparent 0 5px,#a1fbff38 6px 7px)}
+.kamila-flippable-card.tier-epic .kamila-card-face::after{opacity:.45;background:radial-gradient(circle at 14% 22%,#fff 0 1px,transparent 2px),radial-gradient(circle at 73% 16%,#fff 0 1px,transparent 2px),radial-gradient(circle at 82% 72%,#fff 0 1px,transparent 2px),radial-gradient(circle at 27% 84%,#fff 0 1px,transparent 2px)}
+.kamila-flippable-card.tier-legendary .kamila-card-face::after{opacity:.48;background:repeating-conic-gradient(from 10deg at 50% 50%,#fff2 0deg 2deg,transparent 2deg 18deg)}
+.kamila-flippable-card.tier-priceless .kamila-card-face::after{opacity:.55;background:conic-gradient(from 15deg at 50% 50%,#ffeffa55,#c9faff40,#fff2a855,#e9c9ff50,#ffeffa55);mix-blend-mode:screen}
+.kamila-card-preview-dialog{background:linear-gradient(150deg,#0d1427 0%,#18243e 35%,#f8faff 35.2%,#eef3fb 100%);border-color:#fff;box-shadow:0 35px 120px #070b18a8}
+.kamila-card-preview-dialog .kamila-catch-heading p{color:#eff4ff;letter-spacing:.2em}
+.kamila-card-preview-dialog .kamila-catch-heading button{border-color:#ffffff6b;background:#ffffff12;color:#fff}
+.kamila-card-preview-dialog h2{margin:9px 0 2px;color:#fff;font-size:clamp(22px,6vw,29px);letter-spacing:.12em;text-transform:uppercase;text-shadow:0 2px 16px #a6cfff66}
+.kamila-card-flip-scene{position:relative;isolation:isolate;filter:drop-shadow(0 22px 35px #0b163c66);animation:kamila-launch-reveal 1.05s cubic-bezier(.16,1,.3,1) both}
+.kamila-card-flip-scene::before{position:absolute;z-index:-1;inset:-18% -22%;border-radius:50%;background:radial-gradient(ellipse,#d8eaffa8 0,#9bbcff40 24%,#8d9df522 44%,transparent 68%);content:"";filter:blur(12px);opacity:0;animation:kamila-launch-light 1.35s ease-out .12s both}
+.kamila-card-flip-inner{transition:transform .88s cubic-bezier(.2,.8,.2,1);-webkit-transition:-webkit-transform .88s cubic-bezier(.2,.8,.2,1)}
+.kamila-card-preview-dialog .kamila-card-flip-button{border:1px solid #dbe5f5;background:linear-gradient(120deg,#fff,#edf4ff);color:#243754;box-shadow:0 8px 24px #0c1a3226;font-weight:700;letter-spacing:.06em}
+@keyframes kamila-launch-reveal{0%{opacity:0;transform:perspective(900px) translateY(28px) scale(.86) rotateX(12deg);filter:blur(12px) brightness(1.8)}58%{opacity:1;filter:blur(0) brightness(1.15)}78%{transform:perspective(900px) translateY(-4px) scale(1.015) rotateX(-2deg)}100%{opacity:1;transform:perspective(900px) translateY(0) scale(1) rotateX(0);filter:blur(0) brightness(1)}}
+@keyframes kamila-launch-light{0%{opacity:0;transform:scale(.45)}40%{opacity:.95;transform:scale(1.12)}100%{opacity:.12;transform:scale(1.4)}}
+@media(max-width:620px){.kamila-card-preview-dialog{background:linear-gradient(150deg,#0d1427 0%,#18243e 27%,#f8faff 27.2%,#eef3fb 100%)}.kamila-card-preview-dialog h2{font-size:20px}.kamila-card-flip-scene{animation-duration:.9s}}
+@media(prefers-reduced-motion:reduce){.kamila-card-flip-scene,.kamila-card-flip-scene::before,.kamila-flippable-card .kamila-card-face::before{animation:none!important;opacity:1;filter:none}.kamila-card-flip-inner{transition:none!important;-webkit-transition:none!important}}
 /* Safari/iOS needs prefixed 3D preservation for the two-sided card flip. */
 .kamila-card-preview-dialog,.kamila-card-flip-scene{-webkit-perspective:1100px}
 .kamila-card-flip-inner{-webkit-transform-style:preserve-3d;-webkit-transition:-webkit-transform .68s cubic-bezier(.2,.75,.25,1);will-change:transform}
@@ -791,6 +828,14 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex;flex-dir
 .kamila-card-back-star{width:62px;height:62px;border-color:#f1d88c;background:linear-gradient(145deg,#fff9e8,#e8c979);color:#665183;font-size:30px;box-shadow:0 0 24px #f7dc8c66,inset 0 0 0 4px #fff9}
 .kamila-card-back-label,.kamila-card-back-mark{color:#f5dfa4}
 .kamila-card-description{max-width:220px;color:#fff9eb;font-size:14px;text-shadow:0 2px 12px #0005}
+.kamila-card-market-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:100%;max-width:220px}
+.kamila-card-market-stats>span{display:grid;gap:3px;padding:6px 7px;border:1px solid #f4dda65c;border-radius:8px;background:#ffffff12;color:#f5dfa4;font:700 6px/1.2 var(--mono);letter-spacing:.12em;text-align:center}
+.kamila-card-market-stats strong{color:#fff9eb;font:700 9px/1.25 var(--sans);letter-spacing:.02em;overflow-wrap:anywhere}
+.kamila-card-traits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;width:100%;max-width:220px;margin:0;padding:0}
+.kamila-card-traits>div{min-width:0;padding:5px 6px;border:1px solid #f4dda64a;border-radius:8px;background:#ffffff10}
+.kamila-card-traits>div:last-child{grid-column:1/-1}
+.kamila-card-traits dt{margin:0 0 2px;color:#f5dfa4;font:700 6px/1.2 var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.kamila-card-traits dd{margin:0;color:#fff9eb;font:500 8px/1.25 var(--sans);overflow-wrap:anywhere}
 .kamila-card-flip-button{border-color:#d8c48d;background:linear-gradient(135deg,#fffdf7,#f6ebd2);color:#635477;box-shadow:0 5px 16px #29355217;transition:transform .2s ease,box-shadow .2s ease}
 .kamila-card-flip-button:hover{transform:translateY(-2px);box-shadow:0 8px 22px #29355225}
 .kamila-flippable-card.tier-rare .kamila-card-face{box-shadow:0 0 0 2px #94bfe8,0 0 0 5px #fff9,0 0 28px #83b9f066,inset 0 0 0 1px #fff}
@@ -803,5 +848,13 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex;flex-dir
 @keyframes kamila-showcase-in{from{opacity:0;transform:translateY(12px) scale(.92) rotate(-2deg)}to{opacity:1;transform:translateY(0) scale(1) rotate(0)}}
 @keyframes kamila-foil-sweep{0%,18%{background-position:180% 0}68%,100%{background-position:-130% 0}}
 @media(hover:hover) and (prefers-reduced-motion:no-preference){.kamila-card-flip-scene:hover{filter:drop-shadow(0 19px 22px #1a284538)}}
-@media(max-width:620px){.kamila-card-preview-dialog{padding:14px}.kamila-card-flip-scene{width:min(100%,220px);height:288px}.kamila-card-face{padding:8px}.kamila-card-description{font-size:12px}}
+@media(max-width:620px){.kamila-card-preview-dialog{padding:14px}.kamila-card-flip-scene{width:min(100%,220px);height:288px}.kamila-card-face{padding:8px}.kamila-card-description{font-size:12px}.kamila-card-back-star{width:44px;height:44px;font-size:24px}.kamila-card-back{gap:7px!important}.kamila-card-traits>div{padding:4px 5px}}
 @media(prefers-reduced-motion:reduce){.kamila-card-flip-scene,.kamila-card-face::before{animation:none!important}.kamila-card-flip-button{transition:none}.kamila-card-flip-button:hover{transform:none}}
+/* Replay the cinematic entrance only when the card dialog opens. */
+.kamila-card-flip-scene{animation:none}
+.kamila-card-flip-scene.kamila-launching{animation:kamila-launch-reveal 1.05s cubic-bezier(.16,1,.3,1) both}
+.kamila-card-flip-scene::before{opacity:0;animation:none}
+.kamila-card-flip-scene.kamila-launching::before{animation:kamila-launch-light 1.35s ease-out .12s both}
+.kamila-card-swipe-hint{margin:0 0 8px;color:#74829b;font:500 9px/1.35 var(--sans);letter-spacing:.08em;text-align:center}
+@media(max-width:620px){.kamila-card-preview-dialog .kamila-card-flip-button{min-width:0;min-height:34px;padding:7px 13px;border-color:#e1e8f2;border-radius:999px;background:#f8faff;color:#66758f;box-shadow:none;font-size:10px;font-weight:600;letter-spacing:.02em}.kamila-card-swipe-hint{margin:0 0 7px;color:#8290a7;font-size:8px;letter-spacing:.06em}}
+@media(prefers-reduced-motion:reduce){.kamila-card-flip-scene.kamila-launching,.kamila-card-flip-scene.kamila-launching::before{animation:none!important}}
