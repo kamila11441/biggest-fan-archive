@@ -219,7 +219,7 @@
   "kissMessages": [],
   "kissMilestones": [
     {
-      "type": "streak",
+      "type": "total",
       "target": 1,
       "title": "happy first kiss!",
       "sticker": "💋",
