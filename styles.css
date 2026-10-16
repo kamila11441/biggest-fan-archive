@@ -438,6 +438,7 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex;flex-dir
 .note-swap{position:relative;display:block;min-height:76px;padding:14px 86px 58px 18px}
 .note-swap>.keep-button{position:absolute;right:12px;bottom:10px;margin:0}
 .polaroid .keep-button{right:8px;bottom:6px;min-width:64px;min-height:30px;width:auto;height:30px;padding:0 11px}
+.notification-age{display:inline-block;margin-top:4px;color:var(--muted);font:500 10px/1.4 var(--mono)}
 .keep-button{display:inline-flex;align-items:center;justify-content:center;width:auto;min-width:64px;height:36px;min-height:36px;padding:0 13px;border-radius:999px;font:600 11px/1 var(--sans);letter-spacing:.04em}
 .deal-card>.keep-button{margin:0}
 .songs-section .song-caption-row .keep-button{top:auto}
@@ -446,6 +447,17 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex;flex-dir
 @media(min-width:851px){.header{grid-template-columns:auto auto minmax(0,1fr) auto;column-gap:clamp(14px,2vw,26px)}.nav{gap:clamp(12px,2vw,30px)}}
 .keep-button,.polaroid .keep-button{width:38px;min-width:38px;height:38px;min-height:38px;padding:0;border-radius:50%;font:500 23px/1 var(--sans);letter-spacing:0}
 @media(max-width:620px){.keep-button,.polaroid .keep-button{width:36px;min-width:36px;height:36px;min-height:36px}}
+/* About note as a fast, tappable glimpse into the journal. */
+.hand-note{position:relative;overflow:hidden;vertical-align:top;text-align:left;cursor:pointer;transition:min-width .15s ease,min-height .15s ease,background .15s ease}
+.hand-note:focus-visible{outline:3px solid var(--rose);outline-offset:3px}
+.hand-note-copy{position:relative;z-index:1;transition:opacity .12s ease}
+.about-photo-peek{position:absolute;inset:5px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;opacity:0;pointer-events:none;transition:opacity .12s ease}
+.about-photo-flash-tile{width:100%;height:100%;min-width:0;object-fit:cover;border:2px solid #fff;border-radius:8px;box-shadow:0 2px 9px #24354a20}
+.about-photo-flash-tile:nth-child(2){transform:translateY(3px) rotate(2deg)}.about-photo-flash-tile:nth-child(3){transform:translateY(-2px) rotate(-2deg)}.about-photo-flash-tile:nth-child(4){transform:translateY(2px) rotate(1deg)}
+.hand-note.photo-flash-active{width:min(270px,calc(100vw - 72px));min-height:84px;background:#e6eef8}.photo-flash-active .hand-note-copy{opacity:0}.photo-flash-active .about-photo-peek{opacity:1}
+@media(prefers-reduced-motion:reduce){.hand-note,.hand-note-copy,.about-photo-peek{transition:none}}
+/* Keep the mobile journal collage brief: one large glimpse and a few small frames. */
+@media(max-width:620px){#blogPosts.journal-mosaic{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#blogPosts.journal-mosaic .blog-post{grid-column:span 1;padding:0;border-radius:12px}#blogPosts.journal-mosaic .blog-post:first-child{grid-column:span 2;grid-row:span 2}#blogPosts.journal-mosaic .blog-photo-button,#blogPosts.journal-mosaic .blog-post:first-child .blog-photo-button{height:84px;aspect-ratio:auto}#blogPosts.journal-mosaic .blog-post:first-child .blog-photo-button{height:176px}#blogPosts.journal-mosaic .blog-post .blog-photo-button img{height:100%}#blogPosts.journal-mosaic .blog-post-copy{display:none}#blogPosts.journal-mosaic .blog-post>.keep-button{right:6px;bottom:6px;width:30px;min-width:30px;height:30px;min-height:30px;font-size:20px}}
 @media(hover:hover) and (prefers-reduced-motion:no-preference){.polaroid:hover{transform:rotate(calc(var(--tilt) + 2deg)) scale(1.025)}.keep-button:hover{animation:keep-pop .3s ease}}
 @keyframes keep-pop{50%{transform:scale(1.15)}}
 @media(prefers-reduced-motion:reduce){.deal-card,.archive-thought-grid .archive-thought{animation:none!important}.polaroid,.pill-button{transition:none!important}}
