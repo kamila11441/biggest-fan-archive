@@ -107,6 +107,13 @@
         <div class="photo-post-list-heading"><h3>Published photo posts</h3><span id="photoPostCount">0 POSTS</span></div>
         <div id="adminPhotoPostList" class="admin-item-list" aria-label="Published photo posts"></div>
       </section>
+      <section class="photo-post-manager kamila-photo-manager" aria-labelledby="kamilaPhotoManagerHeading">
+        <div class="panel-heading"><div><span class="panel-index">HIDE-AND-CATCH / COLLECTIBLES</span><h3 id="kamilaPhotoManagerHeading">Kamila card photos</h3></div><span class="panel-icon" aria-hidden="true">✦</span></div>
+        <p class="panel-description">Upload photos for the collectible card awarded when a visitor catches Kamila. One photo is chosen at random each time. Add, caption, or remove photos; visitors receive a personal card copy in their local pocket.</p>
+        <label class="kamila-photo-upload-label" for="kamilaPhotoFiles">ADD CARD PHOTOS</label><input id="kamilaPhotoFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple><p id="kamilaPhotoStatus" class="admin-message" role="status" aria-live="polite"></p>
+        <div class="photo-post-list-heading"><h3>Card photo folder</h3><span id="kamilaPhotoCount">0 CARDS</span></div>
+        <div id="adminKamilaPhotoList" class="admin-item-list" aria-label="Kamila collectible card photos"></div>
+      </section>
       <div class="visual-actions"><button type="button" class="primary-button" id="savePageContent">Publish changes ↗</button><button type="button" class="secondary-button" id="saveContentDraft">Save draft</button><button type="button" class="secondary-button" id="restoreContentDraft">Restore draft</button><p id="contentStatus" class="admin-message" role="status" aria-live="polite"></p></div>
     </section>
     <section class="admin-panel full-panel" id="kissMilestoneManager" aria-labelledby="kissMilestoneHeading"><div class="panel-heading"><div><span class="panel-index">DAILY RITUAL / REWARDS</span><h2 id="kissMilestoneHeading">Kiss sticker awards</h2></div><span class="panel-icon" aria-hidden="true">♡</span></div><p class="panel-description">Design a sticker for each consecutive-day streak or total-kiss milestone. Upload a graphic or paste a public HTTPS image URL. These settings publish with the rest of your page content.</p><div id="kissMilestoneFields"><div id="kissMilestoneRows" class="kiss-milestone-rows"></div><div class="kiss-milestone-actions"><button type="button" class="secondary-button" id="addKissMilestone">Add a milestone</button><p id="kissMilestoneStatus" class="admin-message" role="status" aria-live="polite"></p></div></div></section>
