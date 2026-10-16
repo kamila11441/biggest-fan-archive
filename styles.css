@@ -429,6 +429,23 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex;flex-dir
 @keyframes fade-in{from{opacity:0}to{opacity:1}}
 @media(max-width:620px){.deal-hand{grid-template-columns:1fr;gap:14px}.deal-card{min-height:160px}.deal-card img{height:190px}.counter-strip{justify-content:flex-start;overflow:auto;gap:18px;font-size:10px}.journal-heading{align-items:flex-start;flex-direction:column}.journal-actions{align-items:flex-start;flex-direction:column}.journal-mosaic{grid-template-columns:repeat(2,minmax(0,1fr))}.journal-mosaic .blog-post:first-child{grid-row:span 2;grid-column:span 2}.journal-mosaic .blog-post:first-child .blog-photo-button img{height:300px}.polaroid-toolbar{flex-wrap:wrap}.polaroid-toolbar h2{width:100%}.polaroid{width:min(170px,47vw)}.polaroid img{height:120px}.pocket-toggle{right:12px;bottom:calc(76px + env(safe-area-inset-bottom))}}
 @media(max-width:390px){.deal-section .section-heading{align-items:flex-start}.deal-section .section-heading h2{font-size:44px}.journal-tools input{width:100%}.polaroid-toolbar button{padding:8px 11px;font-size:12px}}
+/* Expandable noise and note previews; pocket actions sit at each card's lower-right corner. */
+.noises-section #noisesMore,.archive-collection #notesMore{margin-top:18px}
+.archive-noise[hidden]{display:none!important}
+.blog-post,.archive-song,.archive-thought,.deal-card{position:relative;padding-bottom:62px}
+.blog-post>.keep-button,.archive-song>.keep-button,.archive-thought>.keep-button,.deal-card>.keep-button{position:absolute;right:16px;bottom:14px;margin:0;z-index:2}
+.blog-post .blog-post-copy>.keep-button{position:absolute;right:16px;bottom:14px;margin:0}
+.note-swap{position:relative;display:block;min-height:76px;padding:14px 86px 58px 18px}
+.note-swap>.keep-button{position:absolute;right:12px;bottom:10px;margin:0}
+.polaroid .keep-button{right:8px;bottom:6px;min-width:64px;min-height:30px;width:auto;height:30px;padding:0 11px}
+.keep-button{display:inline-flex;align-items:center;justify-content:center;width:auto;min-width:64px;height:36px;min-height:36px;padding:0 13px;border-radius:999px;font:600 11px/1 var(--sans);letter-spacing:.04em}
+.deal-card>.keep-button{margin:0}
+.songs-section .song-caption-row .keep-button{top:auto}
+@media(max-width:620px){.blog-post,.archive-song,.archive-thought,.deal-card{padding-bottom:58px}.blog-post>.keep-button,.archive-song>.keep-button,.archive-thought>.keep-button,.deal-card>.keep-button,.blog-post .blog-post-copy>.keep-button{right:12px;bottom:12px}.note-swap{padding-right:78px}}
+/* Keep desktop notifications beside the home mark; the compact header stays unchanged. */
+@media(min-width:851px){.header{grid-template-columns:auto auto minmax(0,1fr) auto;column-gap:clamp(14px,2vw,26px)}.nav{gap:clamp(12px,2vw,30px)}}
+.keep-button,.polaroid .keep-button{width:38px;min-width:38px;height:38px;min-height:38px;padding:0;border-radius:50%;font:500 23px/1 var(--sans);letter-spacing:0}
+@media(max-width:620px){.keep-button,.polaroid .keep-button{width:36px;min-width:36px;height:36px;min-height:36px}}
 @media(hover:hover) and (prefers-reduced-motion:no-preference){.polaroid:hover{transform:rotate(calc(var(--tilt) + 2deg)) scale(1.025)}.keep-button:hover{animation:keep-pop .3s ease}}
 @keyframes keep-pop{50%{transform:scale(1.15)}}
 @media(prefers-reduced-motion:reduce){.deal-card,.archive-thought-grid .archive-thought{animation:none!important}.polaroid,.pill-button{transition:none!important}}
