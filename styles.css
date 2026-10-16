@@ -858,3 +858,8 @@ body[data-song-layout="grid"] .songs-section .archive-song{display:flex;flex-dir
 .kamila-card-swipe-hint{margin:0 0 8px;color:#74829b;font:500 9px/1.35 var(--sans);letter-spacing:.08em;text-align:center}
 @media(max-width:620px){.kamila-card-preview-dialog .kamila-card-flip-button{min-width:0;min-height:34px;padding:7px 13px;border-color:#e1e8f2;border-radius:999px;background:#f8faff;color:#66758f;box-shadow:none;font-size:10px;font-weight:600;letter-spacing:.02em}.kamila-card-swipe-hint{margin:0 0 7px;color:#8290a7;font-size:8px;letter-spacing:.06em}}
 @media(prefers-reduced-motion:reduce){.kamila-card-flip-scene.kamila-launching,.kamila-card-flip-scene.kamila-launching::before{animation:none!important}}
+
+/* Kamila pocket photo previews: fill the circular frame edge to edge. */
+.kamila-pocket-card>.pocket-photo{width:58px!important;height:58px!important;min-width:58px;max-width:58px!important;aspect-ratio:1;border-radius:50%;padding:0!important;overflow:hidden}
+.kamila-pocket-card .pocket-photo img{display:block;width:100%!important;height:100%!important;max-width:none!important;aspect-ratio:1;box-sizing:border-box;object-fit:cover;object-position:center;padding:0;border:0;border-radius:50%;box-shadow:none}
+@media(max-width:620px){.kamila-pocket-card>.pocket-photo{width:52px!important;height:52px!important;min-width:52px;max-width:52px!important}.kamila-pocket-card .pocket-photo img{width:100%!important;height:100%!important}}
