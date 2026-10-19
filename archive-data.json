@@ -359,7 +359,14 @@
     ]
   },
   "marketItems": [],
-  "customNotifications": [],
+  "customNotifications": [
+    {
+      "id": "notice-1792432411151-d32be8",
+      "title": "MWAAAAH",
+      "message": "I hope you’re having a wonderful day💋",
+      "createdAt": 1792432411151
+    }
+  ],
   "journalOrder": "date",
   "kissMessages": [],
   "kissMilestones": [
