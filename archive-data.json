@@ -2,6 +2,14 @@
   "songs": [
     {
       "kind": "spotify",
+      "embed": "https://open.spotify.com/embed/track/7G7tgVYORlDuVprcYHuFJh",
+      "title": "Spotify track",
+      "original": "https://open.spotify.com/track/7G7tgVYORlDuVprcYHuFJh?si=ekpa4BjzTn2MSuVBmtirIA&utm_source=copy-link&rowId=e4f48e14d81d4d9e",
+      "label": "you stole my song btw",
+      "addedAt": 1792885976941
+    },
+    {
+      "kind": "spotify",
       "embed": "https://open.spotify.com/embed/track/5phbwzg5d2MqNAoc0435Zu",
       "title": "Spotify track",
       "original": "https://open.spotify.com/track/5phbwzg5d2MqNAoc0435Zu?si=qIY8NfCQRFaMBInAcGxX5Q&utm_source=copy-link",
