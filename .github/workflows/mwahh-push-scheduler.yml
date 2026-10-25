@@ -1,0 +1,20 @@
+name: MWAHH push scheduler
+on:
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+jobs:
+  send-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send daily kiss reminders and detect new archive content
+        env:
+          PUSH_FUNCTION_URL: ${{ secrets.PUSH_FUNCTION_URL }}
+          PUSH_CRON_SECRET: ${{ secrets.PUSH_CRON_SECRET }}
+        run: |
+          test -n "$PUSH_FUNCTION_URL"
+          test -n "$PUSH_CRON_SECRET"
+          curl --fail-with-body --silent --show-error -X POST "$PUSH_FUNCTION_URL" \
+            -H "Content-Type: application/json" \
+            -H "x-push-cron-secret: $PUSH_CRON_SECRET" \
+            -d '{"action":"scheduled"}'
