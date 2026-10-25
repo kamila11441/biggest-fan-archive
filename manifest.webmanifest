@@ -1,1 +1,16 @@
-{"name":"MWAHH","short_name":"MWAHH","start_url":"./","scope":"./","display":"standalone","background_color":"#ededeb","theme_color":"#202020","icons":[{"src":"icon.png","sizes":"512x512","type":"image/png"}]}
+{
+  "name": "Mwahh",
+  "short_name": "Mwahh",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ededeb",
+  "theme_color": "#202020",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
