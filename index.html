@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <title>MWAHH</title>
+  <title>Mwahh</title>
 
 <link rel="icon" type="image/png" href="./icon1.png">
 
@@ -11,9 +11,9 @@
 
 <meta name="theme-color" content="#ffffff">
 
-<meta name="application-name" content="MWAHH">
+<meta name="application-name" content="Mwahh">
 
-<meta name="apple-mobile-web-app-title" content="MWAHH">
+<meta name="apple-mobile-web-app-title" content="Mwahh">
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 
@@ -36,9 +36,28 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@300;400;500;600;700&family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .push-reminder-control { margin-top: 1rem; }
+    .push-reminder-control p { font-size: .9rem; margin-top: .5rem; }
+    @media (display-mode: standalone) { .push-reminder-control { display: block; } }
+    /* Installed-app presentation only: hide the pet and market interface.
+       Keep daily kiss data/section, notification button and panel, pocket,
+       and all existing scripts/data handling intact. Desktop browser is unchanged. */
+    @media (display-mode: standalone) {
+      #archivePetToggle,
+      #archivePetPanel,
+      #guestbook,
+      .header-link[href="#guestbook"],
+      .nav a[href="#guestbook"] {
+        display: none !important;
+      }
+    }
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script defer src="backend-config.js"></script>
   <script defer src="public-app.js"></script>
+  <script defer src="push-config.js"></script>
+  <script defer src="push-client.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#home">Skip to main content</a>
@@ -133,6 +152,7 @@
           <p class="kiss-message" id="kissMessage" aria-live="polite"></p>
           <p class="kiss-stats" id="kissStats" hidden></p>
           <p class="kiss-note" id="kissNote"></p>
+          <div class="push-reminder-control" id="pushReminderControl" hidden><button type="button" class="pill-button" id="enableKissPush">Enable push notifications</button><p id="kissPushStatus" role="status" aria-live="polite"></p></div>
           <div id="kissAwards" class="kiss-awards" aria-label="Kiss sticker collection" hidden></div>
         </div>
       </div>
