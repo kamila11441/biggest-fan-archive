@@ -2,6 +2,22 @@
   "songs": [
     {
       "kind": "spotify",
+      "embed": "https://open.spotify.com/embed/track/0wuxOBMmwRRgJi3gXse0QD",
+      "title": "Spotify track",
+      "original": "https://open.spotify.com/track/0wuxOBMmwRRgJi3gXse0QD?si=6pXkI_nTTnGq3y5HAVkj4w&utm_source=copy-link",
+      "label": "one day I’ll tell you why",
+      "addedAt": 1794962264417
+    },
+    {
+      "kind": "spotify",
+      "embed": "https://open.spotify.com/embed/track/1FZ6fxRJETDWVbL5hGp7vp",
+      "title": "Spotify track",
+      "original": "https://open.spotify.com/track/1FZ6fxRJETDWVbL5hGp7vp?si=NI4WPh35QjabxwP693noRA&utm_source=copy-link",
+      "label": "self explanatory🤗",
+      "addedAt": 1794962296083
+    },
+    {
+      "kind": "spotify",
       "embed": "https://open.spotify.com/embed/track/7G7tgVYORlDuVprcYHuFJh",
       "title": "Spotify track",
       "original": "https://open.spotify.com/track/7G7tgVYORlDuVprcYHuFJh?si=ekpa4BjzTn2MSuVBmtirIA&utm_source=copy-link&rowId=e4f48e14d81d4d9e",
